@@ -1,3 +1,198 @@
+# Codexa MM — Master Implementation Plan
+
+> **Plan version:** 2.0
+> **Product:** Codexa MM — Learn. Build. Innovate.
+> **Architecture:** Laravel Modular Monolith + Inertia.js + React + TypeScript
+> **Status:** Phase 1 foundation in progress; public landing page shipped in commit `fba69ce`, RBAC slice completed in the current change.
+
+## 0. Non-negotiable product and brand rules
+
+- `image.png` is the source-of-truth Codexa MM brand board and **must not be deleted, replaced, or visually simplified away**. It contains the approved logo, Light Icon, Dark Icon, Monochrome Icon, color palette, typography, brand values, divisions, and hero direction.
+- Product name is **Codexa MM**. Do not use “Code Nest” in user-facing copy except when referring to the historical architecture notes below.
+- Brand promise: **Learn. Build. Innovate.**
+- Primary users: Students, Instructors, Clients, Administrators, and internal Development Staff.
+- MVP priorities: Public Website, Authentication, Course Management, Student Dashboard, Video Learning, Enrollment, Assignments, Client Inquiry, Project Management, Quotations, and Invoices.
+- Deferred features: Online Payment Provider integration, Live Classes, AI Assistant, Mobile App, Advanced Analytics, and Affiliate System.
+
+## 1. Logo and visual identity specification — preserve exactly
+
+### 1.1 Approved logo assets
+
+- Source board: `image.png` at repository root. Keep it permanently in the repository.
+- Logo mark: geometric open `C` / code-bracket symbol from the source board.
+- Wordmark: `Codexa` in dark navy plus `MM` in primary blue.
+- Tagline: `LEARN. BUILD. INNOVATE.`
+- Supporting statement: `Technology · Education · Innovation` and “Empowering Myanmar’s developers with world-class skills and solutions.”
+- Required variants: Light Icon on white, Dark Icon on navy, Monochrome for print/low-color contexts, horizontal wordmark, compact favicon/app icon.
+- Required future files: `public/brand/codexa-mark.svg`, `public/brand/codexa-wordmark.svg`, `public/brand/codexa-wordmark-dark.svg`, `public/brand/favicon.svg`, and an accessible `BrandLogo.tsx` component. These are additive assets; never remove `image.png`.
+
+### 1.2 Tokens and usage rules
+
+- Primary: `#2563EB`
+- Dark: `#0F172A`
+- Accent: `#60A5FA`
+- Background: `#F1F5F9`
+- Main text: `#0F172A`; muted text: `#64748B`; border: `#E2E8F0`.
+- English font: Inter / Plus Jakarta Sans direction from the board; Myanmar font: Noto Sans Myanmar.
+- Logo clear space: at least the height of the inner code mark on every side.
+- Never stretch, rotate, recolor arbitrarily, add a drop shadow to the mark, or place the light logo on a low-contrast background.
+- Header, auth screens, dashboards, certificates, email templates, favicon, and social previews must use the same logo component/tokens.
+
+## 2. Delivery strategy and Definition of Done
+
+Every feature must pass all of these gates before its phase is marked complete:
+
+- [ ] UI is implemented for desktop, tablet, and mobile.
+- [ ] Backend validation and safe error handling are implemented.
+- [ ] Authentication, authorization, and ownership rules are enforced server-side.
+- [ ] Database relationships, indexes, constraints, and soft deletes are verified.
+- [ ] Feature and policy tests are added.
+- [ ] TypeScript check, Vite build, Laravel tests, and formatting checks pass.
+- [ ] Accessibility basics pass: labels, focus states, keyboard navigation, contrast, and semantic landmarks.
+- [ ] English and Myanmar copy can be localized without changing component structure.
+- [ ] Documentation and seed data are updated.
+
+## 3. Phase-by-phase implementation plan
+
+### Phase 1 — Foundation, branding, authentication, and RBAC
+
+**Current sprint / next implementation unit**
+
+- [x] Laravel 13 + Inertia + React + TypeScript bootstrapped.
+- [x] Composer and npm dependency compatibility repaired.
+- [x] Public landing page shipped with responsive hero, navigation, divisions, and footer.
+- [x] `/health` endpoint and public smoke tests added.
+- [x] TypeScript and production Vite build passing.
+- [x] Set `APP_NAME=Codexa MM` in `.env.example` and document environment defaults.
+- [ ] Add the complete logo asset set and reusable `BrandLogo` component without deleting `image.png`.
+- [x] Seed `admin`, `instructor`, `student`, and `client` roles.
+- [x] Seed granular permissions using `{domain}.{action}` names, for example `courses.create`, `courses.update`, `projects.view-own`, `invoices.manage`.
+- [x] Assign `student` automatically on public registration; never allow public self-registration as admin or instructor.
+- [ ] Add account status enforcement (`active`, `inactive`, `suspended`) in authentication middleware.
+- [ ] Build login, register, forgot-password, reset-password, email-verification, and profile pages.
+- [ ] Add role-aware post-login redirects: admin → `/admin/dashboard`, instructor → `/instructor/dashboard`, client → `/client/dashboard`, student → `/student/dashboard`.
+- [ ] Add policies and tests for role checks and authenticated/guest access.
+- [ ] Add shared UI primitives: Button, Input, Card, Badge, Modal, Toast, EmptyState, PageHeader, and accessible AppShell.
+
+**Exit criteria:** a new user registers as `student`, cannot select privileged roles, can log in, and is redirected to the correct portal; seeded roles and permissions work in a fresh database.
+
+### Phase 2 — Public website and content foundation
+
+- [ ] Build About, Course Catalog, Course Detail, Curriculum, Services, Service Detail, Portfolio, Instructors, Blog, Contact, FAQ, Privacy, and Terms pages.
+- [ ] Replace placeholder route-only pages with real data-driven Inertia pages.
+- [ ] Add public models, factories, seeders, slugs, published/draft visibility, pagination, search, and filtering.
+- [ ] Add contact form validation, spam/rate protection, persistence, and queued notification hooks.
+- [ ] Add SEO title, description, canonical URL, Open Graph image, sitemap, robots, and JSON-LD where relevant.
+- [ ] Use the approved Codexa logo in header, footer, auth screens, favicon, and social preview.
+
+**Exit criteria:** public visitors can browse published content and submit a validated inquiry on mobile and desktop.
+
+### Phase 3 — Academy LMS
+
+- [ ] Course categories, courses, modules, lessons, resources, instructors, announcements, reviews, and course status management.
+- [ ] Support free, paid, and package-based course pricing in the domain model.
+- [ ] Support multiple instructors per course through `course_instructors`.
+- [ ] Instructor CRUD with ownership policy: instructors manage only assigned courses.
+- [ ] Student dashboard with enrolled courses, progress, continue-learning, assignments, activities, certificates, and notifications.
+- [ ] Enrollment service with database transaction and duplicate-enrollment protection.
+- [ ] Lesson player with resume position, progress, captions, playback speed, and lesson navigation.
+- [ ] Never expose private video URLs directly; use authorized access and expiring signed URLs.
+
+**Exit criteria:** a student can browse a published course, enroll in a free course, access lessons, and see durable progress.
+
+### Phase 4 — Assignments, quizzes, and certificates
+
+- [ ] Assignment authoring, attachments, submissions, late-submission rules, grading, feedback, and status transitions.
+- [ ] Quiz authoring with question types, options, attempts, scoring, pass marks, and server-side answer validation.
+- [ ] Never return `is_correct` or answer keys in student payloads.
+- [ ] Course completion calculation based on lesson, assignment, and quiz requirements.
+- [ ] Certificate generation, certificate number uniqueness, verification code, public `/verify/{code}` page, and downloadable certificate layout.
+- [ ] Add policy tests for student ownership and instructor grading scope.
+
+### Phase 5 — Codexa Solutions / CRM / project portal
+
+- [ ] Service categories, services, lead capture, lead activities, clients, and inquiry workflow.
+- [ ] Client portal with strict ownership filtering: clients can see only their own projects, files, milestones, tasks, quotations, invoices, and support tickets.
+- [ ] Project lifecycle: `inquiry → reviewing → quoted → approved → planning → in_progress → testing → client_review → completed`; include `cancelled` and `on_hold` paths.
+- [ ] Milestones with dates, status, completion percentage, assigned team members, and attachments.
+- [ ] Tasks with assignee, priority, status, due date, comments, and activity history.
+- [ ] Project updates, documents, support tickets, internal notes, and client feedback.
+- [ ] Add ownership policy tests using two different client accounts.
+
+### Phase 6 — Quotations, invoices, and financial records
+
+- [ ] Quotation CRUD, line items, totals, tax, validity, approval/rejection, and immutable numbering.
+- [ ] Invoice CRUD, line items, due date, partial payment fields, status transitions, and PDF-ready presentation.
+- [ ] Keep invoice, payment, transaction, and refund records separate.
+- [ ] Use decimal monetary fields and database transactions for financial operations.
+- [ ] Add payment provider abstraction only; keep actual Myanmar provider integration behind a later feature flag.
+- [ ] Add audit events for invoice creation, approval, payment confirmation, adjustment, and refund.
+
+### Phase 7 — Shared operations
+
+- [ ] In-app notifications with read/unread state and preferences.
+- [ ] Queued email notifications for enrollment, assignment, grading, project, milestone, invoice, and payment events.
+- [ ] Settings, media/file metadata, activity logs, system logs, and admin reports.
+- [ ] Secure uploads with MIME, size, ownership, and storage-disk validation.
+- [ ] Redis cache, queue worker, scheduler, and failed-job monitoring configuration.
+
+### Phase 8 — API and mobile-readiness
+
+- [ ] Versioned `/api/v1` routes for auth, academy, solutions, billing, notifications, and profile.
+- [ ] Sanctum token authentication for future Flutter clients.
+- [ ] Consistent JSON envelope, pagination, validation errors, authorization policies, throttling, and OpenAPI documentation.
+- [ ] Keep Inertia web flows as the primary product; do not add Next.js unless SSR becomes necessary.
+
+### Phase 9 — Quality, security, performance, and launch
+
+- [ ] Feature, unit, policy, authorization, and API tests with realistic factories.
+- [ ] Security review: CSRF, XSS, SQL injection, rate limiting, session cookies, file validation, secret handling, audit logs, and ownership checks.
+- [ ] Performance review: indexes, eager loading, query counts, pagination, caching, queue throughput, asset compression, and CDN strategy.
+- [ ] Daily database backup, off-site file backup, retention rules, and scheduled restore test.
+- [ ] Separate local, staging, and production environments.
+- [ ] GitHub Actions: install, lint, TypeScript, build, migrations, tests, and deployment artifact checks.
+- [ ] Ubuntu + Nginx + PHP-FPM + PostgreSQL + Redis + SSL deployment documentation.
+- [ ] Launch checklist, rollback plan, monitoring, error reporting, and post-launch review.
+
+## 4. Database implementation order
+
+1. Identity: users, profiles, preferences, roles, permissions, activity logs.
+2. Academy: categories, courses, course instructors, modules, lessons, resources, enrollments, progress, reviews, announcements.
+3. Assessment: assignments, files, submissions, grades, quizzes, questions, options, attempts, answers.
+4. Certificates: templates, certificates, verification records.
+5. Solutions: service categories, services, requests, leads, clients, projects, members, milestones, tasks, updates, documents, tickets, messages.
+6. Finance: quotations, quotation items, invoices, invoice items, payments, transactions, refunds.
+7. Shared content: notifications, preferences, media, settings, contact messages, blog, portfolio, FAQs, system logs.
+8. Every foreign key, unique constraint, status enum, index, soft-delete decision, and transaction boundary must have a test or documented reason.
+
+## 5. Portal and route delivery order
+
+- Public: `/`, `/about`, `/courses`, `/courses/{slug}`, `/services`, `/portfolio`, `/blog`, `/contact`, `/faq`, `/verify/{code}`.
+- Auth: `/login`, `/register`, `/forgot-password`, `/reset-password`, `/email/verify`, `/profile`.
+- Student: `/student/dashboard`, `/student/my-courses`, learning, assignments, submissions, quizzes, certificates, notifications, payments, wishlist, reviews, profile.
+- Instructor: dashboard, courses, curriculum, lessons, resources, students, assignments, submissions, grading, announcements, reviews, profile.
+- Client: dashboard, projects, milestones, tasks, quotations, invoices, payments, documents, support, feedback, profile.
+- Admin: dashboard, users, roles, permissions, academy, solutions, finance, content, notifications, reports, activity logs, settings.
+
+## 6. Working agreement for each next task
+
+1. Read this plan and identify the first unchecked item in the current phase.
+2. Inspect the existing implementation before changing files.
+3. Implement the smallest complete vertical slice: database → policy/service → route/controller → Inertia UI → tests.
+4. Run `php artisan test`, `npx tsc --noEmit`, `npm run build`, and relevant formatting checks.
+5. Update this plan's checkboxes and a short implementation note.
+6. Commit with a focused message and push to `main` only after the checks pass.
+7. Never remove `image.png` or the approved Codexa MM logo variants while refactoring UI.
+
+---
+
+## Implementation notes
+
+- Completed: public landing page, responsive navigation, brand colors, `/health`, public smoke tests, dependency compatibility, and build pipeline.
+- Completed in this change: full master plan rewrite, preserved logo specification, Codexa MM environment name, RBAC roles/permissions seeder, default student registration role, and RBAC tests.
+- Current next slice: authentication UI, account status middleware, role-aware redirects, and reusable brand/logo components.
+- Historical architecture specification retained below for reference and traceability.
+
 Code Nest — Complete System Architecture & Development Specification
 Architecture Proposal v1.0
  Production-oriented
@@ -886,16 +1081,16 @@ Production Deployment
 11. MVP နဲ့ Future Features ခွဲခြားခြင်း
 အကုန်လုံးကို ပထမ Version မှာ မထည့်သင့်ပါဘူး။
 Feature	MVP	Future
-Public Website	Yes	
-Authentication	Yes	
-Course Management	Yes	
-Student Dashboard	Yes	
-Video Learning	Yes	
-Enrollment	Yes	
-Assignments	Yes	
-Client Inquiry	Yes	
-Project Management	Yes	
-Quotations & Invoices	Yes	
+Public Website	Yes
+Authentication	Yes
+Course Management	Yes
+Student Dashboard	Yes
+Video Learning	Yes
+Enrollment	Yes
+Assignments	Yes
+Client Inquiry	Yes
+Project Management	Yes
+Quotations & Invoices	Yes
 Online Payment		Later
 Live Classes		Later
 AI Learning Assistant		Later
