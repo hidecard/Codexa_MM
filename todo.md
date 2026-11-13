@@ -80,8 +80,9 @@ Every feature must pass all of these gates before its phase is marked complete:
 ### Phase 2 — Public website and content foundation
 
 - [ ] Build About, Course Catalog, Course Detail, Curriculum, Services, Service Detail, Portfolio, Instructors, Blog, Contact, FAQ, Privacy, and Terms pages.
-- [ ] Replace placeholder route-only pages with real data-driven Inertia pages.
-- [ ] Add public models, factories, seeders, slugs, published/draft visibility, pagination, search, and filtering.
+- [x] Replace the Course Catalog and Course Detail placeholder routes with real data-driven Inertia pages.
+- [x] Add course category/course/module models, seed data, slugs, published/draft visibility, pagination, search, and category filtering.
+- [ ] Add the remaining public models, factories, seeders, slugs, published/draft visibility, pagination, search, and filtering for services, portfolio, instructors, blog, and FAQ.
 - [ ] Add contact form validation, spam/rate protection, persistence, and queued notification hooks.
 - [ ] Add SEO title, description, canonical URL, Open Graph image, sitemap, robots, and JSON-LD where relevant.
 - [ ] Use the approved Codexa logo in header, footer, auth screens, favicon, and social preview.

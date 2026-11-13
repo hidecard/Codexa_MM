@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PublicCourseController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -23,17 +24,13 @@ Route::get('/about', function () {
     return Inertia::render('Public/About');
 })->name('about');
 
-Route::get('/courses', function () {
-    return Inertia::render('Public/Courses/Index');
-})->name('courses.index');
+Route::get('/courses', [PublicCourseController::class, 'index'])->name('courses.index');
 
 Route::get('/courses/categories', function () {
     return Inertia::render('Public/Courses/Categories');
 })->name('courses.categories');
 
-Route::get('/courses/{course:slug}', function () {
-    return Inertia::render('Public/Courses/Show');
-})->name('courses.show');
+Route::get('/courses/{course:slug}', [PublicCourseController::class, 'show'])->name('courses.show');
 
 Route::get('/courses/{course:slug}/curriculum', function () {
     return Inertia::render('Public/Courses/Curriculum');
