@@ -1,6 +1,11 @@
 <?php
 
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\PublicBlogController;
 use App\Http\Controllers\PublicCourseController;
+use App\Http\Controllers\PublicFaqController;
+use App\Http\Controllers\PublicInstructorController;
+use App\Http\Controllers\PublicPortfolioController;
 use App\Http\Controllers\PublicServiceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -41,37 +46,24 @@ Route::get('/services', [PublicServiceController::class, 'index'])->name('servic
 
 Route::get('/services/{service:slug}', [PublicServiceController::class, 'show'])->name('services.show');
 
-Route::get('/portfolio', function () {
-    return Inertia::render('Public/Portfolio/Index');
-})->name('portfolio.index');
+Route::get('/portfolio', [PublicPortfolioController::class, 'index'])->name('portfolio.index');
 
-Route::get('/portfolio/{project:slug}', function () {
-    return Inertia::render('Public/Portfolio/Show');
-})->name('portfolio.show');
+Route::get('/portfolio/{project:slug}', [PublicPortfolioController::class, 'show'])->name('portfolio.show');
 
-Route::get('/instructors', function () {
-    return Inertia::render('Public/Instructors/Index');
-})->name('instructors.index');
+Route::get('/instructors', [PublicInstructorController::class, 'index'])->name('instructors.index');
 
-Route::get('/instructors/{instructor:slug}', function () {
-    return Inertia::render('Public/Instructors/Show');
-})->name('instructors.show');
+Route::get('/instructors/{instructor}', [PublicInstructorController::class, 'show'])->name('instructors.show');
 
-Route::get('/blog', function () {
-    return Inertia::render('Public/Blog/Index');
-})->name('blog.index');
+Route::get('/blog', [PublicBlogController::class, 'index'])->name('blog.index');
 
-Route::get('/blog/{post:slug}', function () {
-    return Inertia::render('Public/Blog/Show');
-})->name('blog.show');
+Route::get('/blog/{post:slug}', [PublicBlogController::class, 'show'])->name('blog.show');
 
 Route::get('/contact', function () {
     return Inertia::render('Public/Contact');
 })->name('contact');
+Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:10,1')->name('contact.store');
 
-Route::get('/faq', function () {
-    return Inertia::render('Public/Faq');
-})->name('faq');
+Route::get('/faq', PublicFaqController::class)->name('faq');
 
 Route::get('/privacy-policy', function () {
     return Inertia::render('Public/PrivacyPolicy');

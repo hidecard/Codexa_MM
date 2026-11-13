@@ -72,14 +72,15 @@ Every feature must pass all of these gates before its phase is marked complete:
 - [x] Add account status enforcement (`active`, `inactive`, `suspended`) in authentication middleware.
 - [x] Build the first auth UI slice: login, register, and forgot-password pages with Codexa branding.
 - [x] Add role-aware post-login redirects: admin → `/admin/dashboard`, instructor → `/instructor/dashboard`, client → `/client/dashboard`, student → `/student/dashboard`.
-- [ ] Add policies and tests for role checks and authenticated/guest access.
-- [ ] Add shared UI primitives: Button, Input, Card, Badge, Modal, Toast, EmptyState, PageHeader, and accessible AppShell.
+- [x] Add policies and tests for role checks and authenticated/guest access.
+- [x] Add baseline portal gates (`access-*-portal`) and `CoursePolicy` (instructor ownership/admin override) with feature coverage.
+- [x] Add shared UI primitives: Button, Input, Card, Badge, Modal, Toast, EmptyState, PageHeader, and accessible AppShell.
 
 **Exit criteria:** a new user registers as `student`, cannot select privileged roles, can log in, and is redirected to the correct portal; seeded roles and permissions work in a fresh database.
 
 ### Phase 2 — Public website and content foundation
 
-- [ ] Build About, Course Catalog, Course Detail, Curriculum, Services, Service Detail, Portfolio, Instructors, Blog, Contact, FAQ, Privacy, and Terms pages.
+- [x] Build About, Course Catalog, Course Detail, Curriculum, Services, Service Detail, Portfolio, Instructors, Blog, Contact, FAQ, Privacy, and Terms pages.
 - [x] Replace the Course Catalog and Course Detail placeholder routes with real data-driven Inertia pages.
 - [x] Add course category/course/module models, seed data, slugs, published/draft visibility, pagination, search, and category filtering.
 - [x] Replace the Services and Service Detail placeholder routes with real data-driven Inertia pages, active visibility, search, category filtering, and seed data.

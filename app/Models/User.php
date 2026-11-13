@@ -43,4 +43,14 @@ class User extends Authenticatable implements HasMedia
             ->singleFile()
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
     }
+
+    public function taughtCourses()
+    {
+        return $this->hasMany(Course::class, 'instructor_id');
+    }
+
+    public function instructedCourses()
+    {
+        return $this->belongsToMany(Course::class, 'course_instructors', 'instructor_id', 'course_id');
+    }
 }
