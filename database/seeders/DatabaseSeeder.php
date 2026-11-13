@@ -25,5 +25,6 @@ class DatabaseSeeder extends Seeder
         $user->assignRole('student');
 
         $this->call(CourseCatalogSeeder::class);
+        $this->call(ServiceCatalogSeeder::class);
     }
 }

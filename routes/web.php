@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\PublicCourseController;
+use App\Http\Controllers\PublicServiceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -36,13 +37,9 @@ Route::get('/courses/{course:slug}/curriculum', function () {
     return Inertia::render('Public/Courses/Curriculum');
 })->name('courses.curriculum');
 
-Route::get('/services', function () {
-    return Inertia::render('Public/Services/Index');
-})->name('services.index');
+Route::get('/services', [PublicServiceController::class, 'index'])->name('services.index');
 
-Route::get('/services/{service:slug}', function () {
-    return Inertia::render('Public/Services/Show');
-})->name('services.show');
+Route::get('/services/{service:slug}', [PublicServiceController::class, 'show'])->name('services.show');
 
 Route::get('/portfolio', function () {
     return Inertia::render('Public/Portfolio/Index');

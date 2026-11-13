@@ -82,6 +82,7 @@ Every feature must pass all of these gates before its phase is marked complete:
 - [ ] Build About, Course Catalog, Course Detail, Curriculum, Services, Service Detail, Portfolio, Instructors, Blog, Contact, FAQ, Privacy, and Terms pages.
 - [x] Replace the Course Catalog and Course Detail placeholder routes with real data-driven Inertia pages.
 - [x] Add course category/course/module models, seed data, slugs, published/draft visibility, pagination, search, and category filtering.
+- [x] Replace the Services and Service Detail placeholder routes with real data-driven Inertia pages, active visibility, search, category filtering, and seed data.
 - [ ] Add the remaining public models, factories, seeders, slugs, published/draft visibility, pagination, search, and filtering for services, portfolio, instructors, blog, and FAQ.
 - [ ] Add contact form validation, spam/rate protection, persistence, and queued notification hooks.
 - [ ] Add SEO title, description, canonical URL, Open Graph image, sitemap, robots, and JSON-LD where relevant.
