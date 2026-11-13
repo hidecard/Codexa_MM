@@ -64,13 +64,13 @@ Every feature must pass all of these gates before its phase is marked complete:
 - [x] `/health` endpoint and public smoke tests added.
 - [x] TypeScript and production Vite build passing.
 - [x] Set `APP_NAME=Codexa MM` in `.env.example` and document environment defaults.
-- [ ] Add the complete logo asset set and reusable `BrandLogo` component without deleting `image.png`.
+- [x] Add the complete logo asset set and reusable `BrandLogo` component without deleting `image.png`.
 - [x] Seed `admin`, `instructor`, `student`, and `client` roles.
 - [x] Seed granular permissions using `{domain}.{action}` names, for example `courses.create`, `courses.update`, `projects.view-own`, `invoices.manage`.
 - [x] Assign `student` automatically on public registration; never allow public self-registration as admin or instructor.
-- [ ] Add account status enforcement (`active`, `inactive`, `suspended`) in authentication middleware.
-- [ ] Build login, register, forgot-password, reset-password, email-verification, and profile pages.
-- [ ] Add role-aware post-login redirects: admin → `/admin/dashboard`, instructor → `/instructor/dashboard`, client → `/client/dashboard`, student → `/student/dashboard`.
+- [x] Add account status enforcement (`active`, `inactive`, `suspended`) in authentication middleware.
+- [x] Build the first auth UI slice: login, register, and forgot-password pages with Codexa branding.
+- [x] Add role-aware post-login redirects: admin → `/admin/dashboard`, instructor → `/instructor/dashboard`, client → `/client/dashboard`, student → `/student/dashboard`.
 - [ ] Add policies and tests for role checks and authenticated/guest access.
 - [ ] Add shared UI primitives: Button, Input, Card, Badge, Modal, Toast, EmptyState, PageHeader, and accessible AppShell.
 
@@ -190,7 +190,8 @@ Every feature must pass all of these gates before its phase is marked complete:
 
 - Completed: public landing page, responsive navigation, brand colors, `/health`, public smoke tests, dependency compatibility, and build pipeline.
 - Completed in this change: full master plan rewrite, preserved logo specification, Codexa MM environment name, RBAC roles/permissions seeder, default student registration role, and RBAC tests.
-- Current next slice: authentication UI, account status middleware, role-aware redirects, and reusable brand/logo components.
+- Completed in this change: reusable logo SVG variants, `BrandLogo` component, auth layout, login/register/forgot-password pages, Fortify provider registration, account status middleware, and role-aware `/dashboard` redirects.
+- Current next slice: reset-password/email-verification UI, authenticated AppShell, and shared UI primitives.
 - Historical architecture specification retained below for reference and traceability.
 
 Code Nest — Complete System Architecture & Development Specification

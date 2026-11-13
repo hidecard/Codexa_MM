@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Codexa MM mark</title>
+  <desc id="desc">Geometric blue and navy open C with code brackets</desc>
+  <path fill="#2563EB" d="M64 8 116 38 94 51 64 34 40 48 25 39Z"/>
+  <path fill="#60A5FA" d="m12 38 13 8v36l15 9-15 9-13-8Z"/>
+  <path fill="#2563EB" d="m40 88 24 14 30-17 22 13-52 30-52-30 13-8Z"/>
+  <path fill="#0F172A" d="m116 38-22 13v36L64 102 40 88l15-9 9 5 15-9V59l15-8Z"/>
+  <path fill="#0F172A" d="m53 49 7 7-11 8 11 8-7 7-20-15Z"/>
+  <path fill="#0F172A" d="m75 49 20 15-20 15-7-7 11-8-11-8Z"/>
+  <path fill="#0F172A" d="m67 45 8 3-14 32-8-3Z"/>
+</svg>

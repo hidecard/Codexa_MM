@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowRight, Code2, GraduationCap, Layers3, Menu, Sparkles, X } from 'lucide-react';
 import { useState } from 'react';
+import { BrandLogo } from '../../components/BrandLogo';
 
 const navItems = [
     { label: 'Academy', href: '/courses' },
@@ -42,12 +43,7 @@ export default function Home() {
             <div className="min-h-screen overflow-hidden bg-slate-50 text-slate-950">
                 <header className="relative z-20 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl">
                     <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
-                        <Link href="/" className="flex items-center gap-3" aria-label="Codexa MM home">
-                            <span className="grid size-10 place-items-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-                                <Code2 size={21} strokeWidth={2.5} />
-                            </span>
-                            <span className="text-lg font-black tracking-tight">CODEXA<span className="text-blue-600"> MM</span></span>
-                        </Link>
+                        <BrandLogo />
                         <nav className="hidden items-center gap-8 md:flex" aria-label="Main navigation">
                             {navItems.map((item) => <Link key={item.href} href={item.href} className="text-sm font-semibold text-slate-600 transition hover:text-blue-600">{item.label}</Link>)}
                         </nav>

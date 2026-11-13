@@ -7,6 +7,18 @@ Route::get('/', function () {
     return Inertia::render('Public/Home');
 })->name('home');
 
+Route::get('/dashboard', function () {
+    $user = request()->user();
+
+    return match (true) {
+        $user->hasRole('admin') => redirect()->route('admin.dashboard'),
+        $user->hasRole('instructor') => redirect()->route('instructor.dashboard'),
+        $user->hasRole('client') => redirect()->route('client.dashboard'),
+        $user->hasRole('student') => redirect()->route('student.dashboard'),
+        default => abort(403, 'No portal role is assigned to this account.'),
+    };
+})->middleware('auth')->name('dashboard');
+
 Route::get('/about', function () {
     return Inertia::render('Public/About');
 })->name('about');
