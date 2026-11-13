@@ -7,6 +7,7 @@ use App\Http\Controllers\PublicFaqController;
 use App\Http\Controllers\PublicInstructorController;
 use App\Http\Controllers\PublicPortfolioController;
 use App\Http\Controllers\PublicServiceController;
+use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -72,6 +73,14 @@ Route::get('/privacy-policy', function () {
 Route::get('/terms', function () {
     return Inertia::render('Public/Terms');
 })->name('terms');
+
+Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
+
+Route::get('/robots.txt', function () {
+    return response("User-agent: *\nDisallow: /admin/\nDisallow: /student/\nDisallow: /instructor/\nDisallow: /client/\nSitemap: ".url('/sitemap.xml')."\n", 200, [
+        'Content-Type' => 'text/plain; charset=UTF-8',
+    ]);
+})->name('robots');
 
 require __DIR__.'/health.php';
 require __DIR__.'/auth.php';

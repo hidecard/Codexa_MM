@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Codexa MM</title>
+  <desc id="desc">Learn. Build. Innovate.</desc>
+  <rect width="1200" height="630" fill="#020617"/>
+  <circle cx="980" cy="-40" r="390" fill="#2563eb" opacity=".85"/>
+  <circle cx="1080" cy="560" r="260" fill="#38bdf8" opacity=".28"/>
+  <text x="90" y="270" fill="#fff" font-family="Arial, sans-serif" font-size="86" font-weight="800">CODEXA<tspan fill="#60a5fa"> MM</tspan></text>
+  <text x="96" y="360" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="38">Learn. Build. Innovate.</text>
+</svg>

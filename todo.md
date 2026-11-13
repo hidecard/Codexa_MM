@@ -86,7 +86,7 @@ Every feature must pass all of these gates before its phase is marked complete:
 - [x] Replace the Services and Service Detail placeholder routes with real data-driven Inertia pages, active visibility, search, category filtering, and seed data.
 - [x] Add the remaining public models, factories, seeders, slugs, published/draft visibility, pagination, search, and filtering for services, portfolio, instructors, blog, and FAQ.
 - [x] Add contact form validation, spam/rate protection, persistence, and queued notification hooks.
-- [ ] Add SEO title, description, canonical URL, Open Graph image, sitemap, robots, and JSON-LD where relevant.
+- [x] Add SEO title, description, canonical URL, Open Graph image, sitemap, robots, and JSON-LD where relevant.
 - [ ] Use the approved Codexa logo in header, footer, auth screens, favicon, and social preview.
 
 **Exit criteria:** public visitors can browse published content and submit a validated inquiry on mobile and desktop.
@@ -197,6 +197,7 @@ Every feature must pass all of these gates before its phase is marked complete:
 - Completed in this change: reusable logo SVG variants, `BrandLogo` component, auth layout, login/register/forgot-password pages, Fortify provider registration, account status middleware, and role-aware `/dashboard` redirects.
 - Completed in this change: public blog, portfolio, instructor, and FAQ catalogs now have seeded data, published visibility rules, pagination, search/category filtering, responsive Inertia pages, and feature coverage.
 - Completed in this change: contact inquiries now validate and persist safely, use route throttling plus a honeypot spam guard, and queue admin email notifications with feature coverage.
+- Completed in this change: shared public SEO metadata now covers descriptions, canonicals, Open Graph/Twitter cards, JSON-LD, a default social image, dynamic sitemap XML, and protected robots rules with feature coverage.
 - Current next slice: reset-password/email-verification UI, authenticated AppShell, and shared UI primitives.
 - Historical architecture specification retained below for reference and traceability.
 

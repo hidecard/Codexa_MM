@@ -19,6 +19,10 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            'site' => [
+                'name' => config('app.name', 'Codexa MM'),
+                'url' => rtrim(config('app.url', 'http://localhost'), '/'),
+            ],
             'auth' => [
                 'user' => $request->user() ? [
                     'id' => $request->user()->id,

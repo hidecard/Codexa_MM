@@ -2,6 +2,7 @@
 import { useState, type ReactNode } from 'react';
 import { Menu, X } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
+import { SeoHead } from '@/components/shared/seo-head';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -17,7 +18,9 @@ export function PublicLayout({ children }: { children: ReactNode }) {
     const [open, setOpen] = useState(false);
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-950">
+        <>
+            <SeoHead />
+            <div className="min-h-screen bg-slate-50 text-slate-950">
             <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-3 focus:py-2 focus:text-sm font-semibold focus:text-blue-700 focus:ring-2 focus:ring-blue-500">Skip to content</a>
             <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur">
                 <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -65,6 +68,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
                     <p className="text-sm text-slate-500">© {new Date().getFullYear()} Codexa MM.</p>
                 </div>
             </footer>
-        </div>
+            </div>
+        </>
     );
 }

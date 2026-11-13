@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowRight, Code2, GraduationCap, Layers3, Menu, Sparkles, X } from 'lucide-react';
 import { useState } from 'react';
 import { BrandLogo } from '../../components/BrandLogo';
+import { SeoHead } from '../../components/shared/seo-head';
 
 const navItems = [
     { label: 'Academy', href: '/courses' },
@@ -40,6 +41,7 @@ export default function Home() {
     return (
         <>
             <Head title="Learn. Build. Innovate." />
+            <SeoHead title="Codexa MM — Learn. Build. Innovate." description="Codexa MM connects practical technology education, software development, and ambitious people in Myanmar and beyond." structuredData={{ '@context': 'https://schema.org', '@type': 'Organization', name: 'Codexa MM', logo: '/images/brand/logo-primary.svg', description: 'Technology education and software solutions from Myanmar.' }} />
             <div className="min-h-screen overflow-hidden bg-slate-50 text-slate-950">
                 <header className="relative z-20 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl">
                     <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
