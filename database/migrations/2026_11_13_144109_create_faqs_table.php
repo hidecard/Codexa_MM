@@ -6,20 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('faqs', function (Blueprint $table) {
             $table->id();
+            $table->string('question');
+            $table->text('answer');
+            $table->string('category')->nullable()->index();
+            $table->unsignedInteger('sort_order')->default(0);
+            $table->boolean('is_published')->default(true)->index();
             $table->timestamps();
+            $table->softDeletes();
+            $table->index(['is_published', 'sort_order']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('faqs');

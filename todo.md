@@ -3,7 +3,7 @@
 > **Plan version:** 2.0
 > **Product:** Codexa MM — Learn. Build. Innovate.
 > **Architecture:** Laravel Modular Monolith + Inertia.js + React + TypeScript
-> **Status:** Phase 1 foundation in progress; public landing page shipped in commit `fba69ce`, RBAC slice completed in the current change.
+> **Status:** Database migration foundation completed; Phase 1 authentication and branding remain in progress.
 
 ## 0. Non-negotiable product and brand rules
 
@@ -58,6 +58,7 @@ Every feature must pass all of these gates before its phase is marked complete:
 
 **Current sprint / next implementation unit**
 
+- [x] Complete the migration foundation: dependency ordering, missing FAQ/system-log columns, relationship uniqueness, query indexes, and clean fresh-database verification.
 - [x] Laravel 13 + Inertia + React + TypeScript bootstrapped.
 - [x] Composer and npm dependency compatibility repaired.
 - [x] Public landing page shipped with responsive hero, navigation, divisions, and footer.

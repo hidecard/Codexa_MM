@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('certificate_verifications', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('certificate_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('certificate_id')->unique()->constrained()->cascadeOnDelete();
             $table->string('verification_code')->unique();
             $table->timestamp('verified_at')->nullable();
             $table->timestamps();

@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('grades', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('submission_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('submission_id')->unique()->constrained()->cascadeOnDelete();
             $table->foreignId('instructor_id')->constrained('users')->cascadeOnDelete();
             $table->decimal('score', 5, 2);
             $table->text('feedback')->nullable();

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
             $table->unique(['student_id', 'course_id']);
+            $table->index(['course_id', 'status']);
         });
     }
 
