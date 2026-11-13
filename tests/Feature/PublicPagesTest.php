@@ -1,6 +1,11 @@
-﻿<?php
+<?php
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+
+uses(RefreshDatabase::class);
+
+beforeEach(fn () => $this->seed());
 
 $pages = [
     ['/', 'Public/Home'],

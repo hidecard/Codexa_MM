@@ -1,18 +1,25 @@
-﻿import { Head, Link } from '@inertiajs/react';
+﻿import { Head, Link, router } from '@inertiajs/react';
 import { PublicLayout } from '@/components/shared/public-layout';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Users } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
+import { type FormEvent, useState } from 'react';
 
 type Instructor = { id: number; name: string; courses_count: number; profile?: { bio?: string | null } | null };
 type Page<T> = { data: T[]; links: { url: string | null; label: string; active: boolean }[] };
 
-export default function Index({ instructors }: { instructors: Page<Instructor> }) {
+export default function Index({ instructors, filters }: { instructors: Page<Instructor>; filters: { q?: string } }) {
+    const [q, setQ] = useState(filters.q ?? '');
+    const submit = (event: FormEvent) => { event.preventDefault(); router.get('/instructors', { q: q || undefined }, { preserveState: true, replace: true }); };
     return (
         <PublicLayout>
             <Head title="Instructors" />
             <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
                 <PageHeader eyebrow="Codexa Academy" title="Instructors" description="Learn from practitioners who build and teach with real-world experience." />
+                <form onSubmit={submit} className="mt-8 flex gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+                    <label className="relative flex-1"><span className="sr-only">Search instructors</span><Search className="absolute left-3 top-3 text-slate-400" size={18} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search instructors…" className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-4 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" /></label>
+                    <button className="rounded-xl bg-slate-950 px-5 py-2.5 font-semibold text-white hover:bg-blue-600">Search</button>
+                </form>
                 {instructors.data.length === 0 ? (
                     <div className="mt-10"><EmptyState icon={<Users className="size-10" />} title="Instructor profiles coming soon" description="We are preparing instructor profiles and course lineups." /></div>
                 ) : (

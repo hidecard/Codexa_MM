@@ -84,7 +84,7 @@ Every feature must pass all of these gates before its phase is marked complete:
 - [x] Replace the Course Catalog and Course Detail placeholder routes with real data-driven Inertia pages.
 - [x] Add course category/course/module models, seed data, slugs, published/draft visibility, pagination, search, and category filtering.
 - [x] Replace the Services and Service Detail placeholder routes with real data-driven Inertia pages, active visibility, search, category filtering, and seed data.
-- [ ] Add the remaining public models, factories, seeders, slugs, published/draft visibility, pagination, search, and filtering for services, portfolio, instructors, blog, and FAQ.
+- [x] Add the remaining public models, factories, seeders, slugs, published/draft visibility, pagination, search, and filtering for services, portfolio, instructors, blog, and FAQ.
 - [ ] Add contact form validation, spam/rate protection, persistence, and queued notification hooks.
 - [ ] Add SEO title, description, canonical URL, Open Graph image, sitemap, robots, and JSON-LD where relevant.
 - [ ] Use the approved Codexa logo in header, footer, auth screens, favicon, and social preview.
@@ -195,6 +195,7 @@ Every feature must pass all of these gates before its phase is marked complete:
 - Completed: public landing page, responsive navigation, brand colors, `/health`, public smoke tests, dependency compatibility, and build pipeline.
 - Completed in this change: full master plan rewrite, preserved logo specification, Codexa MM environment name, RBAC roles/permissions seeder, default student registration role, and RBAC tests.
 - Completed in this change: reusable logo SVG variants, `BrandLogo` component, auth layout, login/register/forgot-password pages, Fortify provider registration, account status middleware, and role-aware `/dashboard` redirects.
+- Completed in this change: public blog, portfolio, instructor, and FAQ catalogs now have seeded data, published visibility rules, pagination, search/category filtering, responsive Inertia pages, and feature coverage.
 - Current next slice: reset-password/email-verification UI, authenticated AppShell, and shared UI primitives.
 - Historical architecture specification retained below for reference and traceability.
 
