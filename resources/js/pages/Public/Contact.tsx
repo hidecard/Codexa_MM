@@ -10,7 +10,7 @@ import type { FormEvent } from 'react';
 type Flash = { flash?: { success?: string } };
 export default function Contact() {
     const { props } = usePage<Flash>();
-    const form = useForm({ name: '', email: '', phone: '', subject: '', message: '' });
+    const form = useForm({ name: '', email: '', phone: '', subject: '', message: '', website: '' });
     const submit = (e: FormEvent) => { e.preventDefault(); form.post('/contact', { preserveScroll: true, onSuccess: () => form.reset() }); };
     return (
         <PublicLayout>
@@ -21,6 +21,7 @@ export default function Contact() {
                     <Card><CardContent className="p-6 sm:p-8">
                         {props.flash?.success && <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800" role="status">{props.flash.success}</div>}
                         <form className="space-y-5" onSubmit={submit} aria-label="Contact form">
+                            <input type="text" name="website" value={form.data.website} onChange={(e) => form.setData('website', e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden" />
                             <div className="grid gap-5 sm:grid-cols-2">
                                 <Input label="Name" name="name" autoComplete="name" required value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
                                 <Input label="Email" name="email" type="email" autoComplete="email" required value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} />
