@@ -72,7 +72,7 @@ Every feature must pass all of these gates before its phase is marked complete:
 - [x] Add account status enforcement (`active`, `inactive`, `suspended`) in authentication middleware.
 - [x] Build the first auth UI slice: login, register, and forgot-password pages with Codexa branding.
 - [x] Add role-aware post-login redirects: admin → `/admin/dashboard`, instructor → `/instructor/dashboard`, client → `/client/dashboard`, student → `/student/dashboard`.
-- [ ] Add policies and tests for role checks and authenticated/guest access.
+- [x] Add policies and tests for role checks and authenticated/guest access.
 - [ ] Add shared UI primitives: Button, Input, Card, Badge, Modal, Toast, EmptyState, PageHeader, and accessible AppShell.
 
 **Exit criteria:** a new user registers as `student`, cannot select privileged roles, can log in, and is redirected to the correct portal; seeded roles and permissions work in a fresh database.
@@ -194,7 +194,8 @@ Every feature must pass all of these gates before its phase is marked complete:
 - Completed: public landing page, responsive navigation, brand colors, `/health`, public smoke tests, dependency compatibility, and build pipeline.
 - Completed in this change: full master plan rewrite, preserved logo specification, Codexa MM environment name, RBAC roles/permissions seeder, default student registration role, and RBAC tests.
 - Completed in this change: reusable logo SVG variants, `BrandLogo` component, auth layout, login/register/forgot-password pages, Fortify provider registration, account status middleware, and role-aware `/dashboard` redirects.
-- Current next slice: reset-password/email-verification UI, authenticated AppShell, and shared UI primitives.
+- Completed in this change: portal role policies registered as Laravel Gate abilities, portal middleware authorization, and feature coverage for guest redirects, verified access, role isolation, and account verification.
+- Current next slice: shared UI primitives, authenticated AppShell, and reset-password/email-verification UI.
 - Historical architecture specification retained below for reference and traceability.
 
 Code Nest — Complete System Architecture & Development Specification

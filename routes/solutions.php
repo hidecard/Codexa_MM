@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::middleware(['auth', 'verified', 'role:client'])->prefix('client')->name('client.')->group(function () {
+Route::middleware(['auth', 'verified', 'can:access-client-portal'])->prefix('client')->name('client.')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Client/Dashboard');
     })->name('dashboard');

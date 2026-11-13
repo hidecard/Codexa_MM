@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->group(function () {
+Route::middleware(['auth', 'verified', 'can:access-student-portal'])->prefix('student')->name('student.')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Student/Dashboard');
     })->name('dashboard');
@@ -61,7 +61,7 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
     })->name('profile');
 });
 
-Route::middleware(['auth', 'verified', 'role:instructor'])->prefix('instructor')->name('instructor.')->group(function () {
+Route::middleware(['auth', 'verified', 'can:access-instructor-portal'])->prefix('instructor')->name('instructor.')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Instructor/Dashboard');
     })->name('dashboard');
