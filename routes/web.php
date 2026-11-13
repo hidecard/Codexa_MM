@@ -75,6 +75,7 @@ Route::get('/terms', function () {
     return Inertia::render('Public/Terms');
 })->name('terms');
 
+require __DIR__.'/health.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/academy.php';
 require __DIR__.'/solutions.php';
