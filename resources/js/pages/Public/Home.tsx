@@ -83,7 +83,7 @@ export default function Home() {
                     </section>
                 </main>
 
-                <footer className="bg-slate-950 text-slate-300"><div className="mx-auto flex max-w-7xl flex-col gap-5 px-6 py-10 sm:flex-row sm:items-center sm:justify-between lg:px-8"><div><p className="font-black text-white">CODEXA<span className="text-blue-400"> MM</span></p><p className="mt-2 text-sm text-slate-500">Learn. Build. Innovate.</p></div><p className="text-sm text-slate-500">© {new Date().getFullYear()} Codexa MM. Built for the next generation.</p></div></footer>
+                <footer className="bg-slate-950 text-slate-300"><div className="mx-auto flex max-w-7xl flex-col gap-5 px-6 py-10 sm:flex-row sm:items-center sm:justify-between lg:px-8"><div><BrandLogo href="/" variant="dark" className="w-44" /><p className="mt-2 text-sm text-slate-500">Learn. Build. Innovate.</p></div><p className="text-sm text-slate-500">© {new Date().getFullYear()} Codexa MM. Built for the next generation.</p></div></footer>
             </div>
         </>
     );

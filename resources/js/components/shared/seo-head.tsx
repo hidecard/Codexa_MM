@@ -10,7 +10,7 @@ type SeoProps = {
 
 type SharedProps = { url?: string; site?: { name?: string; url?: string } };
 
-export function SeoHead({ title = 'Codexa MM', description = 'Codexa MM brings technology education and software solutions together.', image = '/images/og-default.svg', type = 'website', structuredData }: SeoProps) {
+export function SeoHead({ title = 'Codexa MM', description = 'Codexa MM brings technology education and software solutions together.', image = '/brand/codexa-wordmark-dark.svg', type = 'website', structuredData }: SeoProps) {
     const { url, site } = usePage<SharedProps>().props;
     const origin = site?.url || (typeof window !== 'undefined' ? window.location.origin : 'https://codexamm.com');
     const canonical = new URL((url || '/').split('?')[0], origin).toString();

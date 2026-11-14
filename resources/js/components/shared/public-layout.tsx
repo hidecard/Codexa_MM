@@ -55,7 +55,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             <footer className="mt-16 border-t border-slate-200 bg-slate-950 text-slate-300">
                 <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
                     <div>
-                        <p className="font-black text-white">CODEXA<span className="text-blue-400"> MM</span></p>
+                        <BrandLogo href="/" variant="dark" className="w-44" />
                         <p className="mt-1 text-sm text-slate-400">Learn. Build. Innovate.</p>
                     </div>
                     <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
