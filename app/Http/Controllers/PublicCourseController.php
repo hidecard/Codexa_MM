@@ -40,7 +40,13 @@ class PublicCourseController extends Controller
     {
         abort_unless($course->status === 'published' && $course->published_at && $course->category?->is_active, 404);
 
-        $course->load(['category', 'instructor', 'modules']);
+        $course->load([
+            'category',
+            'instructor',
+            'modules.lessons',
+            'announcements' => fn ($query) => $query->whereNotNull('published_at')->select(['id', 'course_id', 'title', 'content', 'published_at']),
+            'reviews' => fn ($query) => $query->where('is_approved', true)->with('student:id,name')->select(['id', 'course_id', 'student_id', 'rating', 'comment']),
+        ]);
 
         return Inertia::render('Public/Courses/Show', [
             'course' => $course,

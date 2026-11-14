@@ -17,7 +17,10 @@ type Course = {
         title: string;
         description?: string;
         position: number;
+        lessons?: { id: number; title: string; duration: number; type: string; is_free: boolean }[];
     }[];
+    announcements?: { id: number; title: string; content: string }[];
+    reviews?: { id: number; rating: number; comment?: string; student?: { name: string } }[];
 };
 
 export default function Show({ course }: { course: Course }) {
@@ -107,11 +110,14 @@ export default function Show({ course }: { course: Course }) {
                                             <p className="mt-1 text-sm leading-6 text-slate-500">
                                                 {module.description}
                                             </p>
+                                            {module.lessons && module.lessons.length > 0 && <div className="mt-4 space-y-2 border-t border-slate-100 pt-3">{module.lessons.map((lesson) => <div key={lesson.id} className="flex items-center justify-between gap-4 text-sm text-slate-600"><span>{lesson.title}</span><span className="shrink-0 text-xs font-semibold text-slate-400">{lesson.is_free ? "Free preview" : `${lesson.duration} min`}</span></div>)}</div>}
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         </section>
+                        {course.announcements && course.announcements.length > 0 && <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-7"><h2 className="text-2xl font-black">Course updates</h2><div className="mt-5 space-y-4">{course.announcements.map((announcement) => <article key={announcement.id} className="border-l-2 border-blue-500 pl-4"><h3 className="font-bold">{announcement.title}</h3><p className="mt-1 leading-7 text-slate-600">{announcement.content}</p></article>)}</div></section>}
+                        {course.reviews && course.reviews.length > 0 && <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-7"><h2 className="text-2xl font-black">Student feedback</h2><div className="mt-5 space-y-4">{course.reviews.map((review) => <blockquote key={review.id} className="rounded-2xl bg-slate-50 p-4"><p className="font-bold text-amber-500">{"★".repeat(review.rating)}</p>{review.comment && <p className="mt-2 leading-7 text-slate-600">“{review.comment}”</p>}<cite className="mt-2 block text-sm font-semibold not-italic text-slate-400">{review.student?.name ?? "Codexa student"}</cite></blockquote>)}</div></section>}
                     </div>
                     <aside className="h-fit rounded-3xl bg-white p-7 shadow-xl shadow-slate-200/60 ring-1 ring-slate-200 lg:sticky lg:top-6">
                         <p className="text-sm font-bold uppercase tracking-wider text-slate-400">

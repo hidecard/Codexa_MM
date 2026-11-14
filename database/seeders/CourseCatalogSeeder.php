@@ -3,8 +3,12 @@
 namespace Database\Seeders;
 
 use App\Models\Course;
+use App\Models\CourseAnnouncement;
 use App\Models\CourseCategory;
 use App\Models\CourseModule;
+use App\Models\CourseReview;
+use App\Models\Lesson;
+use App\Models\LessonResource;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -50,9 +54,30 @@ class CourseCatalogSeeder extends Seeder
             );
 
             foreach (['Foundations', 'Build a real project', 'Ship and grow'] as $position => $title) {
-                CourseModule::updateOrCreate(
+                $module = CourseModule::updateOrCreate(
                     ['course_id' => $course->id, 'position' => $position + 1],
                     ['title' => $title, 'description' => 'Practical lessons and guided exercises for this course.', 'position' => $position + 1],
+                );
+
+                $lesson = Lesson::updateOrCreate(
+                    ['module_id' => $module->id, 'position' => 1],
+                    ['title' => "{$title}: first steps", 'content' => 'A guided lesson with practical exercises and a clear next step.', 'duration' => 25, 'type' => 'video', 'is_free' => $position === 0, 'video_url' => 'private://lesson/'.$course->slug.'/'.$module->position, 'meta' => ['captions' => true]],
+                );
+                LessonResource::updateOrCreate(
+                    ['lesson_id' => $lesson->id, 'original_name' => 'Lesson notes.pdf'],
+                    ['file_path' => 'private/lessons/'.$lesson->id.'/notes.pdf', 'file_type' => 'application/pdf', 'file_size' => 0],
+                );
+            }
+
+            CourseAnnouncement::updateOrCreate(
+                ['course_id' => $course->id, 'title' => 'Welcome to the course'],
+                ['content' => 'Start with the first module and work through the guided exercises at your own pace.', 'published_at' => now()],
+            );
+
+            if ($student = User::role('student')->first()) {
+                CourseReview::updateOrCreate(
+                    ['course_id' => $course->id, 'student_id' => $student->id],
+                    ['rating' => 5, 'comment' => 'A practical and focused learning path.', 'is_approved' => true],
                 );
             }
         }
