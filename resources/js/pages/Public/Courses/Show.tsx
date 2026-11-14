@@ -9,6 +9,8 @@ type Course = {
     duration: number;
     price: string;
     sale_price?: string;
+    pricing_type: "free" | "paid" | "package";
+    packages?: { id: number; name: string; price: string; sale_price?: string }[];
     outcomes?: string[];
     category?: { name: string };
     instructor?: { name: string };
@@ -25,6 +27,7 @@ type Course = {
 
 export default function Show({ course }: { course: Course }) {
     const price = course.sale_price ?? course.price;
+    const pricingLabel = course.pricing_type === "free" ? "Free course" : course.pricing_type === "package" ? "Included in a package" : "Single course access";
     return (
         <>
             <Head title={course.title} />
@@ -123,12 +126,9 @@ export default function Show({ course }: { course: Course }) {
                         <p className="text-sm font-bold uppercase tracking-wider text-slate-400">
                             Course investment
                         </p>
-                        <p className="mt-2 text-3xl font-black">
-                            {new Intl.NumberFormat("en-US").format(
-                                Number(price),
-                            )}{" "}
-                            MMK
-                        </p>
+                        <p className="mt-2 text-3xl font-black">{course.pricing_type === "free" ? "Free" : course.pricing_type === "package" ? "Package access" : `${new Intl.NumberFormat("en-US").format(Number(price))} MMK`}</p>
+                        <p className="mt-2 text-sm font-semibold text-blue-600">{pricingLabel}</p>
+                        {course.pricing_type === "package" && course.packages?.map((coursePackage) => <p key={coursePackage.id} className="mt-3 rounded-xl bg-blue-50 p-3 text-sm leading-6 text-blue-800">Available in <strong>{coursePackage.name}</strong> for {new Intl.NumberFormat("en-US").format(Number(coursePackage.sale_price ?? coursePackage.price))} MMK.</p>)}
                         <p className="mt-3 text-sm leading-6 text-slate-500">
                             Enrollments open soon. Join the academy to be
                             notified when this course starts.

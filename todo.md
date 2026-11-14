@@ -94,7 +94,7 @@ Every feature must pass all of these gates before its phase is marked complete:
 ### Phase 3 — Academy LMS
 
 - [x] Course categories, courses, modules, lessons, resources, instructors, announcements, reviews, and course status management.
-- [ ] Support free, paid, and package-based course pricing in the domain model.
+- [x] Support free, paid, and package-based course pricing in the domain model.
 - [ ] Support multiple instructors per course through `course_instructors`.
 - [ ] Instructor CRUD with ownership policy: instructors manage only assigned courses.
 - [ ] Student dashboard with enrolled courses, progress, continue-learning, assignments, activities, certificates, and notifications.
@@ -200,6 +200,7 @@ Every feature must pass all of these gates before its phase is marked complete:
 - Completed in this change: shared public SEO metadata now covers descriptions, canonicals, Open Graph/Twitter cards, JSON-LD, a default social image, dynamic sitemap XML, and protected robots rules with feature coverage.
 - Completed in this change: approved Codexa mark/wordmark variants now cover public and auth headers, public footers, the SVG favicon/apple touch icon, and social preview metadata with consistency coverage.
 - Completed in this change: Academy content foundation now includes lesson/resource/announcement/review models, factories, seeded curriculum content, public course curriculum updates and approved feedback, course status visibility, and private media path serialization tests.
+- Completed in this change: course pricing now supports explicit free/paid/package modes, package pricing with published course bundles and pivot membership, seeded package examples, public pricing display, and pricing behavior tests.
 - Current next slice: reset-password/email-verification UI, authenticated AppShell, and shared UI primitives.
 - Historical architecture specification retained below for reference and traceability.
 

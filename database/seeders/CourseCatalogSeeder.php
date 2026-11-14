@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\CourseAnnouncement;
 use App\Models\CourseCategory;
 use App\Models\CourseModule;
+use App\Models\CoursePackage;
 use App\Models\CourseReview;
 use App\Models\Lesson;
 use App\Models\LessonResource;
@@ -33,10 +34,12 @@ class CourseCatalogSeeder extends Seeder
         ]);
 
         $courses = [
-            ['category' => 'web-development', 'title' => 'Full-Stack Web Development', 'slug' => 'full-stack-web-development', 'short_description' => 'Learn the practical path from a blank folder to a deployed web application.', 'description' => 'A project-led path through HTML, CSS, JavaScript, Laravel, databases, and deployment.', 'level' => 'intermediate', 'duration' => 48, 'price' => 180000, 'outcomes' => ['Build responsive interfaces', 'Design relational databases', 'Ship a production-ready app']],
-            ['category' => 'programming-fundamentals', 'title' => 'Programming with JavaScript', 'slug' => 'programming-with-javascript', 'short_description' => 'Build confidence with logic, data, functions, and real-world coding habits.', 'description' => 'A friendly, hands-on introduction to programming using JavaScript and practical exercises.', 'level' => 'beginner', 'duration' => 24, 'price' => 95000, 'outcomes' => ['Think in algorithms', 'Use modern JavaScript', 'Build small useful tools']],
-            ['category' => 'product-design', 'title' => 'Digital Product Design', 'slug' => 'digital-product-design', 'short_description' => 'Move from a rough idea to a validated, usable product direction.', 'description' => 'Learn research, user flows, wireframes, interface systems, and product storytelling.', 'level' => 'beginner', 'duration' => 20, 'price' => 120000, 'outcomes' => ['Map user journeys', 'Create interface systems', 'Present product decisions']],
+            ['category' => 'web-development', 'title' => 'Full-Stack Web Development', 'slug' => 'full-stack-web-development', 'short_description' => 'Learn the practical path from a blank folder to a deployed web application.', 'description' => 'A project-led path through HTML, CSS, JavaScript, Laravel, databases, and deployment.', 'level' => 'intermediate', 'duration' => 48, 'price' => 180000, 'pricing_type' => 'paid', 'outcomes' => ['Build responsive interfaces', 'Design relational databases', 'Ship a production-ready app']],
+            ['category' => 'programming-fundamentals', 'title' => 'Programming with JavaScript', 'slug' => 'programming-with-javascript', 'short_description' => 'Build confidence with logic, data, functions, and real-world coding habits.', 'description' => 'A friendly, hands-on introduction to programming using JavaScript and practical exercises.', 'level' => 'beginner', 'duration' => 24, 'price' => 95000, 'pricing_type' => 'paid', 'outcomes' => ['Think in algorithms', 'Use modern JavaScript', 'Build small useful tools']],
+            ['category' => 'product-design', 'title' => 'Digital Product Design', 'slug' => 'digital-product-design', 'short_description' => 'Move from a rough idea to a validated, usable product direction.', 'description' => 'Learn research, user flows, wireframes, interface systems, and product storytelling.', 'level' => 'beginner', 'duration' => 20, 'price' => 120000, 'pricing_type' => 'package', 'outcomes' => ['Map user journeys', 'Create interface systems', 'Present product decisions']],
         ];
+
+        $seededCourses = collect();
 
         foreach ($courses as $attributes) {
             $category = $categories[$attributes['category']];
@@ -52,6 +55,7 @@ class CourseCatalogSeeder extends Seeder
                     'published_at' => now(),
                 ],
             );
+            $seededCourses->push($course);
 
             foreach (['Foundations', 'Build a real project', 'Ship and grow'] as $position => $title) {
                 $module = CourseModule::updateOrCreate(
@@ -81,5 +85,11 @@ class CourseCatalogSeeder extends Seeder
                 );
             }
         }
+
+        $package = CoursePackage::updateOrCreate(
+            ['slug' => 'codexa-growth-bundle'],
+            ['name' => 'Codexa Growth Bundle', 'description' => 'A practical bundle for learners building a complete product skill set.', 'price' => 250000, 'status' => 'published', 'published_at' => now()],
+        );
+        $package->courses()->sync($seededCourses->values()->mapWithKeys(fn (Course $course, int $position) => [$course->id => ['position' => $position + 1]])->all());
     }
 }

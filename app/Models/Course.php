@@ -11,16 +11,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['category_id', 'instructor_id', 'title', 'slug', 'description', 'short_description', 'thumbnail', 'price', 'sale_price', 'status', 'level', 'language', 'duration', 'requirements', 'outcomes', 'published_at'])]
+#[Fillable(['category_id', 'instructor_id', 'title', 'slug', 'description', 'short_description', 'thumbnail', 'price', 'sale_price', 'pricing_type', 'status', 'level', 'language', 'duration', 'requirements', 'outcomes', 'published_at'])]
 class Course extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected function casts(): array
+    public function casts(): array
     {
         return [
             'price' => 'decimal:2',
             'sale_price' => 'decimal:2',
+            'pricing_type' => 'string',
             'duration' => 'integer',
             'requirements' => 'array',
             'outcomes' => 'array',
@@ -63,5 +64,10 @@ class Course extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(CourseReview::class);
+    }
+
+    public function packages(): BelongsToMany
+    {
+        return $this->belongsToMany(CoursePackage::class, 'course_package_courses')->withPivot('position')->orderByPivot('position');
     }
 }
