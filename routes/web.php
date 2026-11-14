@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CertificateVerificationController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\PublicBlogController;
 use App\Http\Controllers\PublicCourseController;
@@ -65,6 +66,8 @@ Route::get('/contact', function () {
 Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:10,1')->name('contact.store');
 
 Route::get('/faq', PublicFaqController::class)->name('faq');
+
+Route::get('/verify/{code}', CertificateVerificationController::class)->name('certificates.verify');
 
 Route::get('/privacy-policy', function () {
     return Inertia::render('Public/PrivacyPolicy');

@@ -20,6 +20,7 @@ type Course = {
     sale_price?: string;
     category?: Category;
     instructor?: { name: string };
+    instructors?: { id?: number; name: string }[];
 };
 type Page<T> = {
     data: T[];
@@ -151,6 +152,18 @@ export default function Index({ courses, categories, filters }: Props) {
                                         <p className="mt-3 flex-1 leading-7 text-slate-600">
                                             {course.short_description}
                                         </p>
+                                        {(() => {
+                                            const names = Array.from(
+                                                new Set(
+                                                    [course.instructor?.name, ...(course.instructors ?? []).map((i) => i.name)].filter(
+                                                        (n): n is string => Boolean(n),
+                                                    ),
+                                                ),
+                                            );
+                                            return names.length ? (
+                                                <p className="mt-3 text-sm font-semibold text-slate-500">By {names.join(', ')}</p>
+                                            ) : null;
+                                        })()}
                                         <div className="mt-6 flex items-end justify-between gap-4">
                                             <div>
                                                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400">

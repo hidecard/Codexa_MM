@@ -15,11 +15,22 @@ class PublicInstructorController extends Controller
         $instructors = User::query()
             ->role('instructor')
             ->with('profile')
-            ->withCount(['taughtCourses as courses_count' => fn ($q) => $q->published()])
             ->when($request->string('q')->trim()->value(), fn ($query, string $search) => $query->where('name', 'like', "%{$search}%"))
             ->orderBy('name')
             ->paginate(12)
             ->withQueryString();
+
+        $instructors->getCollection()->transform(function (User $instructor) {
+            $instructor->setAttribute(
+                'courses_count',
+                Course::query()
+                    ->published()
+                    ->where(fn ($q) => $q->where('instructor_id', $instructor->id)->orWhereHas('instructors', fn ($qq) => $qq->whereKey($instructor->id)))
+                    ->count(),
+            );
+
+            return $instructor;
+        });
 
         return Inertia::render('Public/Instructors/Index', [
             'instructors' => $instructors,

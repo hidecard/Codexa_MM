@@ -1,6 +1,6 @@
 ﻿import { Link, usePage } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Facebook, Linkedin, Mail, MapPin, Menu, Phone, X, Youtube } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
 import { SeoHead } from '@/components/shared/seo-head';
 import { cn } from '@/lib/utils';
@@ -52,20 +52,87 @@ export function PublicLayout({ children }: { children: ReactNode }) {
                 )}
             </header>
             <main id="main-content">{children}</main>
-            <footer className="mt-16 border-t border-slate-200 bg-slate-950 text-slate-300">
-                <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-                    <div>
-                        <BrandLogo href="/" variant="dark" className="w-44" />
-                        <p className="mt-1 text-sm text-slate-400">Learn. Build. Innovate.</p>
+            <footer className="mt-16 border-t border-slate-800 bg-slate-950 text-slate-300">
+                <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+                    <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-8">
+                        <div className="sm:col-span-2 lg:col-span-4">
+                            <BrandLogo href="/" variant="dark" className="w-44" />
+                            <p className="mt-4 max-w-sm text-sm leading-6 text-slate-400">
+                                Codexa MM delivers practical technology education and software solutions to help learners and businesses grow with confidence.
+                            </p>
+                            <ul className="mt-6 space-y-3 text-sm text-slate-400">
+                                <li className="flex items-start gap-3">
+                                    <MapPin className="mt-0.5 size-4 shrink-0 text-blue-400" aria-hidden="true" />
+                                    <span>Yangon, Myanmar</span>
+                                </li>
+                                <li className="flex items-center gap-3">
+                                    <Mail className="size-4 shrink-0 text-blue-400" aria-hidden="true" />
+                                    <a href="mailto:hello@codexa.mm" className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">hello@codexa.mm</a>
+                                </li>
+                                <li className="flex items-center gap-3">
+                                    <Phone className="size-4 shrink-0 text-blue-400" aria-hidden="true" />
+                                    <a href="tel:+959000000000" className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">+95 9 000 000 000</a>
+                                </li>
+                            </ul>
+                            <div className="mt-6 flex items-center gap-3">
+                                <a href="https://www.facebook.com" target="_blank" rel="noreferrer" aria-label="Facebook" className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 transition hover:border-slate-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                    <Facebook className="size-4" />
+                                </a>
+                                <a href="https://www.linkedin.com" target="_blank" rel="noreferrer" aria-label="LinkedIn" className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 transition hover:border-slate-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                    <Linkedin className="size-4" />
+                                </a>
+                                <a href="https://www.youtube.com" target="_blank" rel="noreferrer" aria-label="YouTube" className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 transition hover:border-slate-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                    <Youtube className="size-4" />
+                                </a>
+                            </div>
+                        </div>
+
+                        <div className="lg:col-span-2">
+                            <h2 className="text-sm font-semibold uppercase tracking-wider text-white">Academy</h2>
+                            <ul className="mt-4 space-y-3 text-sm">
+                                <li><Link href="/courses" className="text-slate-400 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">All Courses</Link></li>
+                                <li><Link href="/courses/categories" className="text-slate-400 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">Categories</Link></li>
+                                <li><Link href="/instructors" className="text-slate-400 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">Instructors</Link></li>
+                                <li><Link href="/blog" className="text-slate-400 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">Blog</Link></li>
+                            </ul>
+                        </div>
+
+                        <div className="lg:col-span-2">
+                            <h2 className="text-sm font-semibold uppercase tracking-wider text-white">Solutions</h2>
+                            <ul className="mt-4 space-y-3 text-sm">
+                                <li><Link href="/services" className="text-slate-400 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">Our Services</Link></li>
+                                <li><Link href="/portfolio" className="text-slate-400 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">Portfolio</Link></li>
+                                <li><Link href="/contact" className="text-slate-400 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">Start a Project</Link></li>
+                            </ul>
+                        </div>
+
+                        <div className="lg:col-span-2">
+                            <h2 className="text-sm font-semibold uppercase tracking-wider text-white">Company</h2>
+                            <ul className="mt-4 space-y-3 text-sm">
+                                <li><Link href="/about" className="text-slate-400 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">About Us</Link></li>
+                                <li><Link href="/contact" className="text-slate-400 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">Contact</Link></li>
+                                <li><Link href="/faq" className="text-slate-400 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">FAQ</Link></li>
+                            </ul>
+                        </div>
+
+                        <div className="lg:col-span-2">
+                            <h2 className="text-sm font-semibold uppercase tracking-wider text-white">Legal</h2>
+                            <ul className="mt-4 space-y-3 text-sm">
+                                <li><Link href="/privacy-policy" className="text-slate-400 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">Privacy Policy</Link></li>
+                                <li><Link href="/terms" className="text-slate-400 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">Terms &amp; Conditions</Link></li>
+                            </ul>
+                        </div>
                     </div>
-                    <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                        <Link href="/about" className="hover:text-white">About</Link>
-                        <Link href="/courses" className="hover:text-white">Academy</Link>
-                        <Link href="/services" className="hover:text-white">Solutions</Link>
-                        <Link href="/privacy-policy" className="hover:text-white">Privacy</Link>
-                        <Link href="/terms" className="hover:text-white">Terms</Link>
+
+                    <div className="mt-12 flex flex-col gap-4 border-t border-slate-800 pt-8 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-sm text-slate-500">© {new Date().getFullYear()} Codexa MM. All rights reserved.</p>
+                        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                            <Link href="/privacy-policy" className="text-slate-500 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">Privacy</Link>
+                            <Link href="/terms" className="text-slate-500 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">Terms</Link>
+                            <Link href="/faq" className="text-slate-500 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">FAQ</Link>
+                            <Link href="/contact" className="text-slate-500 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded">Contact</Link>
+                        </div>
                     </div>
-                    <p className="text-sm text-slate-500">© {new Date().getFullYear()} Codexa MM.</p>
                 </div>
             </footer>
             </div>

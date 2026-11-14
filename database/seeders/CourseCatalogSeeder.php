@@ -39,9 +39,17 @@ class CourseCatalogSeeder extends Seeder
             ['category' => 'product-design', 'title' => 'Digital Product Design', 'slug' => 'digital-product-design', 'short_description' => 'Move from a rough idea to a validated, usable product direction.', 'description' => 'Learn research, user flows, wireframes, interface systems, and product storytelling.', 'level' => 'beginner', 'duration' => 20, 'price' => 120000, 'pricing_type' => 'package', 'outcomes' => ['Map user journeys', 'Create interface systems', 'Present product decisions']],
         ];
 
+        $coInstructors = User::factory()->count(2)->create(['status' => 'active']);
+        foreach ($coInstructors as $index => $coInstructor) {
+            $coInstructor->name = $index === 0 ? 'Mya Thandar' : 'Ko Aung Htet';
+            $coInstructor->email = $index === 0 ? 'mya.thandar@codexa.test' : 'ko.aung.htet@codexa.test';
+            $coInstructor->save();
+            $coInstructor->assignRole('instructor');
+        }
+
         $seededCourses = collect();
 
-        foreach ($courses as $attributes) {
+        foreach ($courses as $i => $attributes) {
             $category = $categories[$attributes['category']];
             unset($attributes['category']);
             $course = Course::updateOrCreate(
@@ -55,6 +63,7 @@ class CourseCatalogSeeder extends Seeder
                     'published_at' => now(),
                 ],
             );
+            $course->instructors()->syncWithoutDetaching([$coInstructors[$i % $coInstructors->count()]->id]);
             $seededCourses->push($course);
 
             foreach (['Foundations', 'Build a real project', 'Ship and grow'] as $position => $title) {

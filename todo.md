@@ -95,22 +95,22 @@ Every feature must pass all of these gates before its phase is marked complete:
 
 - [x] Course categories, courses, modules, lessons, resources, instructors, announcements, reviews, and course status management.
 - [x] Support free, paid, and package-based course pricing in the domain model.
-- [ ] Support multiple instructors per course through `course_instructors`.
-- [ ] Instructor CRUD with ownership policy: instructors manage only assigned courses.
-- [ ] Student dashboard with enrolled courses, progress, continue-learning, assignments, activities, certificates, and notifications.
-- [ ] Enrollment service with database transaction and duplicate-enrollment protection.
-- [ ] Lesson player with resume position, progress, captions, playback speed, and lesson navigation.
-- [ ] Never expose private video URLs directly; use authorized access and expiring signed URLs.
+- [x] Support multiple instructors per course through `course_instructors`.
+- [x] Instructor CRUD with ownership policy: instructors manage only assigned courses.
+- [x] Student dashboard with enrolled courses, progress, continue-learning, assignments, activities, certificates, and notifications.
+- [x] Enrollment service with database transaction and duplicate-enrollment protection.
+- [x] Lesson player with resume position, progress, captions, playback speed, and lesson navigation.
+- [x] Never expose private video URLs directly; use authorized access and expiring signed URLs.
 
 **Exit criteria:** a student can browse a published course, enroll in a free course, access lessons, and see durable progress.
 
 ### Phase 4 — Assignments, quizzes, and certificates
 
-- [ ] Assignment authoring, attachments, submissions, late-submission rules, grading, feedback, and status transitions.
+- [x] Assignment authoring, attachments, submissions, late-submission rules, grading, feedback, and status transitions.
 - [ ] Quiz authoring with question types, options, attempts, scoring, pass marks, and server-side answer validation.
 - [ ] Never return `is_correct` or answer keys in student payloads.
-- [ ] Course completion calculation based on lesson, assignment, and quiz requirements.
-- [ ] Certificate generation, certificate number uniqueness, verification code, public `/verify/{code}` page, and downloadable certificate layout.
+- [x] Course completion calculation based on lesson, assignment, and quiz requirements.
+- [x] Certificate generation, certificate number uniqueness, verification code, public `/verify/{code}` page, and downloadable certificate layout.
 - [ ] Add policy tests for student ownership and instructor grading scope.
 
 ### Phase 5 — Codexa Solutions / CRM / project portal
@@ -201,7 +201,12 @@ Every feature must pass all of these gates before its phase is marked complete:
 - Completed in this change: approved Codexa mark/wordmark variants now cover public and auth headers, public footers, the SVG favicon/apple touch icon, and social preview metadata with consistency coverage.
 - Completed in this change: Academy content foundation now includes lesson/resource/announcement/review models, factories, seeded curriculum content, public course curriculum updates and approved feedback, course status visibility, and private media path serialization tests.
 - Completed in this change: course pricing now supports explicit free/paid/package modes, package pricing with published course bundles and pivot membership, seeded package examples, public pricing display, and pricing behavior tests.
-- Current next slice: reset-password/email-verification UI, authenticated AppShell, and shared UI primitives.
+- Completed in this change: public site footer rebuilt as a full multi-column Codexa footer (brand/contact/social, Academy/Solutions/Company/Legal links, bottom bar) in the shared public layout and verified with a production Vite build.
+- Completed in this change: courses now support multiple instructors via the `course_instructors` pivot (with timestamps), seed co-instructors, public catalog/detail/instructor pages display all instructors and count co-taught courses, and policy/tests cover assigned-co-instructor update access with ownership limits.
+- Completed in this change: student enrollment vertical slice added — `Enrollment`/`LessonProgress` models, `EnrollmentService` (transaction + duplicate protection), student dashboard/my-courses/learn/lesson controllers and pages with progress tracking and lesson completion, enrollment CTA on public course page, and feature coverage for free enrollment, progress/continue-learning, authorized lesson access/completion, and forbidden access without enrollment.
+- Completed in this change: student dashboard now surfaces enrolled-course progress, continue-learning, assignments, recent activity, certificates, and notifications; lesson player supports resume position persistence, caption tracks, playback speed controls, and authorized signed/streamed video delivery with progress/completion tracking.
+- Completed in this change: student certificates and notifications pages are data-driven with read/mark-all actions, public `/verify/{code}` verification page added, and `CertificateService` issues unique certificate numbers/verification codes and recalculates course completion from lessons plus required assignment submissions (quiz requirements remain pending implementation).
+- Current next slice: add policy/ownership tests for assignment/student/instructor grading scope, then implement quiz authoring, attempts, server-side scoring/answer validation, and integrate quiz completion requirements.
 - Historical architecture specification retained below for reference and traceability.
 
 Code Nest — Complete System Architecture & Development Specification

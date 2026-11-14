@@ -48,7 +48,7 @@ class Course extends Model
 
     public function instructors(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'course_instructors', 'course_id', 'instructor_id');
+        return $this->belongsToMany(User::class, 'course_instructors', 'course_id', 'instructor_id')->withTimestamps();
     }
 
     public function modules(): HasMany
@@ -69,5 +69,15 @@ class Course extends Model
     public function packages(): BelongsToMany
     {
         return $this->belongsToMany(CoursePackage::class, 'course_package_courses')->withPivot('position')->orderByPivot('position');
+    }
+
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(Enrollment::class);
+    }
+
+    public function lessons()
+    {
+        return $this->hasManyThrough(Lesson::class, CourseModule::class, 'course_id', 'module_id');
     }
 }

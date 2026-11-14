@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Enrollment;
 use App\Models\Course;
 use App\Models\CourseCategory;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ class PublicCourseController extends Controller
     {
         $courses = Course::query()
             ->published()
-            ->with(['category', 'instructor'])
+            ->with(['category', 'instructor', 'instructors:id,name'])
             ->when($request->string('q')->trim()->value(), function ($query, string $search) {
                 $query->where(function ($course) use ($search) {
                     $course->where('title', 'like', "%{$search}%")
@@ -42,15 +43,27 @@ class PublicCourseController extends Controller
 
         $course->load([
             'category',
-            'instructor',
+            'instructor:id,name',
+            'instructors:id,name',
             'packages' => fn ($query) => $query->published()->select(['course_packages.id', 'name', 'slug', 'description', 'price', 'sale_price', 'status', 'published_at']),
             'modules.lessons',
             'announcements' => fn ($query) => $query->whereNotNull('published_at')->select(['id', 'course_id', 'title', 'content', 'published_at']),
             'reviews' => fn ($query) => $query->where('is_approved', true)->with('student:id,name')->select(['id', 'course_id', 'student_id', 'rating', 'comment']),
         ]);
 
+        $user = request()->user();
+        $enrollment = null;
+        if ($user) {
+            $enrollment = Enrollment::query()
+                ->where('student_id', $user->id)
+                ->where('course_id', $course->id)
+                ->first(['id', 'status', 'course_id', 'student_id']);
+        }
+
         return Inertia::render('Public/Courses/Show', [
             'course' => $course,
+            'enrollment' => $enrollment ? ['id' => $enrollment->id, 'status' => $enrollment->status] : null,
+            'canEnroll' => (bool) ($user && $user->hasRole('student')),
         ]);
     }
 }

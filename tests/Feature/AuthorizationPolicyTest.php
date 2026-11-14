@@ -47,14 +47,19 @@ test('course policy allows instructors to manage only their own courses', functi
     $instructor->assignRole('instructor');
     $other = User::factory()->create(['status' => 'active']);
     $other->assignRole('instructor');
+    $coInstructor = User::factory()->create(['status' => 'active']);
+    $coInstructor->assignRole('instructor');
     $admin = User::factory()->create(['status' => 'active']);
     $admin->assignRole('admin');
 
     $own = makeCourseFor($instructor);
     $foreign = makeCourseFor($other);
+    $foreign->instructors()->attach($coInstructor->id);
 
     expect($instructor->can('update', $own))->toBeTrue()
         ->and($instructor->can('update', $foreign))->toBeFalse()
+        ->and($coInstructor->can('update', $foreign))->toBeTrue()
+        ->and($coInstructor->can('delete', $foreign))->toBeFalse()
         ->and($instructor->can('delete', $foreign))->toBeFalse()
         ->and($admin->can('update', $foreign))->toBeTrue()
         ->and($admin->can('delete', $foreign))->toBeTrue();

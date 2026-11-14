@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\BlogPost;
+use App\Models\Course;
+use App\Models\CourseCategory;
 use App\Models\Faq;
 use App\Models\PortfolioProject;
 use App\Models\User;
@@ -33,19 +35,43 @@ test('the portfolio catalog hides drafts and supports search', function () {
             ->where('projects.data.0.id', $project->id));
 });
 
-test('the instructor directory supports name search and only shows instructors', function () {
-    $this->seed();
-    $instructor = User::factory()->create(['name' => 'Mya Developer']);
-    $instructor->assignRole('instructor');
-    $student = User::factory()->create(['name' => 'Mya Student']);
-    $student->assignRole('student');
+test('the instructor directory supports name search and includes co-taught courses', function () {
+    $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
 
-    $this->get('/instructors?q=Developer')
+    $instructor = User::factory()->create(['name' => 'Laravel Developer', 'status' => 'active']);
+    $instructor->assignRole('instructor');
+    $coInstructor = User::factory()->create(['name' => 'React Mentor', 'status' => 'active']);
+    $coInstructor->assignRole('instructor');
+    $category = CourseCategory::query()->create(['name' => 'Web', 'slug' => 'web', 'is_active' => true, 'position' => 1]);
+    $course = Course::query()->create([
+        'category_id' => $category->id,
+        'instructor_id' => $instructor->id,
+        'title' => 'Shared Course',
+        'slug' => 'shared-course',
+        'status' => 'published',
+        'level' => 'beginner',
+        'language' => 'en',
+        'duration' => 1,
+        'price' => 0,
+        'pricing_type' => 'free',
+        'published_at' => now(),
+    ]);
+    $course->instructors()->attach($coInstructor->id);
+    User::factory()->create(['name' => 'UI Designer', 'status' => 'active'])->assignRole('instructor');
+
+    $this->get('/instructors?q=React')
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Public/Instructors/Index')
             ->where('instructors.total', 1)
-            ->where('instructors.data.0.id', $instructor->id));
+            ->where('instructors.data.0.id', $coInstructor->id)
+            ->where('instructors.data.0.courses_count', 1));
+
+    $this->get('/instructors/'.$coInstructor->id)
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Public/Instructors/Show')
+            ->where('courses.0.slug', 'shared-course'));
 });
 
 test('the FAQ directory hides unpublished entries and supports category search', function () {

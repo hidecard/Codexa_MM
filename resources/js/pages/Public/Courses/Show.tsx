@@ -1,7 +1,8 @@
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 import { ArrowLeft, CheckCircle2, Clock3, GraduationCap } from "lucide-react";
 
 type Course = {
+    id?: number;
     title: string;
     slug: string;
     description?: string;
@@ -14,6 +15,7 @@ type Course = {
     outcomes?: string[];
     category?: { name: string };
     instructor?: { name: string };
+    instructors?: { id?: number; name: string }[];
     modules: {
         id: number;
         title: string;
@@ -25,9 +27,22 @@ type Course = {
     reviews?: { id: number; rating: number; comment?: string; student?: { name: string } }[];
 };
 
-export default function Show({ course }: { course: Course }) {
+type Props = {
+    course: Course;
+    enrollment?: { id: number; status: string } | null;
+    canEnroll?: boolean;
+};
+
+export default function Show({ course, enrollment = null, canEnroll = false }: Props) {
+    const { auth } = usePage<{ auth?: { user?: unknown } }>().props as any;
+    const isGuest = !auth?.user;
     const price = course.sale_price ?? course.price;
     const pricingLabel = course.pricing_type === "free" ? "Free course" : course.pricing_type === "package" ? "Included in a package" : "Single course access";
+    const instructorNames = (() => {
+        const names = [course.instructor?.name, ...(course.instructors ?? []).map((i) => i.name)].filter((n): n is string => Boolean(n));
+        return Array.from(new Set(names));
+    })();
+    const enroll = () => router.post(`/student/courses/${course.slug}/enroll`);
     return (
         <>
             <Head title={course.title} />
@@ -66,7 +81,7 @@ export default function Show({ course }: { course: Course }) {
                                     {course.duration} hours
                                 </span>
                                 <span>
-                                    Instructor: {course.instructor?.name}
+                                    Instructors: {instructorNames.length ? instructorNames.join(", ") : "TBA"}
                                 </span>
                             </div>
                         </div>
@@ -129,16 +144,41 @@ export default function Show({ course }: { course: Course }) {
                         <p className="mt-2 text-3xl font-black">{course.pricing_type === "free" ? "Free" : course.pricing_type === "package" ? "Package access" : `${new Intl.NumberFormat("en-US").format(Number(price))} MMK`}</p>
                         <p className="mt-2 text-sm font-semibold text-blue-600">{pricingLabel}</p>
                         {course.pricing_type === "package" && course.packages?.map((coursePackage) => <p key={coursePackage.id} className="mt-3 rounded-xl bg-blue-50 p-3 text-sm leading-6 text-blue-800">Available in <strong>{coursePackage.name}</strong> for {new Intl.NumberFormat("en-US").format(Number(coursePackage.sale_price ?? coursePackage.price))} MMK.</p>)}
-                        <p className="mt-3 text-sm leading-6 text-slate-500">
-                            Enrollments open soon. Join the academy to be
-                            notified when this course starts.
-                        </p>
-                        <Link
-                            href="/register"
-                            className="mt-6 block rounded-xl bg-blue-600 px-5 py-3.5 text-center font-bold text-white transition hover:bg-blue-700"
-                        >
-                            Create an account
-                        </Link>
+                        {enrollment ? (
+                            <>
+                                <p className="mt-3 text-sm leading-6 text-slate-500">
+                                    {enrollment.status === 'active' || enrollment.status === 'completed'
+                                        ? 'You have access to this course.'
+                                        : 'Enrollment is pending activation.'}
+                                </p>
+                                {enrollment.status === 'active' || enrollment.status === 'completed' ? (
+                                    <Link href={`/student/courses/${course.id}/learn`} className="mt-6 block rounded-xl bg-blue-600 px-5 py-3.5 text-center font-bold text-white transition hover:bg-blue-700">
+                                        Continue learning
+                                    </Link>
+                                ) : (
+                                    <Link href="/student/my-courses" className="mt-6 block rounded-xl bg-slate-950 px-5 py-3.5 text-center font-bold text-white transition hover:bg-slate-800">
+                                        View enrollment
+                                    </Link>
+                                )}
+                            </>
+                        ) : isGuest ? (
+                            <>
+                                <p className="mt-3 text-sm leading-6 text-slate-500">Create an account to enroll and track your progress.</p>
+                                <Link href="/register" className="mt-6 block rounded-xl bg-blue-600 px-5 py-3.5 text-center font-bold text-white transition hover:bg-blue-700">Create an account</Link>
+                                <Link href="/login" className="mt-3 block rounded-xl border border-slate-200 px-5 py-3 text-center font-bold text-slate-700 transition hover:bg-slate-50">Sign in</Link>
+                            </>
+                        ) : canEnroll ? (
+                            <>
+                                <p className="mt-3 text-sm leading-6 text-slate-500">
+                                    {course.pricing_type === 'free' ? 'Enroll now to start learning immediately.' : 'Enroll to reserve your spot. Paid access activation will be available when payments are enabled.'}
+                                </p>
+                                <button type="button" onClick={enroll} className="mt-6 block w-full rounded-xl bg-blue-600 px-5 py-3.5 text-center font-bold text-white transition hover:bg-blue-700">
+                                    {course.pricing_type === 'free' ? 'Enroll for free' : 'Enroll now'}
+                                </button>
+                            </>
+                        ) : (
+                            <p className="mt-3 text-sm leading-6 text-slate-500">Sign in with a student account to enroll in this course.</p>
+                        )}
                     </aside>
                 </main>
             </div>
