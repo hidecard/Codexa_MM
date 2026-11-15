@@ -8,6 +8,7 @@ use App\Http\Controllers\Student\CourseLearnController;
 use App\Http\Controllers\Student\DashboardController;
 use App\Http\Controllers\Student\EnrollmentController;
 use App\Http\Controllers\Student\NotificationController as StudentNotificationController;
+use App\Http\Controllers\Student\QuizController;
 use App\Models\Enrollment;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -57,6 +58,11 @@ Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->name
     Route::get('/quizzes', function () {
         return Inertia::render('Student/Quizzes/Index');
     })->name('quizzes.index');
+
+    Route::get('/quizzes/{quiz}', [QuizController::class, 'show'])->name('quizzes.show');
+    Route::post('/quizzes/{quiz}/start', [QuizController::class, 'start'])->name('quizzes.start');
+    Route::post('/quizzes/{quiz}/submit', [QuizController::class, 'submit'])->name('quizzes.submit');
+    Route::get('/quizzes/{quiz}/results/{attempt}', [QuizController::class, 'results'])->name('quizzes.results');
 
     Route::get('/certificates', [StudentCertificateController::class, 'index'])->name('certificates.index');
 
@@ -112,6 +118,15 @@ Route::middleware(['auth', 'verified', 'role:instructor'])->prefix('instructor')
     Route::post('/assignments', [InstructorAssignmentController::class, 'store'])->name('assignments.store');
     Route::get('/assignments/{assignment}', [InstructorAssignmentController::class, 'show'])->name('assignments.show');
     Route::post('/assignments/{assignment}/submissions/{submission}/grade', [InstructorAssignmentController::class, 'grade'])->name('assignments.submissions.grade');
+
+    Route::get('/quizzes', [App\Http\Controllers\Instructor\QuizController::class, 'index'])->name('quizzes.index');
+    Route::get('/quizzes/create', [App\Http\Controllers\Instructor\QuizController::class, 'create'])->name('quizzes.create');
+    Route::post('/quizzes', [App\Http\Controllers\Instructor\QuizController::class, 'store'])->name('quizzes.store');
+    Route::get('/quizzes/{quiz}', [App\Http\Controllers\Instructor\QuizController::class, 'show'])->name('quizzes.show');
+    Route::put('/quizzes/{quiz}', [App\Http\Controllers\Instructor\QuizController::class, 'update'])->name('quizzes.update');
+    Route::delete('/quizzes/{quiz}', [App\Http\Controllers\Instructor\QuizController::class, 'destroy'])->name('quizzes.destroy');
+    Route::get('/quizzes/{quiz}/results', [App\Http\Controllers\Instructor\QuizController::class, 'results'])->name('quizzes.results');
+    Route::get('/quizzes/{quiz}/attempts/{attempt}', [App\Http\Controllers\Instructor\QuizController::class, 'attemptDetail'])->name('quizzes.attempts.show');
 
     Route::get('/submissions', fn () => redirect()->route('instructor.assignments.index'))->name('submissions.index');
     Route::get('/grading', fn () => redirect()->route('instructor.assignments.index'))->name('grading.index');

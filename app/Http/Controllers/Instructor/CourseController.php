@@ -196,6 +196,7 @@ class CourseController extends Controller
         while (Course::query()->where('slug', $candidate)->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))->exists()) {
             $candidate = $base.'-'.$i++;
         }
+
         return $candidate;
     }
 }

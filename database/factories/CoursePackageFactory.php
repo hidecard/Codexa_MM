@@ -13,6 +13,7 @@ class CoursePackageFactory extends Factory
     public function definition(): array
     {
         $name = fake()->unique()->words(3, true);
+
         return ['name' => $name, 'slug' => Str::slug($name), 'description' => fake()->sentence(), 'price' => fake()->numberBetween(150000, 500000), 'status' => 'published', 'published_at' => now()];
     }
 }

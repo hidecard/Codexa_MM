@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
-use App\Models\Enrollment;
 use App\Services\EnrollmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

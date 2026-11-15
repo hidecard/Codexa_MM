@@ -7,6 +7,7 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
+use App\Services\CertificateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
@@ -174,7 +175,7 @@ class CourseLearnController extends Controller
 
     private function recalculateCompletion(Course $course, Enrollment $enrollment): void
     {
-        app(\App\Services\CertificateService::class)->recalculateEnrollmentCompletion($enrollment);
+        app(CertificateService::class)->recalculateEnrollmentCompletion($enrollment);
     }
 
     public function stream(Request $request, Course $course, Lesson $lesson): StreamedResponse

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Models\Assignment;
 use App\Models\Course;
@@ -6,6 +6,7 @@ use App\Models\CourseCategory;
 use App\Models\Enrollment;
 use App\Models\Submission;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -28,11 +29,12 @@ function setupCourseWithInstructor(): array
         'duration' => 1,
         'published_at' => now(),
     ]);
+
     return [$instructor, $course];
 }
 
 test('instructor can create assignment and grade enrolled student submission with ownership enforced', function () {
-    $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+    $this->seed(RolesAndPermissionsSeeder::class);
     [$instructor, $course] = setupCourseWithInstructor();
     $student = User::factory()->create(['status' => 'active', 'email_verified_at' => now()]);
     $student->assignRole('student');
@@ -70,7 +72,7 @@ test('instructor can create assignment and grade enrolled student submission wit
 });
 
 test('late submission is rejected when not allowed and student cannot submit after graded', function () {
-    $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+    $this->seed(RolesAndPermissionsSeeder::class);
     [, $course] = setupCourseWithInstructor();
     $student = User::factory()->create(['status' => 'active', 'email_verified_at' => now()]);
     $student->assignRole('student');

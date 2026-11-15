@@ -6,6 +6,7 @@ use App\Models\CourseCategory;
 use App\Models\Faq;
 use App\Models\PortfolioProject;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -36,7 +37,7 @@ test('the portfolio catalog hides drafts and supports search', function () {
 });
 
 test('the instructor directory supports name search and includes co-taught courses', function () {
-    $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+    $this->seed(RolesAndPermissionsSeeder::class);
 
     $instructor = User::factory()->create(['name' => 'Laravel Developer', 'status' => 'active']);
     $instructor->assignRole('instructor');

@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Instructor;
 use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use App\Models\Course;
+use App\Models\Enrollment;
 use App\Models\Grade;
 use App\Models\Submission;
+use App\Services\CertificateService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -120,12 +122,12 @@ class AssignmentController extends Controller
         );
         $submission->forceFill(['status' => $validated['status'] ?? 'graded'])->save();
 
-        $enrollment = \App\Models\Enrollment::query()
+        $enrollment = Enrollment::query()
             ->where('student_id', $submission->student_id)
             ->where('course_id', $assignment->course_id)
             ->first();
         if ($enrollment) {
-            app(\App\Services\CertificateService::class)->recalculateEnrollmentCompletion($enrollment);
+            app(CertificateService::class)->recalculateEnrollmentCompletion($enrollment);
         }
 
         return back()->with('success', 'Submission graded.');

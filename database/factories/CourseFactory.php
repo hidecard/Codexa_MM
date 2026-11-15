@@ -15,6 +15,7 @@ class CourseFactory extends Factory
     public function definition(): array
     {
         $title = fake()->unique()->sentence(3);
+
         return ['category_id' => CourseCategory::factory(), 'instructor_id' => User::factory(), 'title' => $title, 'slug' => Str::slug($title), 'description' => fake()->paragraph(), 'short_description' => fake()->sentence(), 'price' => 0, 'pricing_type' => 'free', 'status' => 'published', 'level' => 'beginner', 'language' => 'en', 'duration' => fake()->numberBetween(2, 40), 'outcomes' => [fake()->sentence()], 'published_at' => now()];
     }
 

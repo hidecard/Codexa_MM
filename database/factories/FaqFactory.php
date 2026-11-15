@@ -12,7 +12,7 @@ class FaqFactory extends Factory
     public function definition(): array
     {
         return [
-            'question' => fake()->sentence() . '?',
+            'question' => fake()->sentence().'?',
             'answer' => fake()->paragraph(),
             'category' => fake()->randomElement(['General', 'Academy', 'Solutions']),
             'sort_order' => fake()->numberBetween(0, 20),

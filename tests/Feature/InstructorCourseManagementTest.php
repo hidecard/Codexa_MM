@@ -1,12 +1,12 @@
-﻿<?php
+<?php
 
 use App\Models\Course;
 use App\Models\CourseCategory;
 use App\Models\CourseModule;
 use App\Models\Lesson;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
 
@@ -14,6 +14,7 @@ function instructorUser(): User
 {
     $user = User::factory()->create(['status' => 'active', 'email_verified_at' => now()]);
     $user->assignRole('instructor');
+
     return $user;
 }
 
@@ -23,7 +24,7 @@ function category(): CourseCategory
 }
 
 test('instructor can create and update own course and manage curriculum', function () {
-    $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+    $this->seed(RolesAndPermissionsSeeder::class);
     $instructor = instructorUser();
     $cat = category();
 
@@ -66,7 +67,7 @@ test('instructor can create and update own course and manage curriculum', functi
 });
 
 test('instructor cannot update or delete courses they do not own or are not assigned to', function () {
-    $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+    $this->seed(RolesAndPermissionsSeeder::class);
     $owner = instructorUser();
     $other = instructorUser();
     $cat = category();
@@ -99,7 +100,7 @@ test('instructor cannot update or delete courses they do not own or are not assi
 });
 
 test('assigned co-instructor can update but not delete per permissions and policy', function () {
-    $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+    $this->seed(RolesAndPermissionsSeeder::class);
     $owner = instructorUser();
     $assigned = instructorUser();
     $cat = category();

@@ -17,6 +17,7 @@ class SubmissionPolicy
         }
         $submission->loadMissing('assignment.course');
         $course = $submission->assignment?->course;
+
         return $user->hasRole('instructor') && $course && ($course->instructor_id === $user->id || $course->instructors()->whereKey($user->id)->exists());
     }
 
@@ -35,6 +36,7 @@ class SubmissionPolicy
         }
         $submission->loadMissing('assignment.course');
         $course = $submission->assignment?->course;
+
         return $user->hasRole('instructor') && $course && ($course->instructor_id === $user->id || $course->instructors()->whereKey($user->id)->exists());
     }
 }

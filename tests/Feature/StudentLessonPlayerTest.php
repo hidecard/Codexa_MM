@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Models\Course;
 use App\Models\CourseCategory;
@@ -7,15 +7,15 @@ use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\URL;
 use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
 
 test('student lesson exposes authorized stream url and progress resume can be saved', function () {
-    $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+    $this->seed(RolesAndPermissionsSeeder::class);
     $category = CourseCategory::query()->create(['name' => 'Web', 'slug' => 'web-video', 'is_active' => true, 'position' => 1]);
     $instructor = User::factory()->create(['status' => 'active']);
     $instructor->assignRole('instructor');

@@ -8,6 +8,8 @@ use App\Models\CertificateVerification;
 use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
+use App\Models\Quiz;
+use App\Models\QuizAttempt;
 use App\Models\Submission;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -63,7 +65,19 @@ class CertificateService
             $assignmentsDone = $gradedCount >= $requiredAssignmentIds->count();
         }
 
-        $allDone = $lessonsDone && $assignmentsDone;
+        $requiredQuizIds = Quiz::query()->where('course_id', $courseId)->pluck('id');
+        $quizzesDone = true;
+        if ($requiredQuizIds->isNotEmpty()) {
+            $passedCount = QuizAttempt::query()
+                ->where('student_id', $enrollment->student_id)
+                ->whereIn('quiz_id', $requiredQuizIds)
+                ->where('status', 'passed')
+                ->distinct('quiz_id')
+                ->count('quiz_id');
+            $quizzesDone = $passedCount >= $requiredQuizIds->count();
+        }
+
+        $allDone = $lessonsDone && $assignmentsDone && $quizzesDone;
         if ($allDone && $enrollment->status !== 'completed') {
             $enrollment->forceFill(['status' => 'completed', 'completed_at' => now()])->save();
         }

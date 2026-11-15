@@ -15,6 +15,7 @@ class BlogPostFactory extends Factory
     public function definition(): array
     {
         $title = fake()->unique()->sentence(4);
+
         return [
             'category_id' => BlogCategory::factory(),
             'author_id' => User::factory(),

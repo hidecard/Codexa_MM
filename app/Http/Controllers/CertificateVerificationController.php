@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Certificate;
 use App\Models\CertificateVerification;
 use Illuminate\Http\Request;
 use Inertia\Inertia;

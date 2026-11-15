@@ -1,5 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\Solutions\ClientController;
+use App\Http\Controllers\Admin\Solutions\InvoiceController;
+use App\Http\Controllers\Admin\Solutions\LeadController;
+use App\Http\Controllers\Admin\Solutions\ProjectController;
+use App\Http\Controllers\Admin\Solutions\QuotationController;
+use App\Http\Controllers\Admin\Solutions\ServiceCategoryController;
+use App\Http\Controllers\Admin\Solutions\ServiceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -63,39 +70,40 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     });
 
     Route::prefix('solutions')->name('solutions.')->group(function () {
-        Route::get('/services', function () {
-            return Inertia::render('Admin/Solutions/Services/Index');
-        })->name('services.index');
+        Route::prefix('services')->name('services.')->group(function () {
+            Route::get('/', [ServiceController::class, 'index'])->name('index');
+            Route::get('/create', [ServiceController::class, 'create'])->name('create');
+            Route::post('/', [ServiceController::class, 'store'])->name('store');
+            Route::get('/{service}/edit', [ServiceController::class, 'edit'])->name('edit');
+            Route::put('/{service}', [ServiceController::class, 'update'])->name('update');
+            Route::delete('/{service}', [ServiceController::class, 'destroy'])->name('destroy');
 
-        Route::get('/leads', function () {
-            return Inertia::render('Admin/Solutions/Leads/Index');
-        })->name('leads.index');
+            Route::prefix('categories')->name('categories.')->group(function () {
+                Route::get('/', [ServiceCategoryController::class, 'index'])->name('index');
+                Route::get('/create', [ServiceCategoryController::class, 'create'])->name('create');
+                Route::post('/', [ServiceCategoryController::class, 'store'])->name('store');
+                Route::get('/{category}/edit', [ServiceCategoryController::class, 'edit'])->name('edit');
+                Route::put('/{category}', [ServiceCategoryController::class, 'update'])->name('update');
+                Route::delete('/{category}', [ServiceCategoryController::class, 'destroy'])->name('destroy');
+            });
+        });
 
-        Route::get('/clients', function () {
-            return Inertia::render('Admin/Solutions/Clients/Index');
-        })->name('clients.index');
+        Route::resource('leads', LeadController::class)->names('leads');
 
-        Route::get('/projects', function () {
-            return Inertia::render('Admin/Solutions/Projects/Index');
-        })->name('projects.index');
+        Route::resource('clients', ClientController::class)->names('clients');
 
-        Route::get('/milestones', function () {
-            return Inertia::render('Admin/Solutions/Milestones/Index');
-        })->name('milestones.index');
-
-        Route::get('/tasks', function () {
-            return Inertia::render('Admin/Solutions/Tasks/Index');
-        })->name('tasks.index');
+        Route::resource('projects', ProjectController::class)->names('projects');
+        Route::post('/projects/{project}/members', [ProjectController::class, 'addMember'])->name('projects.members.store');
+        Route::delete('/projects/{project}/members/{member}', [ProjectController::class, 'removeMember'])->name('projects.members.destroy');
     });
 
     Route::prefix('finance')->name('finance.')->group(function () {
-        Route::get('/quotations', function () {
-            return Inertia::render('Admin/Finance/Quotations/Index');
-        })->name('quotations.index');
+        Route::resource('quotations', QuotationController::class)->names('quotations');
+        Route::post('/quotations/{quotation}/items', [QuotationController::class, 'updateItems'])->name('quotations.items.update');
 
-        Route::get('/invoices', function () {
-            return Inertia::render('Admin/Finance/Invoices/Index');
-        })->name('invoices.index');
+        Route::resource('invoices', InvoiceController::class)->names('invoices');
+        Route::post('/invoices/{invoice}/items', [InvoiceController::class, 'updateItems'])->name('invoices.items.update');
+        Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'recordPayment'])->name('invoices.payments.store');
 
         Route::get('/payments', function () {
             return Inertia::render('Admin/Finance/Payments/Index');

@@ -35,7 +35,7 @@ class PublicContentSeeder extends Seeder
                     'title' => $post['title'],
                     'slug' => Str::slug($post['title']),
                     'excerpt' => $post['excerpt'],
-                    'content' => $post['excerpt'] . "\n\nCodexa MM shares practical lessons from academy and delivery work. More details coming soon.",
+                    'content' => $post['excerpt']."\n\nCodexa MM shares practical lessons from academy and delivery work. More details coming soon.",
                     'status' => 'published',
                     'published_at' => now(),
                 ]

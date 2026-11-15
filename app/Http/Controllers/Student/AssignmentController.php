@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use App\Models\Enrollment;
 use App\Models\Submission;
+use App\Services\CertificateService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -104,12 +105,12 @@ class AssignmentController extends Controller
             'submitted_at' => now(),
         ])->save();
 
-        $enrollment = \App\Models\Enrollment::query()
+        $enrollment = Enrollment::query()
             ->where('student_id', $request->user()->id)
             ->where('course_id', $assignment->course_id)
             ->first();
         if ($enrollment) {
-            app(\App\Services\CertificateService::class)->recalculateEnrollmentCompletion($enrollment);
+            app(CertificateService::class)->recalculateEnrollmentCompletion($enrollment);
         }
 
         return back()->with('success', $isLate ? 'Late submission received.' : 'Assignment submitted.');

@@ -7,6 +7,7 @@ use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -40,7 +41,7 @@ function makePublishedCourse(string $slug = 'learn-laravel', string $pricing = '
 }
 
 test('a student can enroll in a free published course and duplicate enrollment is protected', function () {
-    $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+    $this->seed(RolesAndPermissionsSeeder::class);
     [$course] = makePublishedCourse();
     $student = User::factory()->create(['status' => 'active', 'email_verified_at' => now()]);
     $student->assignRole('student');
@@ -58,7 +59,7 @@ test('a student can enroll in a free published course and duplicate enrollment i
 });
 
 test('student dashboard shows enrolled course progress and continue-learning', function () {
-    $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+    $this->seed(RolesAndPermissionsSeeder::class);
     [$course, $lesson1] = makePublishedCourse('progress-course');
     $student = User::factory()->create(['status' => 'active', 'email_verified_at' => now()]);
     $student->assignRole('student');
@@ -76,7 +77,7 @@ test('student dashboard shows enrolled course progress and continue-learning', f
 });
 
 test('an enrolled student can view lessons and mark completion with durable progress', function () {
-    $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+    $this->seed(RolesAndPermissionsSeeder::class);
     [$course, $lesson1, $lesson2] = makePublishedCourse('complete-course');
     $student = User::factory()->create(['status' => 'active', 'email_verified_at' => now()]);
     $student->assignRole('student');
@@ -94,7 +95,7 @@ test('an enrolled student can view lessons and mark completion with durable prog
 });
 
 test('lesson access is forbidden without an active enrollment', function () {
-    $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+    $this->seed(RolesAndPermissionsSeeder::class);
     [$course, $lesson1] = makePublishedCourse('forbidden-course');
     $student = User::factory()->create(['status' => 'active', 'email_verified_at' => now()]);
     $student->assignRole('student');

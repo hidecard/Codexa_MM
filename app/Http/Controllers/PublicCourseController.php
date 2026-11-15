@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Enrollment;
 use App\Models\Course;
 use App\Models\CourseCategory;
+use App\Models\Enrollment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;

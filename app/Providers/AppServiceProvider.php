@@ -3,11 +3,31 @@
 namespace App\Providers;
 
 use App\Models\Assignment;
+use App\Models\Client;
 use App\Models\Course;
+use App\Models\Invoice;
+use App\Models\Lead;
+use App\Models\Project;
+use App\Models\Quiz;
+use App\Models\QuizAttempt;
+use App\Models\Quotation;
+use App\Models\Service;
+use App\Models\ServiceCategory;
 use App\Models\Submission;
+use App\Models\SupportTicket;
 use App\Policies\AssignmentPolicy;
+use App\Policies\ClientPolicy;
 use App\Policies\CoursePolicy;
+use App\Policies\InvoicePolicy;
+use App\Policies\LeadPolicy;
+use App\Policies\ProjectPolicy;
+use App\Policies\QuizAttemptPolicy;
+use App\Policies\QuizPolicy;
+use App\Policies\QuotationPolicy;
+use App\Policies\ServiceCategoryPolicy;
+use App\Policies\ServicePolicy;
 use App\Policies\SubmissionPolicy;
+use App\Policies\SupportTicketPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -29,6 +49,17 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Course::class, CoursePolicy::class);
         Gate::policy(Assignment::class, AssignmentPolicy::class);
         Gate::policy(Submission::class, SubmissionPolicy::class);
+        Gate::policy(Quiz::class, QuizPolicy::class);
+        Gate::policy(QuizAttempt::class, QuizAttemptPolicy::class);
+
+        Gate::policy(ServiceCategory::class, ServiceCategoryPolicy::class);
+        Gate::policy(Service::class, ServicePolicy::class);
+        Gate::policy(Lead::class, LeadPolicy::class);
+        Gate::policy(Client::class, ClientPolicy::class);
+        Gate::policy(Project::class, ProjectPolicy::class);
+        Gate::policy(Quotation::class, QuotationPolicy::class);
+        Gate::policy(Invoice::class, InvoicePolicy::class);
+        Gate::policy(SupportTicket::class, SupportTicketPolicy::class);
 
         Gate::define('access-student-portal', fn ($user) => $user->hasRole('student'));
         Gate::define('access-instructor-portal', fn ($user) => $user->hasRole('instructor'));
@@ -36,4 +67,3 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('access-admin-portal', fn ($user) => $user->hasRole('admin'));
     }
 }
-

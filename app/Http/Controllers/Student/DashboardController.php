@@ -8,7 +8,6 @@ use App\Models\Certificate;
 use App\Models\Enrollment;
 use App\Models\LessonProgress;
 use App\Models\StudentNotification;
-use App\Models\Submission;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;

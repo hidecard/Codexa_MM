@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -64,5 +63,10 @@ class User extends Authenticatable implements HasMedia
         return $this->belongsToMany(Course::class, 'enrollments', 'student_id', 'course_id')
             ->withPivot(['status', 'price_paid', 'enrolled_at', 'completed_at'])
             ->withTimestamps();
+    }
+
+    public function quizAttempts()
+    {
+        return $this->hasMany(QuizAttempt::class, 'student_id');
     }
 }

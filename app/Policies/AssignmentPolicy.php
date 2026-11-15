@@ -53,6 +53,7 @@ class AssignmentPolicy
         if (! $course) {
             return false;
         }
+
         return $course->instructor_id === $user->id
             || $course->instructors()->whereKey($user->id)->exists();
     }
