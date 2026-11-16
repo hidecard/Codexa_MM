@@ -109,6 +109,22 @@ class ProjectController extends Controller
         return back()->with('success', 'Project updated.');
     }
 
+    public function transition(Request $request, Project $project): RedirectResponse
+    {
+        $this->authorize('transition', $project);
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:'.implode(',', Project::STATUSES)],
+        ]);
+
+        if (! $project->canTransitionTo($validated['status'])) {
+            return back()->withErrors(['status' => "A project cannot transition from {$project->status} to {$validated['status']}."]);
+        }
+
+        $project->update(['status' => $validated['status']]);
+
+        return back()->with('success', 'Project status updated.');
+    }
+
     public function addMember(Request $request, Project $project): RedirectResponse
     {
         $this->authorize('update', $project);

@@ -60,7 +60,7 @@ class ProjectController extends Controller
     {
         $this->authorize('update', $project);
         $validated = $request->validate([
-            'content' => ['required', 'string'],
+            'content' => ['required', 'string', 'max:10000'],
         ]);
 
         $validated['project_id'] = $project->id;

@@ -93,6 +93,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         Route::resource('clients', ClientController::class)->names('clients');
 
         Route::resource('projects', ProjectController::class)->names('projects');
+        Route::post('/projects/{project}/transition', [ProjectController::class, 'transition'])->name('projects.transition');
         Route::post('/projects/{project}/members', [ProjectController::class, 'addMember'])->name('projects.members.store');
         Route::delete('/projects/{project}/members/{member}', [ProjectController::class, 'removeMember'])->name('projects.members.destroy');
     });

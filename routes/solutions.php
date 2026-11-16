@@ -21,8 +21,10 @@ Route::middleware(['auth', 'verified', 'role:client'])->prefix('client')->name('
     Route::post('/projects/{project}/updates', [ProjectController::class, 'addUpdate'])->name('projects.updates.store');
 
     Route::get('/milestones', [MilestoneController::class, 'index'])->name('milestones.index');
+    Route::get('/milestones/{milestone}', [MilestoneController::class, 'show'])->name('milestones.show');
 
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
+    Route::get('/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
 
     Route::get('/quotations', [QuotationController::class, 'index'])->name('quotations.index');
     Route::get('/quotations/{quotation}', [QuotationController::class, 'show'])->name('quotations.show');
@@ -37,6 +39,7 @@ Route::middleware(['auth', 'verified', 'role:client'])->prefix('client')->name('
     })->name('payments.index');
 
     Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
+    Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
 
     Route::get('/support', [SupportController::class, 'index'])->name('support.index');
     Route::post('/support', [SupportController::class, 'store'])->name('support.store');

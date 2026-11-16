@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['client_id', 'quotation_number', 'subtotal', 'tax_amount', 'total', 'status', 'valid_until', 'notes'])]
+#[Fillable(['client_id', 'project_id', 'quotation_number', 'subtotal', 'tax_amount', 'total', 'status', 'valid_until', 'notes'])]
 class Quotation extends Model
 {
     protected function casts(): array
@@ -24,6 +24,11 @@ class Quotation extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
     public function items(): HasMany

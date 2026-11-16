@@ -31,4 +31,12 @@ class MilestoneController extends Controller
             'milestones' => $milestones,
         ]);
     }
+
+    public function show(Request $request, ProjectMilestone $milestone)
+    {
+        $this->authorize('view', $milestone->project);
+        $milestone->load(['project:id,title,client_id', 'tasks.assignee:id,name,email']);
+
+        return response()->json(['milestone' => $milestone]);
+    }
 }

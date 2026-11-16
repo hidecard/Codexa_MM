@@ -47,7 +47,6 @@ class QuizController extends Controller
                     'question' => $q->question,
                     'type' => $q->type,
                     'points' => $q->points,
-                    'explanation' => $q->explanation,
                     'options' => $q->options->map(fn ($o) => ['id' => $o->id, 'text' => $o->option_text])->values(),
                 ])->values(),
             ],
@@ -175,10 +174,12 @@ class QuizController extends Controller
                     'question' => $a->question?->question,
                     'question_type' => $a->question?->type,
                     'points' => $a->question?->points,
-                    'explanation' => $a->question?->explanation,
+                    'explanation' => $quiz->show_correct_answers ? $a->question?->explanation : null,
                     'answer' => $a->answer,
                     'is_correct' => $a->is_correct,
-                    'correct_option' => $a->question?->options->firstWhere('is_correct', true)?->option_text,
+                    'correct_option' => $quiz->show_correct_answers
+                        ? $a->question?->options->firstWhere('is_correct', true)?->option_text
+                        : null,
                     'options' => $a->question?->options->map(fn ($o) => ['id' => $o->id, 'text' => $o->option_text, 'is_correct' => $quiz->show_correct_answers ? $o->is_correct : false])->values(),
                 ])->values(),
             ],

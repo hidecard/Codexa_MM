@@ -12,7 +12,6 @@ interface Question {
     question: string;
     type: string;
     points: number;
-    explanation: string | null;
     options: { id: number; text: string }[];
 }
 

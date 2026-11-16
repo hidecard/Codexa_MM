@@ -9,7 +9,7 @@ class ProjectPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('projects.view');
+        return $user->can('projects.view') || $user->can('projects.view-own');
     }
 
     public function view(User $user, Project $project): bool
@@ -32,7 +32,7 @@ class ProjectPolicy
 
     public function update(User $user, Project $project): bool
     {
-        if ($user->can('projects.update') && $user->hasRole('admin')) {
+        if (($user->can('projects.update') || $user->can('projects.manage')) && $user->hasRole('admin')) {
             return true;
         }
 
@@ -41,6 +41,11 @@ class ProjectPolicy
         }
 
         return $project->members()->where('user_id', $user->id)->exists();
+    }
+
+    public function transition(User $user, Project $project): bool
+    {
+        return $user->hasRole('admin') && ($user->can('projects.update') || $user->can('projects.manage'));
     }
 
     public function delete(User $user, Project $project): bool

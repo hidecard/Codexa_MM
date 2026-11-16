@@ -11,6 +11,27 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['client_id', 'title', 'description', 'status', 'start_date', 'due_date', 'budget'])]
 class Project extends Model
 {
+    public const STATUSES = ['inquiry', 'reviewing', 'quoted', 'approved', 'planning', 'in_progress', 'testing', 'client_review', 'completed', 'cancelled', 'on_hold'];
+
+    public const STATUS_TRANSITIONS = [
+        'inquiry' => ['reviewing', 'cancelled'],
+        'reviewing' => ['quoted', 'cancelled', 'on_hold'],
+        'quoted' => ['approved', 'cancelled', 'on_hold'],
+        'approved' => ['planning', 'cancelled', 'on_hold'],
+        'planning' => ['in_progress', 'cancelled', 'on_hold'],
+        'in_progress' => ['testing', 'on_hold', 'cancelled'],
+        'testing' => ['client_review', 'in_progress', 'on_hold'],
+        'client_review' => ['completed', 'in_progress', 'on_hold'],
+        'completed' => ['on_hold'],
+        'cancelled' => ['inquiry'],
+        'on_hold' => ['in_progress', 'cancelled'],
+    ];
+
+    public function canTransitionTo(string $status): bool
+    {
+        return in_array($status, self::STATUS_TRANSITIONS[$this->status] ?? [], true);
+    }
+
     protected function casts(): array
     {
         return [
@@ -28,6 +49,13 @@ class Project extends Model
         }
         if (isset($filters['client_id']) && $filters['client_id'] !== 'all') {
             $query->where('client_id', $filters['client_id']);
+        }
+        if (! empty($filters['search'])) {
+            $search = trim((string) $filters['search']);
+            $query->where(function (Builder $project) use ($search) {
+                $project->where('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
         }
 
         return $query;

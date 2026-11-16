@@ -43,6 +43,15 @@ class SupportTicketPolicy
         return true; // Staff can update
     }
 
+    public function reply(User $user, SupportTicket $ticket): bool
+    {
+        if ($ticket->status === 'closed') {
+            return false;
+        }
+
+        return $this->update($user, $ticket);
+    }
+
     public function delete(User $user, SupportTicket $ticket): bool
     {
         return $user->can('tickets.delete') && $user->hasRole('admin');

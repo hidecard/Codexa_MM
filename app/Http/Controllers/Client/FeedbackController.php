@@ -7,6 +7,7 @@ use App\Models\ClientFeedback;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,6 +25,7 @@ class FeedbackController extends Controller
         }
 
         $feedback = ClientFeedback::query()
+            ->where('client_id', $client->id)
             ->whereHas('project', fn ($q) => $q->where('client_id', $client->id))
             ->with('project:id,title')
             ->latest()
@@ -65,7 +67,11 @@ class FeedbackController extends Controller
         }
 
         $validated = $request->validate([
-            'project_id' => ['required', 'integer', 'exists:projects,id'],
+            'project_id' => [
+                'required',
+                'integer',
+                Rule::exists('projects', 'id')->where(fn ($query) => $query->where('client_id', $client->id)),
+            ],
             'rating' => ['required', 'integer', 'min:1', 'max:5'],
             'comment' => ['nullable', 'string'],
         ]);

@@ -10,6 +10,7 @@ use App\Http\Controllers\Student\EnrollmentController;
 use App\Http\Controllers\Student\NotificationController as StudentNotificationController;
 use App\Http\Controllers\Student\QuizController;
 use App\Models\Enrollment;
+use App\Models\Quiz;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -56,7 +57,29 @@ Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->name
     })->name('submissions.index');
 
     Route::get('/quizzes', function () {
-        return Inertia::render('Student/Quizzes/Index');
+        $studentId = request()->user()->id;
+        $quizzes = Quiz::query()
+            ->with('course:id,title')
+            ->withCount('questions')
+            ->whereHas('course.enrollments', fn ($query) => $query
+                ->where('student_id', $studentId)
+                ->whereIn('status', ['active', 'completed']))
+            ->latest()
+            ->get()
+            ->map(fn (Quiz $quiz) => [
+                'id' => $quiz->id,
+                'title' => $quiz->title,
+                'description' => $quiz->description,
+                'pass_mark' => $quiz->pass_mark,
+                'time_limit' => $quiz->time_limit,
+                'questions_count' => $quiz->questions_count,
+                'course' => $quiz->course ? [
+                    'id' => $quiz->course->id,
+                    'title' => $quiz->course->title,
+                ] : null,
+            ])->values();
+
+        return Inertia::render('Student/Quizzes/Index', ['quizzes' => $quizzes]);
     })->name('quizzes.index');
 
     Route::get('/quizzes/{quiz}', [QuizController::class, 'show'])->name('quizzes.show');

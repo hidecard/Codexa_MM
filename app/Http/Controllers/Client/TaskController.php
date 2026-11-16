@@ -36,4 +36,12 @@ class TaskController extends Controller
             'priorities' => [1 => 'Low', 2 => 'Medium', 3 => 'High', 4 => 'Urgent'],
         ]);
     }
+
+    public function show(Request $request, ProjectTask $task)
+    {
+        $this->authorize('view', $task->milestone->project);
+        $task->load(['milestone.project:id,title,client_id', 'assignee:id,name,email']);
+
+        return response()->json(['task' => $task]);
+    }
 }

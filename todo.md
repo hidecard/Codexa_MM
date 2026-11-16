@@ -107,16 +107,16 @@ Every feature must pass all of these gates before its phase is marked complete:
 ### Phase 4 — Assignments, quizzes, and certificates
 
 - [x] Assignment authoring, attachments, submissions, late-submission rules, grading, feedback, and status transitions.
-- [ ] Quiz authoring with question types, options, attempts, scoring, pass marks, and server-side answer validation.
-- [ ] Never return `is_correct` or answer keys in student payloads.
+- [x] Quiz authoring with question types, options, attempts, scoring, pass marks, and server-side answer validation.
+- [x] Never return `is_correct` or answer keys in student payloads.
 - [x] Course completion calculation based on lesson, assignment, and quiz requirements.
 - [x] Certificate generation, certificate number uniqueness, verification code, public `/verify/{code}` page, and downloadable certificate layout.
-- [ ] Add policy tests for student ownership and instructor grading scope.
+- [x] Add policy tests for student ownership and instructor grading scope.
 
 ### Phase 5 — Codexa Solutions / CRM / project portal
 
 - [ ] Service categories, services, lead capture, lead activities, clients, and inquiry workflow.
-- [ ] Client portal with strict ownership filtering: clients can see only their own projects, files, milestones, tasks, quotations, invoices, and support tickets.
+- [x] Client portal with strict ownership filtering: clients can see only their own projects, files, milestones, tasks, quotations, invoices, and support tickets.
 - [ ] Project lifecycle: `inquiry → reviewing → quoted → approved → planning → in_progress → testing → client_review → completed`; include `cancelled` and `on_hold` paths.
 - [ ] Milestones with dates, status, completion percentage, assigned team members, and attachments.
 - [ ] Tasks with assignee, priority, status, due date, comments, and activity history.
@@ -206,7 +206,12 @@ Every feature must pass all of these gates before its phase is marked complete:
 - Completed in this change: student enrollment vertical slice added — `Enrollment`/`LessonProgress` models, `EnrollmentService` (transaction + duplicate protection), student dashboard/my-courses/learn/lesson controllers and pages with progress tracking and lesson completion, enrollment CTA on public course page, and feature coverage for free enrollment, progress/continue-learning, authorized lesson access/completion, and forbidden access without enrollment.
 - Completed in this change: student dashboard now surfaces enrolled-course progress, continue-learning, assignments, recent activity, certificates, and notifications; lesson player supports resume position persistence, caption tracks, playback speed controls, and authorized signed/streamed video delivery with progress/completion tracking.
 - Completed in this change: student certificates and notifications pages are data-driven with read/mark-all actions, public `/verify/{code}` verification page added, and `CertificateService` issues unique certificate numbers/verification codes and recalculates course completion from lessons plus required assignment submissions (quiz requirements remain pending implementation).
-- Current next slice: add policy/ownership tests for assignment/student/instructor grading scope, then implement quiz authoring, attempts, server-side scoring/answer validation, and integrate quiz completion requirements.
+- Completed in this change: quiz authoring, attempts, server-side scoring, pass-mark evaluation, enrollment-scoped student quiz listing, quiz ownership policy coverage, and student-payload redaction for explanations/correct answers when answer review is disabled.
+- Completed in this change: client portal project/search scoping, cross-client feedback/support write protection, ownership regression coverage, and nullable project links for quotations/invoices so project detail and billing records can be scoped consistently.
+- Completed in this change: client project-index authorization now accepts the existing `projects.view-own` permission, project updates are ownership-protected and size-bounded, and closed support tickets reject client replies through a dedicated reply policy.
+- Completed in this change: ownership-scoped milestone/task detail endpoints, secure client document downloads, explicit admin project status-transition rules, missing task filtering, and removal of the nonexistent milestone task ordering column.
+- Completed in this change: client Solutions Inertia UI now includes shared navigation, Projects list/detail, milestone progress, task tracking, secure document download links, billing summaries, and project update submission, all connected to the owner-scoped routes.
+- Current next slice: build the remaining client quotation, invoice, support, feedback, and dashboard Inertia pages, then add UI coverage for approval/rejection and support messaging flows.
 - Historical architecture specification retained below for reference and traceability.
 
 Code Nest — Complete System Architecture & Development Specification

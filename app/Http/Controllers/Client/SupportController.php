@@ -8,6 +8,7 @@ use App\Models\SupportTicket;
 use App\Models\SupportTicketMessage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -48,7 +49,11 @@ class SupportController extends Controller
         }
 
         $validated = $request->validate([
-            'project_id' => ['nullable', 'integer', 'exists:projects,id'],
+            'project_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('projects', 'id')->where(fn ($query) => $query->where('client_id', $client->id)),
+            ],
             'subject' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string'],
             'priority' => ['nullable', 'integer', 'min:1', 'max:4'],
@@ -82,7 +87,7 @@ class SupportController extends Controller
 
     public function addMessage(Request $request, SupportTicket $ticket): RedirectResponse
     {
-        $this->authorize('update', $ticket);
+        $this->authorize('reply', $ticket);
         $validated = $request->validate([
             'message' => ['required', 'string'],
         ]);

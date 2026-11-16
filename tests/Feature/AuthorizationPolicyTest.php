@@ -4,6 +4,7 @@ use App\Models\Assignment;
 use App\Models\Course;
 use App\Models\CourseCategory;
 use App\Models\Enrollment;
+use App\Models\Quiz;
 use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -267,4 +268,35 @@ test('submission policy allows instructors to grade submissions for their course
         ->and($admin->can('grade', $otherSubmission))->toBeTrue();
     // Student cannot grade
     expect($student->can('grade', $submission))->toBeFalse();
+});
+
+test('quiz policy scopes student attempts and instructor management to the course', function () {
+    $this->seed();
+
+    $instructor = User::factory()->create(['status' => 'active']);
+    $instructor->assignRole('instructor');
+    $otherInstructor = User::factory()->create(['status' => 'active']);
+    $otherInstructor->assignRole('instructor');
+    $student = User::factory()->create(['status' => 'active']);
+    $student->assignRole('student');
+    $otherStudent = User::factory()->create(['status' => 'active']);
+    $otherStudent->assignRole('student');
+
+    $course = makeCourseFor($instructor);
+    $otherCourse = makeCourseFor($otherInstructor);
+    $quiz = Quiz::query()->create(['course_id' => $course->id, 'title' => 'Owned quiz', 'pass_mark' => 70]);
+    $otherQuiz = Quiz::query()->create(['course_id' => $otherCourse->id, 'title' => 'Foreign quiz', 'pass_mark' => 70]);
+
+    Enrollment::query()->create([
+        'student_id' => $student->id,
+        'course_id' => $course->id,
+        'status' => 'active',
+        'enrolled_at' => now(),
+    ]);
+
+    expect($student->can('attempt', $quiz))->toBeTrue()
+        ->and($otherStudent->can('attempt', $quiz))->toBeFalse()
+        ->and($instructor->can('update', $quiz))->toBeTrue()
+        ->and($instructor->can('update', $otherQuiz))->toBeFalse()
+        ->and($otherInstructor->can('view', $quiz))->toBeFalse();
 });
