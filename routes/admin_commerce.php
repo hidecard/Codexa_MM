@@ -10,7 +10,7 @@ use App\Http\Controllers\Admin\Academy\PayoutController;
 use App\Http\Controllers\Admin\Academy\RefundController as AcademyRefundController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'admin.access'])->prefix('admin')->name('admin.')->group(function () {
     Route::prefix('academy')->name('academy.')->group(function () {
         // Course payments (CoursePayment model; the invoice-based Payment
         // model is NOT used for academy payments).
@@ -32,11 +32,14 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         Route::delete('/coupons/{coupon}', [CouponController::class, 'destroy'])->name('coupons.destroy');
         Route::post('/coupons/{coupon}/toggle', [CouponController::class, 'toggle'])->name('coupons.toggle');
 
-        // Payouts.
+        // Payouts: the list is visible to staff (Finance reviews it), but
+        // creating and deciding payouts stays admin-only.
         Route::get('/payouts', [PayoutController::class, 'index'])->name('payouts.index');
-        Route::post('/payouts', [PayoutController::class, 'store'])->name('payouts.store');
-        Route::post('/payouts/{payout}/approve', [PayoutController::class, 'approve'])->name('payouts.approve');
-        Route::post('/payouts/{payout}/hold', [PayoutController::class, 'hold'])->name('payouts.hold');
-        Route::post('/payouts/{payout}/reject', [PayoutController::class, 'reject'])->name('payouts.reject');
+        Route::middleware('role:admin')->group(function () {
+            Route::post('/payouts', [PayoutController::class, 'store'])->name('payouts.store');
+            Route::post('/payouts/{payout}/approve', [PayoutController::class, 'approve'])->name('payouts.approve');
+            Route::post('/payouts/{payout}/hold', [PayoutController::class, 'hold'])->name('payouts.hold');
+            Route::post('/payouts/{payout}/reject', [PayoutController::class, 'reject'])->name('payouts.reject');
+        });
     });
 });

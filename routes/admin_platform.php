@@ -12,9 +12,13 @@ use App\Http\Controllers\Admin\Academy\StaffController;
 use App\Http\Controllers\Admin\SettingController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
-    Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+Route::middleware(['auth', 'verified', 'admin.access'])->prefix('admin')->name('admin.')->group(function () {
+    // Platform settings stay admin-only.
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+        Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+        Route::get('/settings/export', [SettingController::class, 'export'])->name('settings.export');
+    });
 
     Route::prefix('academy')->name('academy.')->group(function () {
         Route::get('/cert-templates', [CertTemplateController::class, 'index'])->name('cert-templates.index');
@@ -23,10 +27,13 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         Route::delete('/cert-templates/{certificateTemplate}', [CertTemplateController::class, 'destroy'])->name('cert-templates.destroy');
         Route::post('/cert-templates/{certificateTemplate}/set-default', [CertTemplateController::class, 'setDefault'])->name('cert-templates.set-default');
 
-        Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
-        Route::post('/staff/invite', [StaffController::class, 'invite'])->name('staff.invite');
-        Route::put('/staff/{user}/role', [StaffController::class, 'changeRole'])->name('staff.role');
-        Route::put('/staff/{user}/status', [StaffController::class, 'updateStatus'])->name('staff.status');
+        // Staff management stays admin-only.
+        Route::middleware('role:admin')->group(function () {
+            Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
+            Route::post('/staff/invite', [StaffController::class, 'invite'])->name('staff.invite');
+            Route::put('/staff/{user}/role', [StaffController::class, 'changeRole'])->name('staff.role');
+            Route::put('/staff/{user}/status', [StaffController::class, 'updateStatus'])->name('staff.status');
+        });
 
         Route::get('/gamification', [GamificationController::class, 'index'])->name('gamification.index');
         Route::put('/gamification', [GamificationController::class, 'update'])->name('gamification.update');

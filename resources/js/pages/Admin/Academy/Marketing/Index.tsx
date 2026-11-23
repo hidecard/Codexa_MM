@@ -18,6 +18,8 @@ type Campaign = {
     scheduled_at: string | null;
     sent_at: string | null;
     sent: number;
+    opened: number;
+    clicked: number;
     when: string;
 };
 
@@ -188,7 +190,9 @@ export default function Index({ campaigns = [], audiences = {}, mailConfigured =
                                     {c.name !== c.subject ? ` · ${c.name}` : ''}
                                 </p>
                                 {c.status === 'sent' ? (
-                                    <p className={`mt-1 text-[.8rem] font-semibold ${inkCls}`}>ပို့ပြီး {formatNumber(c.sent)} ဦး</p>
+                                    <p className={`mt-1 text-[.8rem] font-semibold ${inkCls}`}>
+                                        ပို့ပြီး {formatNumber(c.sent)} ဦး · ဖွင့်ပြီး {formatNumber(c.opened)} · နှိပ်ပြီး {formatNumber(c.clicked)}
+                                    </p>
                                 ) : c.status === 'scheduled' ? (
                                     <p className={`mt-1 text-[.8rem] font-semibold ${mutedCls}`}>ပို့ရန် အချိန်သတ်မှတ်ထားပါတယ်</p>
                                 ) : (

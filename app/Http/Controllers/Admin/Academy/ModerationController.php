@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Admin\Academy;
 
 use App\Http\Controllers\Controller;
+use App\Models\CommunityPost;
 use App\Models\CourseReview;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
-// Moderation covers REPORTED course reviews only: reviews that are hidden or
-// awaiting approval. There is no community-post model, so community-post
-// moderation is out of scope until one exists.
+// Moderation covers REPORTED course reviews (hidden or awaiting approval)
+// plus community posts (hide/unhide/delete).
 class ModerationController extends Controller
 {
     private const COLORS = ['#ec4899', '#0ea892', '#6366f1', '#f59e0b', '#38bdf8', '#22c55e', '#8b5cf6', '#f43f5e', '#eab308', '#14b8a6'];
@@ -42,8 +42,30 @@ class ModerationController extends Controller
                 ];
             })->values();
 
+        $posts = CommunityPost::query()
+            ->with('user:id,name')
+            ->latest()
+            ->get()
+            ->map(function (CommunityPost $p) {
+                $name = $p->user?->name ?? 'Unknown';
+                $initials = collect(explode(' ', trim($name)))->map(fn ($w) => Str::upper(Str::substr($w, 0, 1)))->take(2)->implode('');
+
+                return [
+                    'id' => $p->id,
+                    'author' => $name,
+                    'init' => $initials ?: '?',
+                    'col' => self::COLORS[$p->user_id % count(self::COLORS)],
+                    'title' => $p->title,
+                    'body' => $p->body ?? '',
+                    'cat' => $p->category,
+                    'date' => optional($p->created_at)?->toDateString() ?? '',
+                    'status' => $p->status,
+                ];
+            })->values();
+
         return Inertia::render('Admin/Academy/Moderation/Index', [
             'reports' => $reports,
+            'posts' => $posts,
         ]);
     }
 
@@ -67,5 +89,28 @@ class ModerationController extends Controller
         $review->delete();
 
         return back()->with('success', 'Review removed.');
+    }
+
+    // --- Community posts ---
+
+    public function hidePost(CommunityPost $post): RedirectResponse
+    {
+        $post->update(['status' => CommunityPost::STATUS_HIDDEN]);
+
+        return back()->with('success', 'Post hidden.');
+    }
+
+    public function unhidePost(CommunityPost $post): RedirectResponse
+    {
+        $post->update(['status' => CommunityPost::STATUS_PUBLISHED]);
+
+        return back()->with('success', 'Post published again.');
+    }
+
+    public function destroyPost(CommunityPost $post): RedirectResponse
+    {
+        $post->delete();
+
+        return back()->with('success', 'Post removed.');
     }
 }

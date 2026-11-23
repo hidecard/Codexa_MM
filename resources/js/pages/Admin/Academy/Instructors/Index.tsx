@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
-import { Download, Star, UserX, Users, Wallet } from 'lucide-react';
+import { Check, Download, Star, UserX, Users, Wallet, X } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { StatCard } from '@/components/lms/stat-card';
 import { SectionCard } from '@/components/lms/section-card';
@@ -9,17 +9,27 @@ import { Avatar, LmsCard, PageIntro, Pill, btnGhostCls, inkCls, mutedCls } from 
 import type { SampleInstructor } from '@/pages/Admin/Academy/_sample';
 
 type InstructorRow = SampleInstructor & { id: number; status: string };
-type InstructorApp = { name: string; init: string; col: string; field: string; exp: string; note: string; when: string };
+type InstructorApp = { id: number; name: string; init: string; col: string; email: string; field: string; exp: string; note: string; portfolio_links: string[]; status: string; admin_note: string | null; when: string };
 
 export default function Index({ instructors = [], applications = [] }: { instructors?: InstructorRow[]; applications?: InstructorApp[] }) {
     const [notice, setNotice] = useState('');
+    const [appNotes, setAppNotes] = useState<Record<number, string>>({});
 
     const avgRating = instructors.length ? instructors.reduce((s, i) => s + i.rating, 0) / instructors.length : 0;
     const monthShare = instructors.reduce((s, i) => s + i.share, 0);
     const suspendedCount = instructors.filter((i) => i.status === 'suspended').length;
+    const pendingApps = applications.filter((a) => a.status === 'pending');
 
     const setStatus = (id: number, action: 'activate' | 'suspend', done: string) => {
         router.post(`/admin/academy/instructors/${id}/${action}`, {}, { preserveScroll: true, onSuccess: () => setNotice(done) });
+    };
+
+    const reviewApp = (id: number, action: 'approve' | 'reject', done: string) => {
+        router.post(
+            `/admin/academy/instructor-applications/${id}/${action}`,
+            { admin_note: (appNotes[id] ?? '').trim() || null },
+            { preserveScroll: true, onSuccess: () => { setAppNotes({ ...appNotes, [id]: '' }); setNotice(done); } },
+        );
     };
 
     return (
@@ -44,29 +54,61 @@ export default function Index({ instructors = [], applications = [] }: { instruc
 
             <div className="mt-6 grid grid-cols-2 gap-3.5 sm:gap-4 xl:grid-cols-4">
                 <StatCard label="Instructor စုစုပေါင်း" value={`${instructors.length} ဦး`} sub={suspendedCount ? `${suspendedCount} ဦး ဆိုင်းငံ့ထားသည်` : 'အားလုံး active ဖြစ်ပါတယ်'} icon={Users} tone="blue" />
-                <StatCard label="လျှောက်လွှာ စောင့်ဆိုင်းဆဲ" value={`${applications.length} ခု`} sub="စစ်ဆေး အတည်ပြုရန် လိုအပ်ပါတယ်" icon={Users} tone="amber" />
+                <StatCard label="လျှောက်လွှာ စောင့်ဆိုင်းဆဲ" value={`${pendingApps.length} ခု`} sub="စစ်ဆေး အတည်ပြုရန် လိုအပ်ပါတယ်" icon={Users} tone="amber" />
                 <StatCard label="ပျမ်းမျှ Rating" value={`${avgRating.toFixed(1)} / 5`} icon={Star} tone="teal" />
                 <StatCard label="ဒီလ Instructor ခွဲဝေငွေ" value={formatKyat(monthShare)} sub="ဝင်ငွေရဲ့ 50% ခွဲဝေမှု" icon={Wallet} tone="purple" />
             </div>
 
-            <SectionCard title={`Instructor လျှောက်လွှာ အသစ်များ — ${applications.length} ခု`}>
+            <SectionCard title={`Instructor လျှောက်လွှာ အသစ်များ — ${pendingApps.length} ခု`}>
                 {applications.length === 0 ? (
-                    <p className={`text-sm ${mutedCls}`}>စောင့်ဆိုင်းဆဲ လျှောက်လွှာ မရှိတော့ပါ — လျှောက်လွှာ အားလုံးကို စစ်ဆေးပြီးပါပြီ</p>
+                    <p className={`text-sm ${mutedCls}`}>လျှောက်လွှာ မရှိသေးပါ — /teach စာမျက်နှာကနေ လျှောက်ထားသူများ ဒီမှာ ပေါ်လာပါမယ်</p>
                 ) : (
                     <div className="space-y-3.5">
                         {applications.map((a) => (
-                            <LmsCard key={a.name} className="p-5">
+                            <LmsCard key={a.id} className={`p-5 ${a.status !== 'pending' ? 'opacity-70' : ''}`}>
                                 <div className="flex flex-wrap items-start gap-3.5">
                                     <Avatar init={a.init} color={a.col} />
                                     <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center gap-2">
                                             <p className={`text-[.95rem] font-extrabold ${inkCls}`}>{a.name}</p>
-                                            <Pill tone="amber">စောင့်ဆိုင်းဆဲ</Pill>
+                                            {a.status === 'pending' && <Pill tone="amber">စောင့်ဆိုင်းဆဲ</Pill>}
+                                            {a.status === 'approved' && <Pill tone="teal">အတည်ပြုပြီး</Pill>}
+                                            {a.status === 'rejected' && <Pill tone="rose">ပယ်ချပြီး</Pill>}
                                         </div>
                                         <p className={`mt-0.5 text-[.8rem] font-semibold ${mutedCls}`}>
-                                            {a.field} · {a.exp} · {a.when}
+                                            {a.email} · {a.field} · {a.exp} · {a.when}
                                         </p>
-                                        <p className={`mt-1.5 text-[.88rem] leading-relaxed ${mutedCls}`}>{a.note}</p>
+                                        {a.note && <p className={`mt-1.5 text-[.88rem] leading-relaxed ${mutedCls}`}>{a.note}</p>}
+                                        {a.portfolio_links.length > 0 && (
+                                            <p className={`mt-1.5 text-[.8rem] ${mutedCls}`}>
+                                                Portfolio —{' '}
+                                                {a.portfolio_links.map((link, i) => (
+                                                    <span key={link}>
+                                                        {i > 0 && ' · '}
+                                                        <a href={link} target="_blank" rel="noreferrer" className="font-bold text-teal-700 underline dark:text-teal-300">
+                                                            {link}
+                                                        </a>
+                                                    </span>
+                                                ))}
+                                            </p>
+                                        )}
+                                        {a.admin_note && <p className="mt-1.5 text-[.8rem] font-bold text-teal-700 dark:text-teal-300">Admin မှတ်ချက် — {a.admin_note}</p>}
+                                        {a.status === 'pending' && (
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                <input
+                                                    className="h-10 min-w-[200px] flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm dark:border-[#1e2c52] dark:bg-[#070d1f] dark:text-[#e9eefb]"
+                                                    placeholder="Admin မှတ်ချက် (မဖြစ်မနေ မဟုတ်)…"
+                                                    value={appNotes[a.id] ?? ''}
+                                                    onChange={(e) => setAppNotes({ ...appNotes, [a.id]: e.target.value })}
+                                                />
+                                                <button type="button" className={btnGhostCls} onClick={() => reviewApp(a.id, 'approve', `${a.name} ကို Instructor အဖြစ် အတည်ပြုပြီးပါပြီ`)}>
+                                                    <Check className="size-4" /> အတည်ပြုရန်
+                                                </button>
+                                                <button type="button" className={btnGhostCls} onClick={() => reviewApp(a.id, 'reject', `${a.name} ရဲ့ လျှောက်လွှာကို ပယ်ချပြီးပါပြီ`)}>
+                                                    <X className="size-4" /> ပယ်ချရန်
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </LmsCard>

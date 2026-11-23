@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Admin\Academy;
 
 use App\Http\Controllers\Controller;
+use App\Mail\CampaignMail;
+use App\Models\CampaignTracking;
 use App\Models\EmailCampaign;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,6 +24,10 @@ class MarketingController extends Controller
     public function index(): Response
     {
         $campaigns = EmailCampaign::query()
+            ->withCount([
+                'trackings as opened_count' => fn ($query) => $query->whereNotNull('opened_at'),
+                'trackings as clicked_count' => fn ($query) => $query->whereNotNull('clicked_at'),
+            ])
             ->latest()
             ->get()
             ->map(fn (EmailCampaign $c) => $c->toDisplayArray())
@@ -95,13 +102,26 @@ class MarketingController extends Controller
             return back()->withErrors(['send' => 'ဤ campaign ကို ပို့ပြီးသားပါ။']);
         }
 
-        // NOTE: no per-recipient dispatch exists yet — marking sent records
-        // the send against the audience size. Wiring real delivery (a Mailable
-        // + queued job) is a follow-up once a mailer is configured.
+        // Dispatch one queued mailable per active recipient in the audience.
+        // CampaignMail implements ShouldQueue, so this only enqueues jobs;
+        // a queue worker (php artisan queue:work) delivers them.
+        // Create the open/click tracking rows first so stats can populate.
+        CampaignTracking::attachToCampaign($campaign);
+
+        $dispatched = 0;
+
+        EmailCampaign::audienceQuery($campaign->audience)
+            ->chunkById(200, function ($recipients) use ($campaign, &$dispatched) {
+                foreach ($recipients as $recipient) {
+                    Mail::to($recipient)->queue(new CampaignMail($campaign, $recipient));
+                    $dispatched++;
+                }
+            });
+
         $campaign->update([
             'status' => EmailCampaign::STATUS_SENT,
             'sent_at' => now(),
-            'recipients_count' => EmailCampaign::audienceCount($campaign->audience),
+            'recipients_count' => $dispatched,
         ]);
 
         return back()->with('success', 'Campaign ပို့ပြီးပါပြီ — လက်ခံသူ '.$campaign->recipients_count.' ဦး။');

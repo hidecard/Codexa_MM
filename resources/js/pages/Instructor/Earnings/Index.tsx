@@ -7,10 +7,20 @@ import { SectionCard } from '@/components/lms/section-card';
 import { ProgressBar } from '@/components/lms/progress-bar';
 import { formatDate, formatKyat, formatNumber } from '@/lib/format';
 import { PageIntro, Pill, btnAccentCls, btnGhostCls, inkCls, mutedCls } from '@/pages/Admin/Academy/_shared';
-import { mySampleCourses } from '@/pages/Admin/Academy/_sample';
 
 type PendingPayout = { id: number; amount: number; method: string; period?: string | null; created_at?: string | null };
-type Props = { availableBalance?: number; pendingPayout?: PendingPayout | null; flash?: { success?: string | null } };
+type CourseEarning = { id: number; title: string; price: number; students: number; revenue: number; share: number };
+type MonthHistory = { label: string; sales: number; total: number; share: number; status: string };
+type PayoutRow = { id: string; amount: number; method: string; date: string | null; status: string };
+type Props = {
+    availableBalance?: number;
+    pendingPayout?: PendingPayout | null;
+    stats: { totalRevenue: number; totalShare: number; thisMonthShare: number; totalStudents: number; coursesCount: number };
+    courseEarnings: CourseEarning[];
+    monthlyHistory: MonthHistory[];
+    payouts: PayoutRow[];
+    flash?: { success?: string | null };
+};
 
 const PAYOUT_METHODS = [
     { key: 'kbzpay', label: 'KBZPay' },
@@ -19,23 +29,10 @@ const PAYOUT_METHODS = [
     { key: 'bank', label: 'Bank Transfer' },
 ] as const;
 
-// SAMPLE DATA fallback (prototype): no earnings backend yet — routes needed.
-const MONTHS = [
-    { label: 'နိုဝင်ဘာ 2026', sales: 412, total: 7600000, share: 3800000, status: 'pending' },
-    { label: 'အောက်တိုဘာ 2026', sales: 388, total: 6840000, share: 3420000, status: 'paid' },
-    { label: 'စက်တင်ဘာ 2026', sales: 341, total: 5800000, share: 2900000, status: 'paid' },
-    { label: 'ဩဂုတ် 2026', sales: 296, total: 5000000, share: 2500000, status: 'paid' },
-    { label: 'ဇူလိုင် 2026', sales: 264, total: 4400000, share: 2200000, status: 'paid' },
-    { label: 'ဇွန် 2026', sales: 218, total: 3600000, share: 1800000, status: 'paid' },
-];
-
-export default function Index({ availableBalance = 0, pendingPayout = null }: Props) {
+export default function Index({ availableBalance = 0, pendingPayout = null, stats, courseEarnings, monthlyHistory, payouts }: Props) {
     const { flash } = usePage<Props>().props;
-    const mine = mySampleCourses();
-    const revenue = mine.reduce((s, c) => s + c.price * c.students, 0);
-    const share = Math.round(revenue * 0.5);
-    const students = mine.reduce((s, c) => s + c.students, 0);
-    const maxRev = Math.max(...mine.map((c) => c.price * c.students), 1);
+    const maxRev = Math.max(...courseEarnings.map((c) => c.revenue), 1);
+    const months = [...monthlyHistory].reverse();
 
     const { data, setData, post, processing, errors } = useForm({ amount: availableBalance, method: 'kbzpay' as (typeof PAYOUT_METHODS)[number]['key'] });
 
@@ -65,43 +62,44 @@ export default function Index({ availableBalance = 0, pendingPayout = null }: Pr
             )}
 
             <div className="mt-6 grid grid-cols-2 gap-3.5 sm:gap-4 xl:grid-cols-4">
-                <StatCard label="သင်တန်း ရောင်းရငွေ စုစုပေါင်း" value={formatKyat(revenue)} icon={BookOpen} tone="blue" />
-                <StatCard label="ခွဲဝေငွေ စုစုပေါင်း" value={formatKyat(share)} sub="50%" icon={Wallet} tone="teal" />
-                <StatCard label="ဒီလ (နိုဝင်ဘာ) ခွဲဝေငွေ" value={formatKyat(3800000)} icon={Wallet} tone="amber" />
-                <StatCard label={`ကျောင်းသား စုစုပေါင်း · သင်တန်း ${mine.length} ခု`} value={`${formatNumber(students)} ဦး`} icon={Users} tone="purple" />
+                <StatCard label="သင်တန်း ရောင်းရငွေ စုစုပေါင်း" value={formatKyat(stats.totalRevenue)} icon={BookOpen} tone="blue" />
+                <StatCard label="ခွဲဝေငွေ စုစုပေါင်း" value={formatKyat(stats.totalShare)} sub="50%" icon={Wallet} tone="teal" />
+                <StatCard label="ဒီလ ခွဲဝေငွေ" value={formatKyat(stats.thisMonthShare)} icon={Wallet} tone="amber" />
+                <StatCard label={`ကျောင်းသား စုစုပေါင်း · သင်တန်း ${stats.coursesCount} ခု`} value={`${formatNumber(stats.totalStudents)} ဦး`} icon={Users} tone="purple" />
             </div>
 
             <div className="mt-6 grid items-start gap-5 xl:grid-cols-3">
                 <div className="min-w-0 space-y-6 xl:col-span-2">
                     <SectionCard title="သင်တန်းအလိုက် ဝင်ငွေ ခွဲဝေမှု">
-                        <div className="space-y-5">
-                            {mine.map((c) => {
-                                const rev = c.price * c.students;
-                                return (
+                        {courseEarnings.length === 0 ? (
+                            <p className={`text-sm ${mutedCls}`}>သင်တန်း မရှိသေးပါ။</p>
+                        ) : (
+                            <div className="space-y-5">
+                                {courseEarnings.map((c) => (
                                     <div key={c.id}>
                                         <div className="flex flex-wrap items-center justify-between gap-3">
                                             <Link href={`/instructor/earnings/${c.id}`} className={`text-[.9rem] font-bold hover:underline ${inkCls}`}>
                                                 {c.title}
                                             </Link>
                                             <span className={`text-[.8rem] font-bold ${mutedCls}`}>
-                                                ဝင်ငွေ {formatKyat(rev)} · ခွဲဝေ {formatKyat(Math.round(rev * 0.5))}
+                                                ဝင်ငွေ {formatKyat(c.revenue)} · ခွဲဝေ {formatKyat(c.share)}
                                             </span>
                                         </div>
                                         <div className="mt-2">
-                                            <ProgressBar value={Math.round((rev / maxRev) * 100)} />
+                                            <ProgressBar value={Math.round((c.revenue / maxRev) * 100)} />
                                         </div>
                                         <p className={`mt-1.5 text-[.76rem] ${mutedCls}`}>
                                             ကျောင်းသား {formatNumber(c.students)} ဦး · ဈေးနှုန်း {formatKyat(c.price)}
                                         </p>
                                     </div>
-                                );
-                            })}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </SectionCard>
 
                     <SectionCard title="လစဉ် မှတ်တမ်း">
                         <div>
-                            {MONTHS.map((m) => (
+                            {months.map((m) => (
                                 <div key={m.label} className="flex flex-wrap items-center gap-3 border-b border-slate-100 py-3 last:border-0 dark:border-[#18264a]">
                                     <div className="min-w-0 flex-1 basis-[130px]">
                                         <p className={`text-[.88rem] font-bold ${inkCls}`}>{m.label}</p>
@@ -114,6 +112,27 @@ export default function Index({ availableBalance = 0, pendingPayout = null }: Pr
                                 </div>
                             ))}
                         </div>
+                    </SectionCard>
+
+                    <SectionCard title="Payout မှတ်တမ်း">
+                        {payouts.length === 0 ? (
+                            <p className={`text-sm ${mutedCls}`}>Payout မှတ်တမ်း မရှိသေးပါ။</p>
+                        ) : (
+                            <div>
+                                {payouts.map((p) => (
+                                    <div key={p.id} className="flex flex-wrap items-center gap-3 border-b border-slate-100 py-3 last:border-0 dark:border-[#18264a]">
+                                        <div className="min-w-0 flex-1">
+                                            <p className={`text-[.88rem] font-bold ${inkCls}`}>
+                                                {p.id} · {p.method}
+                                            </p>
+                                            <p className={`mt-0.5 text-[.76rem] ${mutedCls}`}>{formatDate(p.date)}</p>
+                                        </div>
+                                        <span className={`text-[.9rem] font-extrabold ${inkCls}`}>{formatKyat(p.amount)}</span>
+                                        {p.status === 'paid' ? <Pill tone="teal">ပေးပြီး</Pill> : p.status === 'rejected' ? <Pill tone="rose">ပယ်ချပြီး</Pill> : <Pill tone="amber">စောင့်ဆိုင်းဆဲ</Pill>}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </SectionCard>
                 </div>
 

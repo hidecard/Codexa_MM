@@ -22,6 +22,10 @@ class AnnouncementController extends Controller
             ->whereIn('course_id', $courseIds)
             ->whereNotNull('published_at')
             ->where('published_at', '<=', now())
+            // Audience: students see 'all' (default) and 'students';
+            // 'instructors' announcements are instructor-only.
+            ->whereIn('audience', ['all', 'students'])
+            ->orderByDesc('is_pinned')
             ->latest('published_at')
             ->latest('created_at')
             ->get()
@@ -30,6 +34,9 @@ class AnnouncementController extends Controller
                 'title' => $a->title,
                 'content' => $a->content,
                 'published_at' => optional($a->published_at ?? $a->created_at)?->toDateTimeString(),
+                'category' => $a->type,
+                'audience' => $a->audience,
+                'pinned' => (bool) $a->is_pinned,
                 'course' => $a->course ? [
                     'id' => $a->course->id,
                     'title' => $a->course->title,

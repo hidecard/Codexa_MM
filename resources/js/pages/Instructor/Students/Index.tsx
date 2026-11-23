@@ -5,7 +5,6 @@ import { LmsShell } from '@/components/shared/lms-shell';
 import { ProgressBar } from '@/components/lms/progress-bar';
 import { formatNumber } from '@/lib/format';
 import { Avatar, Chip, EmptyBox, LmsCard, PageIntro, btnGhostCls, inkCls, mutedCls } from '@/pages/Admin/Academy/_shared';
-import { SAMPLE_COURSES, SAMPLE_INST_STUDENTS, type SampleInstStudent } from '@/pages/Admin/Academy/_sample';
 
 type StudentRow = {
     id: number;
@@ -21,24 +20,10 @@ type StudentRow = {
 
 type CourseOption = { id: number; title: string };
 
-export default function Index({ students, courses }: { students?: StudentRow[]; courses?: CourseOption[] }) {
+export default function Index({ students, courses }: { students: StudentRow[]; courses: CourseOption[] }) {
     const [filter, setFilter] = useState<number | 'all'>('all');
-    // SAMPLE DATA fallback (prototype): route is a closure with no props yet.
-    const courseOptions: CourseOption[] =
-        courses ?? SAMPLE_COURSES.filter((c) => c.instructor === 'Thura Aung').map((c) => ({ id: c.id, title: c.title }));
-    const rows: StudentRow[] =
-        students ??
-        SAMPLE_INST_STUDENTS.map((s: SampleInstStudent, i: number) => ({
-            id: i + 1,
-            name: s.name,
-            init: s.init,
-            col: s.col,
-            courseId: s.courseId,
-            courseTitle: SAMPLE_COURSES.find((c) => c.id === s.courseId)?.title ?? '',
-            progress: s.progress,
-            last: s.last,
-            xp: s.xp,
-        }));
+    const courseOptions: CourseOption[] = courses;
+    const rows: StudentRow[] = students;
 
     const list = rows.filter((s) => filter === 'all' || s.courseId === filter);
     const avg = list.length ? Math.round(list.reduce((s, x) => s + x.progress, 0) / list.length) : 0;
@@ -83,7 +68,8 @@ export default function Index({ students, courses }: { students?: StudentRow[]; 
                             <Avatar init={s.init} color={s.col} size="lg" />
                             <div className="min-w-0 flex-1">
                                 <p className={`text-[.95rem] font-extrabold ${inkCls}`}>
-                                    {s.name} <span className={`text-[.78rem] font-semibold ${mutedCls}`}>· {formatNumber(s.xp)} XP</span>
+                                    {s.name}
+                                    {s.xp > 0 && <span className={`text-[.78rem] font-semibold ${mutedCls}`}> · {formatNumber(s.xp)} XP</span>}
                                 </p>
                                 <p className={`mt-0.5 text-[.8rem] ${mutedCls}`}>
                                     {s.courseTitle} · နောက်ဆုံး တက်ရောက်မှု {s.last}

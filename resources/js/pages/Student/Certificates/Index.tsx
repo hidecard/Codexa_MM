@@ -43,6 +43,7 @@ export default function Index({ certificates = [] }: { certificates?: Certificat
                             </div>
                             <div className="mt-4 flex flex-wrap gap-2">
                                 <Link href={`/student/certificates/${c.id}`} className="inline-flex items-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-sm font-bold text-white hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-500">လက်မှတ် ကြည့်ရန်</Link>
+                                <a href={`/student/certificates/${c.id}/print`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">ပုံနှိပ်ရန်</a>
                                 {c.course?.slug && <Link href={`/courses/${c.course.slug}`} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">သင်တန်း</Link>}
                                 {c.verification_code && <Link href={`/verify/${c.verification_code}`} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"><ExternalLink className="size-4" /> အတည်ပြုရန်</Link>}
                             </div>

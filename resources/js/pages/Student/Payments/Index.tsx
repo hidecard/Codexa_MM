@@ -17,19 +17,10 @@ type Payment = {
     date?: string | null;
 };
 
-type Props = { payments?: Payment[] };
-
-/* SAMPLE DATA — fallback only; no student-linked Payment records exist yet (Payment links via Invoice/Client). */
-const SAMPLE_PAYMENTS: Payment[] = [
-    { id: 1, order_id: 'ORD-2026-0307', title: 'UI/UX Design with Figma', amount: 40000, method: 'KBZPay', status: 'paid', date: 'အောက်တိုဘာ 02' },
-    { id: 2, order_id: 'ORD-2026-0289', title: 'Git, GitHub & Team Workflow', amount: 25000, method: 'WavePay', status: 'paid', date: 'စက်တင်ဘာ 28' },
-    { id: 3, order_id: 'ORD-2026-0264', title: 'Python for Beginners', amount: 45000, method: 'KBZPay', status: 'paid', date: 'စက်တင်ဘာ 15' },
-    { id: 4, order_id: 'ORD-2026-0241', title: 'JavaScript Deep Dive', amount: 75000, method: 'Bank Transfer', status: 'paid', date: 'စက်တင်ဘာ 03' },
-    { id: 5, order_id: 'ORD-2026-0218', title: 'HTML & CSS Foundations', amount: 45000, method: 'KBZPay', status: 'paid', date: 'ဩဂုတ် 21' },
-];
+type Props = { payments: Payment[] };
 
 function statusBadge(status?: string | null) {
-    if (status === 'paid' || status === 'completed' || status === 'success') {
+    if (status === 'approved' || status === 'paid' || status === 'completed' || status === 'success') {
         return <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">ပေးချေပြီး</span>;
     }
     if (status === 'pending') {
@@ -38,13 +29,17 @@ function statusBadge(status?: string | null) {
     if (status === 'refunded') {
         return <span className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">ငွေပြန်အမ်းပြီး</span>;
     }
+    if (status === 'rejected') {
+        return <span className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">ပယ်ချပြီး</span>;
+    }
     return <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">{status ?? '—'}</span>;
 }
 
+const isPaid = (status?: string | null) => status === 'approved' || status === 'paid' || status === 'completed' || status === 'success';
+
 export default function Index({ payments }: Props) {
-    const list = payments && payments.length > 0 ? payments : SAMPLE_PAYMENTS;
-    const usingSample = !payments || payments.length === 0;
-    const total = list.filter((p) => p.status === 'paid' || p.status === 'completed' || p.status === 'success').reduce((s, p) => s + Number(p.amount), 0);
+    const list = payments;
+    const total = list.filter((p) => isPaid(p.status)).reduce((s, p) => s + Number(p.amount), 0);
 
     return (
         <LmsShell title="ငွေပေးချေမှု မှတ်တမ်း" nav="student">
@@ -60,9 +55,8 @@ export default function Index({ payments }: Props) {
             <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-3">
                 <StatCard label="ဝယ်ယူမှု စုစုပေါင်း" value={list.length} tone="teal" />
                 <StatCard label="သုံးစွဲငွေ စုစုပေါင်း" value={formatKyat(total)} tone="blue" />
-                <StatCard label="ပေးချေပြီး" value={list.filter((p) => p.status === 'paid' || p.status === 'completed' || p.status === 'success').length} tone="green" />
+                <StatCard label="ပေးချေပြီး" value={list.filter((p) => isPaid(p.status)).length} tone="green" />
             </div>
-            {usingSample && <p className="mt-3 text-xs text-slate-400">ငွေပေးချေမှု မှတ်တမ်း အစစ်အမှန် မရှိသေးသဖြင့် နမူနာ ပြထားသည်။</p>}
 
             {list.length === 0 ? (
                 <EmptyState

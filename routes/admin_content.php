@@ -15,7 +15,7 @@ use App\Http\Controllers\Admin\Academy\ReviewController as AcademyReviewControll
 use App\Http\Controllers\Admin\Academy\TicketController as AcademyTicketController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'admin.access'])->prefix('admin')->name('admin.')->group(function () {
     Route::prefix('academy')->name('academy.')->group(function () {
         // Reviews
         Route::post('/reviews/{review}/approve', [AcademyReviewController::class, 'approve'])->name('reviews.approve');
@@ -23,6 +23,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         Route::post('/reviews/{review}/unhide', [AcademyReviewController::class, 'unhide'])->name('reviews.unhide');
         Route::post('/reviews/{review}/reply', [AcademyReviewController::class, 'reply'])->name('reviews.reply');
         Route::delete('/reviews/{review}', [AcademyReviewController::class, 'destroy'])->name('reviews.destroy');
+        Route::post('/review-reports/{report}/resolve', [AcademyReviewController::class, 'resolveReport'])->name('review-reports.resolve');
+        Route::post('/review-reports/{report}/dismiss', [AcademyReviewController::class, 'dismissReport'])->name('review-reports.dismiss');
 
         // Announcements (course-scoped: course_id is NOT NULL on the model)
         Route::post('/announcements', [AcademyAnnouncementController::class, 'store'])->name('announcements.store');
@@ -37,21 +39,26 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         Route::delete('/categories/{category}', [AcademyCategoryController::class, 'destroy'])->name('categories.destroy');
         Route::post('/categories/{category}/toggle', [AcademyCategoryController::class, 'toggle'])->name('categories.toggle');
 
-        // Instructors (account activate/suspend; no application model exists)
+        // Instructors (account activate/suspend) and instructor applications
         Route::post('/instructors/{instructor}/activate', [AcademyInstructorController::class, 'activate'])->name('instructors.activate');
         Route::post('/instructors/{instructor}/suspend', [AcademyInstructorController::class, 'suspend'])->name('instructors.suspend');
+        Route::post('/instructor-applications/{application}/approve', [AcademyInstructorController::class, 'approveApplication'])->name('instructor-applications.approve');
+        Route::post('/instructor-applications/{application}/reject', [AcademyInstructorController::class, 'rejectApplication'])->name('instructor-applications.reject');
 
         // Tickets
         Route::get('/tickets/{ticket}', [AcademyTicketController::class, 'show'])->name('tickets.show');
         Route::post('/tickets/{ticket}/reply', [AcademyTicketController::class, 'reply'])->name('tickets.reply');
         Route::post('/tickets/{ticket}/status', [AcademyTicketController::class, 'status'])->name('tickets.status');
 
-        // Moderation (reported reviews only; no community-post model exists).
+        // Moderation (reported reviews + community posts).
         // The GET route overrides the sample-data closure in routes/admin.php.
         Route::get('/moderation', [AcademyModerationController::class, 'index'])->name('moderation.index');
         Route::post('/moderation/{review}/approve', [AcademyModerationController::class, 'approve'])->name('moderation.approve');
         Route::post('/moderation/{review}/hide', [AcademyModerationController::class, 'hide'])->name('moderation.hide');
         Route::delete('/moderation/{review}', [AcademyModerationController::class, 'destroy'])->name('moderation.destroy');
+        Route::post('/moderation/posts/{post}/hide', [AcademyModerationController::class, 'hidePost'])->name('moderation.posts.hide');
+        Route::post('/moderation/posts/{post}/unhide', [AcademyModerationController::class, 'unhidePost'])->name('moderation.posts.unhide');
+        Route::delete('/moderation/posts/{post}', [AcademyModerationController::class, 'destroyPost'])->name('moderation.posts.destroy');
 
         // Curriculum builder (GET overrides the sample-data closure in admin.php)
         // plus module/lesson writes used by the builder.

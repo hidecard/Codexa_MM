@@ -1,6 +1,10 @@
 <?php
 
 use App\Http\Controllers\Admin\Academy\AnnouncementController as AcademyAnnouncementController;
+use App\Http\Controllers\Admin\ActivityLogController as AdminActivityLogController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\ReportController as AdminReportController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\Academy\AssignmentController as AcademyAssignmentController;
 use App\Http\Controllers\Admin\Academy\CategoryController as AcademyCategoryController;
 use App\Http\Controllers\Admin\Academy\CertificateController as AcademyCertificateController;
@@ -24,22 +28,19 @@ use App\Http\Controllers\Admin\Solutions\ServiceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Admin/Dashboard');
-    })->name('dashboard');
+Route::middleware(['auth', 'verified', 'admin.access'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
 
-    Route::get('/users', function () {
-        return Inertia::render('Admin/Users/Index');
-    })->name('users.index');
+    // User + role management stays admin-only.
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+        Route::post('/users/{user}/roles', [AdminUserController::class, 'updateRoles'])->name('users.roles.update');
 
-    Route::get('/roles', function () {
-        return Inertia::render('Admin/Roles/Index');
-    })->name('roles.index');
+        Route::get('/roles', [AdminUserController::class, 'roles'])->name('roles.index');
 
-    Route::get('/permissions', function () {
-        return Inertia::render('Admin/Permissions/Index');
-    })->name('permissions.index');
+        Route::get('/permissions', [AdminUserController::class, 'permissions'])->name('permissions.index');
+        Route::post('/roles/{role}/permissions', [AdminUserController::class, 'updateRolePermissions'])->name('roles.permissions.update');
+    });
 
     Route::prefix('academy')->name('academy.')->group(function () {
         Route::get('/courses', [AcademyCourseController::class, 'index'])->name('courses.index');
@@ -132,13 +133,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         return Inertia::render('Admin/Notifications/Index');
     })->name('notifications.index');
 
-    Route::get('/reports', function () {
-        return Inertia::render('Admin/Reports/Index');
-    })->name('reports.index');
+    Route::get('/reports', AdminReportController::class)->name('reports.index');
 
-    Route::get('/activity-logs', function () {
-        return Inertia::render('Admin/ActivityLogs/Index');
-    })->name('activity-logs.index');
+    Route::get('/activity-logs', AdminActivityLogController::class)->name('activity-logs.index');
 
     // Admin settings are served by SettingController in
     // routes/admin_platform.php (loaded before this file).

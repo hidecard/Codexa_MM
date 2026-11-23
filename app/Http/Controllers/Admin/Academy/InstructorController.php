@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin\Academy;
 use App\Http\Controllers\Controller;
 use App\Models\CourseReview;
 use App\Models\Enrollment;
+use App\Models\InstructorApplication;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -63,10 +65,68 @@ class InstructorController extends Controller
             ];
         })->values();
 
+        $applications = InstructorApplication::query()
+            ->with('user:id,name,email')
+            ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
+            ->latest()
+            ->get()
+            ->map(function (InstructorApplication $a) {
+                $name = $a->user?->name ?? 'Unknown';
+                $initials = collect(explode(' ', trim($name)))->map(fn ($w) => Str::upper(Str::substr($w, 0, 1)))->take(2)->implode('');
+
+                return [
+                    'id' => $a->id,
+                    'name' => $name,
+                    'init' => $initials ?: '?',
+                    'col' => self::COLORS[$a->user_id % count(self::COLORS)],
+                    'email' => $a->user?->email ?? '',
+                    'field' => $a->expertise,
+                    'exp' => $a->experience ?? '—',
+                    'note' => $a->bio ?? '',
+                    'portfolio_links' => $a->portfolio_links ?? [],
+                    'status' => $a->status,
+                    'admin_note' => $a->admin_note,
+                    'when' => optional($a->created_at)?->toDateString() ?? '',
+                ];
+            })->values();
+
         return Inertia::render('Admin/Academy/Instructors/Index', [
             'instructors' => $rows,
-            'applications' => [], // No instructor application model yet.
+            'applications' => $applications,
         ]);
+    }
+
+    /**
+     * Approve an application: the applicant becomes an instructor
+     * (Spatie role) and can use the instructor portal.
+     */
+    public function approveApplication(Request $request, InstructorApplication $application): RedirectResponse
+    {
+        $validated = $request->validate(['admin_note' => ['nullable', 'string', 'max:1000']]);
+
+        $application->update([
+            'status' => InstructorApplication::STATUS_APPROVED,
+            'admin_note' => $validated['admin_note'] ?? null,
+            'reviewed_by' => $request->user()->id,
+            'reviewed_at' => now(),
+        ]);
+        $application->user->assignRole('instructor');
+
+        return back()->with('success', 'Application approved — instructor role assigned.');
+    }
+
+    public function rejectApplication(Request $request, InstructorApplication $application): RedirectResponse
+    {
+        $validated = $request->validate(['admin_note' => ['nullable', 'string', 'max:1000']]);
+
+        $application->update([
+            'status' => InstructorApplication::STATUS_REJECTED,
+            'admin_note' => $validated['admin_note'] ?? null,
+            'reviewed_by' => $request->user()->id,
+            'reviewed_at' => now(),
+        ]);
+
+        return back()->with('success', 'Application rejected.');
     }
 
     public function activate(User $instructor): RedirectResponse

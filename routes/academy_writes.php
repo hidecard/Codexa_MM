@@ -10,8 +10,10 @@ use App\Http\Controllers\Instructor\PayoutController as InstructorPayoutControll
 use App\Http\Controllers\Instructor\ProfileController as InstructorProfileController;
 use App\Http\Controllers\Instructor\QaController as InstructorQaController;
 use App\Http\Controllers\Instructor\ReviewReplyController as InstructorReviewReplyController;
+use App\Http\Controllers\Student\CommunityPostController as StudentCommunityPostController;
 use App\Http\Controllers\Student\NoteController as StudentNoteController;
 use App\Http\Controllers\Student\OrderController as StudentOrderController;
+use App\Http\Controllers\Student\QuestionController as StudentQuestionController;
 use App\Http\Controllers\Student\RefundRequestController as StudentRefundRequestController;
 use App\Http\Controllers\Student\ReviewController as StudentReviewController;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +41,13 @@ Route::middleware(['auth', 'verified', 'role:instructor'])->prefix('instructor')
 
 Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->name('student.')->group(function () {
     Route::post('/reviews', [StudentReviewController::class, 'store'])->name('reviews.store');
+
+    Route::post('/questions', [StudentQuestionController::class, 'store'])->name('questions.store');
+    Route::post('/reviews/{review}/report', [StudentReviewController::class, 'report'])->name('reviews.report');
+
+    Route::post('/community', [StudentCommunityPostController::class, 'store'])->name('community.store');
+    Route::put('/community/{post}', [StudentCommunityPostController::class, 'update'])->name('community.update');
+    Route::delete('/community/{post}', [StudentCommunityPostController::class, 'destroy'])->name('community.destroy');
 
     Route::get('/notes', [StudentNoteController::class, 'index'])->name('notes.index');
     Route::post('/notes', [StudentNoteController::class, 'store'])->name('notes.store');

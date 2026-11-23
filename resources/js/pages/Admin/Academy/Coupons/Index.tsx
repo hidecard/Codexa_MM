@@ -1,17 +1,19 @@
 import { useState, type FormEvent } from 'react';
 import { Head, router, useForm } from '@inertiajs/react';
-import { Plus, Ticket, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Ticket, Trash2 } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { ProgressBar } from '@/components/lms/progress-bar';
-import { formatNumber } from '@/lib/format';
+import { formatKyat, formatNumber } from '@/lib/format';
 import { EmptyBox, LmsCard, PageIntro, Pill, btnAccentCls, btnGhostCls, inkCls, inputCls, labelCls, mutedCls } from '@/pages/Admin/Academy/_shared';
 import { type SampleCoupon } from '@/pages/Admin/Academy/_sample';
 
-type CouponRow = SampleCoupon & { id: number };
+type CouponRow = SampleCoupon & { id: number; discount_type: 'percent' | 'fixed'; expires_at: string | null };
 
 export default function Index({ coupons }: { coupons: CouponRow[] }) {
     const [notice, setNotice] = useState('');
     const form = useForm({ code: '', discount_value: 10, usage_limit: '100', expires_at: '' });
+    const [editing, setEditing] = useState<CouponRow | null>(null);
+    const editForm = useForm({ code: '', discount_type: 'percent' as 'percent' | 'fixed', discount_value: 10, usage_limit: '', expires_at: '', is_active: true });
 
     const activeCount = coupons.filter((c) => c.active).length;
     const totalUsed = coupons.reduce((s, c) => s + c.used, 0);
@@ -31,6 +33,37 @@ export default function Index({ coupons }: { coupons: CouponRow[] }) {
             onSuccess: () => {
                 form.reset();
                 setNotice(`Coupon ${codeText} ဖန်တီးပြီးပါပြီ`);
+            },
+        });
+    };
+
+    const startEdit = (c: CouponRow) => {
+        setEditing(c);
+        editForm.setData({
+            code: c.code,
+            discount_type: c.discount_type,
+            discount_value: c.pct,
+            usage_limit: c.limit ? String(c.limit) : '',
+            expires_at: c.expires_at ?? '',
+            is_active: c.active,
+        });
+        editForm.clearErrors();
+        setNotice('');
+    };
+
+    const submitEdit = (e: FormEvent) => {
+        e.preventDefault();
+        if (!editing) return;
+        editForm.transform((data) => ({
+            ...data,
+            usage_limit: data.usage_limit === '' ? null : Number(data.usage_limit),
+            expires_at: data.expires_at === '' ? null : data.expires_at,
+        }));
+        editForm.put(`/admin/academy/coupons/${editing.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setNotice(`Coupon ${editing.code} ပြင်ဆင်ပြီးပါပြီ`);
+                setEditing(null);
             },
         });
     };
@@ -89,6 +122,55 @@ export default function Index({ coupons }: { coupons: CouponRow[] }) {
                 </form>
             </LmsCard>
 
+            {editing && (
+                <LmsCard className="mt-6 p-5 sm:p-6">
+                    <h2 className={`flex items-center gap-2 text-[1.05rem] font-extrabold ${inkCls}`}>
+                        <Pencil className="size-5" /> Coupon {editing.code} ပြင်ဆင်ရန်
+                    </h2>
+                    <form onSubmit={submitEdit} className="mt-4 grid gap-3 sm:grid-cols-4">
+                        <div>
+                            <label className={labelCls}>Coupon Code</label>
+                            <input className={`${inputCls} font-mono uppercase`} value={editForm.data.code} onChange={(e) => editForm.setData('code', e.target.value)} required />
+                            {editForm.errors.code && <p className="mt-1 text-xs font-semibold text-rose-600">{editForm.errors.code}</p>}
+                        </div>
+                        <div>
+                            <label className={labelCls}>လျှော့ဈေး အမျိုးအစား</label>
+                            <select className={inputCls} value={editForm.data.discount_type} onChange={(e) => editForm.setData('discount_type', e.target.value as 'percent' | 'fixed')}>
+                                <option value="percent">ရာခိုင်နှုန်း (%)</option>
+                                <option value="fixed">ငွေ ပမာဏ (ကျပ်)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className={labelCls}>{editForm.data.discount_type === 'percent' ? 'လျှော့ဈေး (%)' : 'လျှော့ဈေး (ကျပ်)'}</label>
+                            <input className={inputCls} type="number" min={0.01} max={editForm.data.discount_type === 'percent' ? 100 : undefined} step="any" value={editForm.data.discount_value} onChange={(e) => editForm.setData('discount_value', Number(e.target.value))} />
+                            {editForm.errors.discount_value && <p className="mt-1 text-xs font-semibold text-rose-600">{editForm.errors.discount_value}</p>}
+                        </div>
+                        <div>
+                            <label className={labelCls}>အသုံးပြုနိုင်သည့် အများဆုံး အကြိမ်</label>
+                            <input className={inputCls} type="number" min={1} value={editForm.data.usage_limit} onChange={(e) => editForm.setData('usage_limit', e.target.value)} placeholder="အကန့်အသတ် မရှိ" />
+                        </div>
+                        <div>
+                            <label className={labelCls}>သက်တမ်းကုန်ဆုံးရက်</label>
+                            <input className={inputCls} type="date" value={editForm.data.expires_at} onChange={(e) => editForm.setData('expires_at', e.target.value)} />
+                        </div>
+                        <div className="flex items-end pb-2">
+                            <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                                <input type="checkbox" checked={editForm.data.is_active} onChange={(e) => editForm.setData('is_active', e.target.checked)} className="size-5 accent-teal-700" />
+                                အသုံးပြုရန် ဖွင့်ထားသည်
+                            </label>
+                        </div>
+                        <div className="flex flex-wrap gap-2 sm:col-span-4">
+                            <button type="submit" className={btnAccentCls} disabled={editForm.processing}>
+                                ပြင်ဆင်မှု သိမ်းရန်
+                            </button>
+                            <button type="button" className={btnGhostCls} onClick={() => setEditing(null)}>
+                                ပယ်ဖျက်ရန်
+                            </button>
+                        </div>
+                    </form>
+                </LmsCard>
+            )}
+
             <p className={`mt-6 text-sm font-semibold ${mutedCls}`}>
                 Active coupon {activeCount} ခု · အသုံးပြုမှု စုစုပေါင်း {formatNumber(totalUsed)} ကြိမ်
             </p>
@@ -110,7 +192,9 @@ export default function Index({ coupons }: { coupons: CouponRow[] }) {
                                 <div className="min-w-0 flex-1">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <p className={`font-mono text-[.98rem] font-extrabold ${inkCls}`}>{c.code}</p>
-                                        <span className="rounded-full bg-amber-500 px-2.5 py-1 text-[.7rem] font-extrabold text-amber-950">-{c.pct}%</span>
+                                        <span className="rounded-full bg-amber-500 px-2.5 py-1 text-[.7rem] font-extrabold text-amber-950">
+                                            {c.discount_type === 'fixed' ? `-${formatKyat(c.pct)}` : `-${c.pct}%`}
+                                        </span>
                                         {c.active && !exhausted ? <Pill tone="teal">ACTIVE</Pill> : <Pill tone="slate">{exhausted ? 'အကြိမ်ပြည့်' : 'ပိတ်ထား'}</Pill>}
                                     </div>
                                     <p className={`mt-1 text-[.8rem] ${mutedCls}`}>
@@ -123,6 +207,9 @@ export default function Index({ coupons }: { coupons: CouponRow[] }) {
                                     )}
                                 </div>
                                 <div className="flex flex-none flex-wrap gap-2">
+                                    <button type="button" className={btnGhostCls} onClick={() => startEdit(c)}>
+                                        <Pencil className="size-4" /> ပြင်ရန်
+                                    </button>
                                     <button type="button" className={btnGhostCls} onClick={() => toggle(c)}>
                                         {c.active ? 'ပိတ်ရန်' : 'ပြန်ဖွင့်ရန်'}
                                     </button>

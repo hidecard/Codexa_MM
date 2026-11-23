@@ -38,13 +38,26 @@ class CertificateController extends Controller
         ]);
     }
 
+    /**
+     * Print-friendly certificate view: a standalone Blade page (no LMS
+     * shell) with print CSS and a Print button. Students print or save it
+     * as PDF from the browser — no PDF library needed.
+     */
+    public function print(Request $request, Certificate $certificate): \Illuminate\View\View
+    {
+        $this->authorizeOwnership($request, $certificate);
+
+        $certificate->load(['enrollment.course:id,title,slug', 'verification:id,certificate_id,verification_code']);
+
+        return view('certificates.print', [
+            'certificate' => $certificate,
+            'studentName' => $request->user()->name,
+        ]);
+    }
+
     public function show(Request $request, Certificate $certificate): Response
     {
-        $enrollmentIds = Enrollment::query()
-            ->where('student_id', $request->user()->id)
-            ->pluck('id');
-
-        abort_unless($enrollmentIds->contains($certificate->enrollment_id), 403);
+        $this->authorizeOwnership($request, $certificate);
 
         $certificate->load(['enrollment.course:id,title,slug', 'verification:id,certificate_id,verification_code']);
 
@@ -61,5 +74,15 @@ class CertificateController extends Controller
                 'student_name' => $request->user()->name,
             ],
         ]);
+    }
+
+    /** Only the certificate's owner (via their enrollment) may view it. */
+    private function authorizeOwnership(Request $request, Certificate $certificate): void
+    {
+        $enrollmentIds = Enrollment::query()
+            ->where('student_id', $request->user()->id)
+            ->pluck('id');
+
+        abort_unless($enrollmentIds->contains($certificate->enrollment_id), 403);
     }
 }

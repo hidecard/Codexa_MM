@@ -61,6 +61,14 @@ export default function Show({ certificate = null }: Props) {
                 >
                     <Download className="size-4" /> လက်မှတ် ပုံနှိပ်ရန် / သိမ်းရန်
                 </button>
+                <a
+                    href={`/student/certificates/${certificate.id}/print`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                    <ExternalLink className="size-4" /> ပုံနှိပ်ရန် စာမျက်နှာ ဖွင့်ရန်
+                </a>
                 {certificate.course?.slug && (
                     <Link href={`/courses/${certificate.course.slug}`} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
                         <ExternalLink className="size-4" /> သင်တန်း ကြည့်ရန်

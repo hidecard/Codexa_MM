@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LiveSession extends Model
 {
@@ -54,6 +55,34 @@ class LiveSession extends Model
         return $this->belongsTo(User::class, 'instructor_id');
     }
 
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(LiveAttendance::class, 'live_session_id');
+    }
+
+    public function chatMessages(): HasMany
+    {
+        return $this->hasMany(LiveChatMessage::class, 'live_session_id');
+    }
+
+    public function raiseHands(): HasMany
+    {
+        return $this->hasMany(LiveRaiseHand::class, 'live_session_id');
+    }
+
+    public function recordings(): HasMany
+    {
+        return $this->hasMany(SessionRecording::class, 'live_session_id');
+    }
+
+    /**
+     * Users currently in the session (open attendance rows).
+     */
+    public function presentAttendances(): HasMany
+    {
+        return $this->attendances()->whereNull('left_at');
+    }
+
     public function getEndsAtAttribute(): ?Carbon
     {
         return $this->scheduled_at?->copy()->addMinutes($this->duration_minutes ?? 0);
@@ -88,8 +117,10 @@ class LiveSession extends Model
             'when' => $start ? self::myanmarWhen($start) : '',
             'time' => $start && $end ? self::myanmarTimeRange($start, $end) : '',
             'liveNow' => $this->status === self::STATUS_LIVE,
-            // No attendance/registration model exists yet; 0 is honest.
-            'joined' => 0,
+            // Users who have ever joined (one attendance row per user, so
+            // count(*) is the distinct count); controllers load this with
+            // withCount('attendances') to avoid an extra query.
+            'joined' => $this->attendances_count ?? $this->attendances()->count(),
         ];
     }
 

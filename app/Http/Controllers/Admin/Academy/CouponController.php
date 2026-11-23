@@ -31,11 +31,13 @@ class CouponController extends Controller
                 // The admin UI creates percent coupons; fixed-value coupons
                 // show their value here and are applied at checkout.
                 'pct' => (float) $c->discount_value,
+                'discount_type' => $c->discount_type,
                 'used' => $c->used_count,
                 'limit' => $c->usage_limit ?? 0,
                 'expiry' => $c->expires_at !== null
                     ? $c->expires_at->year.' '.self::MONTHS_MY[$c->expires_at->month].' '.$c->expires_at->day
                     : 'သက်တမ်း မရှိ',
+                'expires_at' => $c->expires_at?->toDateString(),
                 'active' => $c->is_active,
             ])->values();
 

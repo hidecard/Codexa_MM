@@ -1,5 +1,6 @@
-import { Link } from '@inertiajs/react';
-import { Play, Star, Users } from 'lucide-react';
+import { Link, router, usePage } from '@inertiajs/react';
+import { useState } from 'react';
+import { Check, Play, ShoppingCart, Star, Users } from 'lucide-react';
 import { ProgressBar } from '@/components/lms/progress-bar';
 import { formatKyat, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -40,11 +41,25 @@ function coverGradient(id: number | string): string {
 type CourseCardProps = {
     course: LmsCourse;
     href?: string;
+    /** Show an add-to-cart button (real catalog courses, logged-in students). */
+    showAddToCart?: boolean;
 };
 
-export function CourseCard({ course, href }: CourseCardProps) {
+type SharedProps = { auth?: { user?: { roles?: string[] } | null } };
+
+export function CourseCard({ course, href, showAddToCart = false }: CourseCardProps) {
     const detailHref = href ?? `/courses/${course.slug}`;
     const hasProgress = typeof course.progress === 'number';
+    const { auth } = usePage<SharedProps>().props;
+    const isStudent = auth?.user?.roles?.includes('student') ?? false;
+    const [added, setAdded] = useState(false);
+    // Sample-data cards carry string ids; only real (numeric id) courses
+    // can be added to the cart.
+    const canAddToCart = showAddToCart && !hasProgress && isStudent && typeof course.id === 'number' && (course.price ?? 0) > 0;
+
+    const addToCart = () => {
+        router.post('/student/cart', { course_id: course.id }, { preserveScroll: true, onSuccess: () => setAdded(true) });
+    };
 
     return (
         <article className="group flex flex-col overflow-hidden rounded-2xl border border-lms-line bg-lms-surface transition duration-200 hover:-translate-y-1 hover:border-lms-accent hover:shadow-[0_10px_30px_rgba(13,30,70,0.08)] dark:hover:shadow-[0_14px_34px_rgba(0,0,0,0.35)]">
@@ -100,18 +115,35 @@ export function CourseCard({ course, href }: CourseCardProps) {
                         </Link>
                     </div>
                 ) : (
-                    <div className="flex items-baseline gap-2 pt-1">
-                        {typeof course.price === 'number' ? (
-                            course.price === 0 ? (
-                                <span className="text-base font-extrabold text-lms-accent">အခမဲ့</span>
+                    <>
+                        <div className="flex items-baseline gap-2 pt-1">
+                            {typeof course.price === 'number' ? (
+                                course.price === 0 ? (
+                                    <span className="text-base font-extrabold text-lms-accent">အခမဲ့</span>
+                                ) : (
+                                    <span className="text-base font-extrabold text-lms-ink">{formatKyat(course.price)}</span>
+                                )
+                            ) : null}
+                            {typeof course.oldPrice === 'number' && course.oldPrice > 0 ? (
+                                <span className="text-xs font-semibold text-lms-faint line-through">{formatKyat(course.oldPrice)}</span>
+                            ) : null}
+                        </div>
+                        {canAddToCart && (
+                            added ? (
+                                <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-teal-700 dark:text-teal-300">
+                                    <Check className="size-4" /> ခြင်းတောင်းထဲ ထည့်ပြီးပါပြီ
+                                </p>
                             ) : (
-                                <span className="text-base font-extrabold text-lms-ink">{formatKyat(course.price)}</span>
+                                <button
+                                    type="button"
+                                    onClick={addToCart}
+                                    className="mt-2 inline-flex items-center gap-1.5 self-start rounded-lg border border-lms-line px-3 py-2 text-xs font-bold text-lms-ink transition hover:border-lms-accent hover:text-lms-accent"
+                                >
+                                    <ShoppingCart className="size-4" /> ခြင်းတောင်းထဲ ထည့်ရန်
+                                </button>
                             )
-                        ) : null}
-                        {typeof course.oldPrice === 'number' && course.oldPrice > 0 ? (
-                            <span className="text-xs font-semibold text-lms-faint line-through">{formatKyat(course.oldPrice)}</span>
-                        ) : null}
-                    </div>
+                        )}
+                    </>
                 )}
             </div>
         </article>

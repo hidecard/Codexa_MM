@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ArrowLeft, Award, BookOpen, CheckCircle2, ChevronDown, Clock3, GraduationCap, Infinity as InfinityIcon, Play, Star, Users } from 'lucide-react';
+import { ArrowLeft, Award, BookOpen, CheckCircle2, ChevronDown, Clock3, Flag, GraduationCap, Infinity as InfinityIcon, Play, ShoppingCart, Star, Users } from 'lucide-react';
 import { useState } from 'react';
 import { PublicLayout } from '@/components/shared/public-layout';
 import { formatKyat } from '@/lib/format';
@@ -39,14 +39,31 @@ type Props = {
     course: Course;
     enrollment?: { id: number; status: string } | null;
     canEnroll?: boolean;
+    canReview?: boolean;
+    myReview?: { id: number; rating: number; comment?: string | null; is_approved: boolean } | null;
 };
 
 type SharedProps = { auth?: { user?: { id: number; name: string } | null } };
 
-export default function Show({ course, enrollment = null, canEnroll = false }: Props) {
+export default function Show({ course, enrollment = null, canEnroll = false, canReview = false, myReview = null }: Props) {
     const { auth } = usePage<SharedProps>().props;
     const isGuest = !auth?.user;
     const [openModule, setOpenModule] = useState<number | null>(course.modules[0]?.id ?? null);
+    const [cartAdded, setCartAdded] = useState(false);
+    const [rating, setRating] = useState(myReview?.rating ?? 5);
+    const [comment, setComment] = useState(myReview?.comment ?? '');
+    const [reviewSent, setReviewSent] = useState(false);
+    const [reportingId, setReportingId] = useState<number | null>(null);
+    const [reportReason, setReportReason] = useState('');
+    const [reportNotice, setReportNotice] = useState('');
+
+    const submitReport = (reviewId: number) => {
+        if (!reportReason.trim()) return;
+        router.post(`/student/reviews/${reviewId}/report`, { reason: reportReason.trim() }, {
+            preserveScroll: true,
+            onSuccess: () => { setReportingId(null); setReportReason(''); setReportNotice('Report တင်ပြီးပါပြီ — Admin အဖွဲ့က စစ်ဆေးပါမယ်'); },
+        });
+    };
 
     const price = course.sale_price ?? course.price;
     const hasDiscount = course.sale_price != null && Number(course.sale_price) < Number(course.price);
@@ -65,6 +82,20 @@ export default function Show({ course, enrollment = null, canEnroll = false }: P
         course.reviews && course.reviews.length > 0 ? course.reviews.reduce((s, r) => s + r.rating, 0) / course.reviews.length : null;
 
     const enroll = () => router.post(`/student/courses/${course.slug}/enroll`);
+
+    const addToCart = () => {
+        if (!course.id) return;
+        router.post('/student/cart', { course_id: course.id }, { preserveScroll: true, onSuccess: () => setCartAdded(true) });
+    };
+
+    const submitReview = () => {
+        if (!course.id) return;
+        router.post(
+            '/student/reviews',
+            { course_id: course.id, rating, comment: comment.trim() || null },
+            { preserveScroll: true, onSuccess: () => setReviewSent(true) },
+        );
+    };
 
     return (
         <PublicLayout>
@@ -243,6 +274,11 @@ export default function Show({ course, enrollment = null, canEnroll = false }: P
                     {course.reviews && course.reviews.length > 0 && (
                         <section className="mt-6 rounded-2xl bg-white p-6 ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52] sm:p-7">
                             <h2 className="text-xl font-extrabold">ကျောင်းသားများ၏ သုံးသပ်ချက်များ</h2>
+                            {reportNotice && (
+                                <p className="mt-4 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-medium text-teal-800 dark:border-teal-900 dark:bg-teal-950/30 dark:text-teal-200">
+                                    {reportNotice}
+                                </p>
+                            )}
                             <div className="mt-5 space-y-4">
                                 {course.reviews.map((review) => (
                                     <blockquote key={review.id} className="rounded-2xl bg-[#eef3fb] p-4 dark:bg-[#12234a]">
@@ -252,12 +288,79 @@ export default function Show({ course, enrollment = null, canEnroll = false }: P
                                             ))}
                                         </p>
                                         {review.comment && <p className="mt-2 leading-7 text-[#5a6a8a] dark:text-[#97a6c6]">“{review.comment}”</p>}
-                                        <cite className="mt-2 block text-sm font-semibold not-italic text-[#8494b3] dark:text-[#67779c]">
-                                            {review.student?.name ?? 'Codexa ကျောင်းသား'}
-                                        </cite>
+                                        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                                            <cite className="block text-sm font-semibold not-italic text-[#8494b3] dark:text-[#67779c]">
+                                                {review.student?.name ?? 'Codexa ကျောင်းသား'}
+                                            </cite>
+                                            {!isGuest && (
+                                                <button type="button" onClick={() => { setReportingId(reportingId === review.id ? null : review.id); setReportReason(''); }} className="inline-flex items-center gap-1 text-xs font-bold text-[#8494b3] hover:text-rose-600 dark:text-[#67779c]">
+                                                    <Flag className="size-3.5" /> Report
+                                                </button>
+                                            )}
+                                        </div>
+                                        {reportingId === review.id && (
+                                            <div className="mt-3 flex gap-2">
+                                                <input
+                                                    value={reportReason}
+                                                    onChange={(e) => setReportReason(e.target.value)}
+                                                    placeholder="Report အကြောင်းရင်း ရေးပါ…"
+                                                    className="h-10 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-teal-500 dark:border-[#1e2c52] dark:bg-[#070d1f] dark:text-[#e9eefb]"
+                                                />
+                                                <button type="button" onClick={() => submitReport(review.id)} disabled={!reportReason.trim()} className="shrink-0 rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white hover:bg-rose-700 disabled:opacity-50">
+                                                    တင်ရန်
+                                                </button>
+                                            </div>
+                                        )}
                                     </blockquote>
                                 ))}
                             </div>
+                        </section>
+                    )}
+
+                    {/* Review form — enrolled students only, one review per course. */}
+                    {canReview && (
+                        <section className="mt-6 rounded-2xl bg-white p-6 ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52] sm:p-7">
+                            <h2 className="text-xl font-extrabold">{myReview ? 'သင့် သုံးသပ်ချက် ပြင်ဆင်ရန်' : 'သုံးသပ်ချက် ရေးရန်'}</h2>
+                            {reviewSent && (
+                                <p className="mt-4 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-medium text-teal-800 dark:border-teal-900 dark:bg-teal-950/30 dark:text-teal-200">
+                                    သုံးသပ်ချက် တင်ပြီးပါပြီ — အတည်ပြုပြီးတာနဲ့ ပေါ်လာပါမယ်။
+                                </p>
+                            )}
+                            {myReview && !reviewSent && (
+                                <p className="mt-4 text-sm font-semibold text-[#5a6a8a] dark:text-[#97a6c6]">
+                                    {myReview.is_approved ? 'သင့် သုံးသပ်ချက်ကို အတည်ပြုပြီးပါပြီ — ပြန်ပြင်နိုင်ပါတယ်။' : 'သင့် သုံးသပ်ချက်ကို အတည်ပြုရန် စောင့်နေပါတယ် — ပြန်ပြင်နိုင်ပါတယ်။'}
+                                </p>
+                            )}
+                            <div className="mt-4 flex items-center gap-1.5" role="radiogroup" aria-label="Rating">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                    <button
+                                        key={i}
+                                        type="button"
+                                        onClick={() => setRating(i + 1)}
+                                        aria-label={`${i + 1} stars`}
+                                        className="rounded p-0.5"
+                                    >
+                                        <Star className={`size-7 ${i < rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-600'}`} />
+                                    </button>
+                                ))}
+                                <span className="ml-2 text-sm font-bold text-[#5a6a8a] dark:text-[#97a6c6]">{rating} / 5</span>
+                            </div>
+                            <textarea
+                                value={comment}
+                                onChange={(e) => setComment(e.target.value)}
+                                rows={4}
+                                maxLength={2000}
+                                placeholder="ဒီ သင်တန်းအကြောင်း ဘယ်လို ထင်ပါသလဲ…"
+                                className="mt-4 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30 dark:border-[#1e2c52] dark:bg-[#070d1f] dark:text-[#e9eefb]"
+                            />
+                            <button
+                                type="button"
+                                onClick={submitReview}
+                                className="mt-4 rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-700"
+                            >
+                                {myReview ? 'သုံးသပ်ချက် ပြင်ဆင်ရန်' : 'သုံးသပ်ချက် တင်ရန်'}
+                            </button>
+                            <p className="mt-2 text-xs text-[#8494b3] dark:text-[#67779c]">သုံးသပ်ချက်ကို admin အတည်ပြုပြီးမှ အများပြည်သူ မြင်ရပါမယ်။</p>
                         </section>
                     )}
                 </div>
@@ -339,6 +442,21 @@ export default function Show({ course, enrollment = null, canEnroll = false }: P
                             >
                                 {course.pricing_type === 'free' ? 'အခမဲ့ စာရင်းသွင်းရန်' : 'စာရင်းသွင်းရန်'}
                             </button>
+                            {course.pricing_type !== 'free' && (
+                                cartAdded ? (
+                                    <p className="mt-3 rounded-xl bg-teal-50 px-4 py-3 text-center text-sm font-bold text-teal-800 dark:bg-teal-900/30 dark:text-teal-200">
+                                        ခြင်းတောင်းထဲ ထည့်ပြီးပါပြီ · <Link href="/student/cart" className="underline">ခြင်းတောင်း ကြည့်ရန်</Link>
+                                    </p>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={addToCart}
+                                        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-center font-bold ring-1 ring-[#dce3f0] transition hover:bg-[#eef3fb] dark:ring-[#1e2c52] dark:hover:bg-[#12234a]"
+                                    >
+                                        <ShoppingCart className="size-4" /> ခြင်းတောင်းထဲ ထည့်ရန်
+                                    </button>
+                                )
+                            )}
                         </>
                     ) : (
                         <p className="mt-5 text-sm leading-6 text-[#5a6a8a] dark:text-[#97a6c6]">စာရင်းသွင်းရန် student အကောင့်ဖြင့် Login ဝင်ပါ။</p>

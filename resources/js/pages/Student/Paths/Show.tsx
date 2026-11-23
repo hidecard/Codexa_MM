@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { ProgressBar } from '@/components/lms/progress-bar';
 import { CheckCircle2, ChevronLeft, Circle, PlayCircle, Target } from 'lucide-react';
@@ -7,44 +6,10 @@ import { CheckCircle2, ChevronLeft, Circle, PlayCircle, Target } from 'lucide-re
 type Step = { id: number; slug: string; title: string; progress: number; lessons: number; hours: number };
 type Path = { id: number; title: string; goal: string; grad: string; glyph: string; months: string; level: string; joined: boolean; steps: Step[]; outcomes: string[] };
 
-/* SAMPLE DATA — fallback only (from prototype). */
-const SAMPLE: Path[] = [
-    { id: 1, title: 'Web Developer လမ်းကြောင်း', goal: 'Frontend ကနေ Backend အထိ ပြည့်စုံတဲ့ web developer တစ်ဦး ဖြစ်ရန်', grad: 'linear-gradient(130deg,#0b3b5e,#0ea892)', glyph: '</>', months: '၅–၇ လ', level: 'Beginner → Advanced', joined: true,
-        steps: [
-            { id: 1, slug: 'html-css-foundations', title: 'HTML & CSS Foundations', progress: 68, lessons: 48, hours: 12 },
-            { id: 2, slug: 'javascript-deep-dive', title: 'JavaScript Deep Dive', progress: 32, lessons: 86, hours: 24 },
-            { id: 4, slug: 'react-complete-course', title: 'React.js Complete Course', progress: 0, lessons: 92, hours: 28 },
-            { id: 9, slug: 'nodejs-api-development', title: 'Node.js API Development', progress: 0, lessons: 66, hours: 20 },
-            { id: 5, slug: 'php-laravel-framework', title: 'PHP & Laravel Framework', progress: 0, lessons: 78, hours: 26 },
-        ],
-        outcomes: ['Portfolio website နဲ့ web app ၃ ခု တည်ဆောက်ပြီး', 'React ဖြင့် modern frontend တည်ဆောက်နိုင်ခြင်း', 'Node.js / Laravel ဖြင့် API တည်ဆောက်နိုင်ခြင်း', 'Junior Web Developer အလုပ်များ လျှောက်ရန် အဆင်သင့်'] },
-    { id: 2, title: 'Python & Data လမ်းကြောင်း', goal: 'Python ကို ကျွမ်းကျင်ပြီး data analysis လမ်းကြောင်းသို့ ဝင်ရောက်ရန်', grad: 'linear-gradient(130deg,#14532d,#22c55e)', glyph: 'Py', months: '၄–၆ လ', level: 'Beginner → Intermediate', joined: false,
-        steps: [
-            { id: 3, slug: 'python-for-beginners', title: 'Python for Beginners', progress: 85, lessons: 64, hours: 18 },
-            { id: 8, slug: 'mysql-database-design', title: 'MySQL & Database Design', progress: 0, lessons: 38, hours: 9 },
-        ],
-        outcomes: ['Python program များကို ကိုယ်တိုင် ရေးနိုင်ခြင်း', 'Database design နဲ့ SQL ကျွမ်းကျင်ခြင်း', 'Data project ၂ ခု portfolio တွင် ထည့်နိုင်ခြင်း'] },
-    { id: 3, title: 'Mobile Developer လမ်းကြောင်း', goal: 'Flutter ဖြင့် Android / iOS app များ တည်ဆောက်ပြီး store ပေါ် တင်နိုင်ရန်', grad: 'linear-gradient(130deg,#123a6d,#38bdf8)', glyph: 'Fl', months: '၄–၅ လ', level: 'Beginner → Intermediate', joined: false,
-        steps: [
-            { id: 3, slug: 'python-for-beginners', title: 'Python for Beginners', progress: 85, lessons: 64, hours: 18 },
-            { id: 6, slug: 'flutter-mobile-development', title: 'Flutter Mobile Development', progress: 0, lessons: 70, hours: 22 },
-            { id: 10, slug: 'git-github-team-workflow', title: 'Git, GitHub & Team Workflow', progress: 100, lessons: 24, hours: 6 },
-        ],
-        outcomes: ['Dart နဲ့ Flutter အခြေခံ ခိုင်မာခြင်း', 'App ၂ ခု ကိုယ်တိုင် တည်ဆောက်ပြီး', 'Play Store / App Store တင်နည်း နားလည်ခြင်း'] },
-    { id: 4, title: 'UI/UX Designer လမ်းကြောင်း', goal: 'Design အခြေခံကနေ professional UI/UX designer တစ်ဦး ဖြစ်ရန်', grad: 'linear-gradient(130deg,#831843,#ec4899)', glyph: 'UX', months: '၃–၄ လ', level: 'Beginner → Intermediate', joined: false,
-        steps: [
-            { id: 7, slug: 'ui-ux-design-with-figma', title: 'UI/UX Design with Figma', progress: 100, lessons: 42, hours: 10 },
-            { id: 1, slug: 'html-css-foundations', title: 'HTML & CSS Foundations', progress: 68, lessons: 48, hours: 12 },
-            { id: 10, slug: 'git-github-team-workflow', title: 'Git, GitHub & Team Workflow', progress: 100, lessons: 24, hours: 6 },
-        ],
-        outcomes: ['Figma ကို ကျွမ်းကျင်စွာ အသုံးပြုနိုင်ခြင်း', 'Design system နဲ့ component library တည်ဆောက်နိုင်ခြင်း', 'Case study ၂ ခုပါ portfolio ပြင်ဆင်ပြီး'] },
-];
-
-export default function Show({ path }: { path?: Path | null }) {
-    const { url } = usePage();
-    const idFromUrl = Number(url.split('/').filter(Boolean).pop());
-    const item = path ?? SAMPLE.find((p) => p.id === idFromUrl) ?? SAMPLE[0];
-    const [joined, setJoined] = useState(item.joined);
+export default function Show({ path }: { path: Path }) {
+    const item = path;
+    const joined = item.joined;
+    const toggleJoin = () => router.post(`/student/paths/${item.id}/follow`, {}, { preserveScroll: true });
     const pct = item.steps.length > 0 ? Math.round(item.steps.reduce((s, st) => s + st.progress, 0) / item.steps.length) : 0;
     const done = item.steps.filter((st) => st.progress >= 100).length;
     const next = item.steps.find((st) => st.progress > 0 && st.progress < 100) ?? item.steps.find((st) => st.progress === 0) ?? null;
@@ -70,7 +35,7 @@ export default function Show({ path }: { path?: Path | null }) {
                             <span className="text-sm font-extrabold">{pct}%</span>
                         </div>
                         <div className="mt-5 flex flex-wrap gap-2.5">
-                            <button onClick={() => setJoined((j) => !j)} className={`rounded-xl px-5 py-2.5 text-sm font-bold ${joined ? 'bg-white text-slate-900' : 'bg-teal-600 text-white hover:bg-teal-500'}`}>
+                            <button onClick={toggleJoin} className={`rounded-xl px-5 py-2.5 text-sm font-bold ${joined ? 'bg-white text-slate-900' : 'bg-teal-600 text-white hover:bg-teal-500'}`}>
                                 {joined ? 'လိုက်နာနေဆဲ ✓' : 'လမ်းကြောင်း လိုက်နာရန်'}
                             </button>
                             {next && <Link href={`/student/courses/${next.id}/learn`} className="inline-flex items-center gap-2 rounded-xl border border-white/30 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/10"><PlayCircle className="size-4" /> နောက်သင်တန်း: {next.title}</Link>}

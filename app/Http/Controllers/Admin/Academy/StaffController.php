@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Admin\Academy;
 
 use App\Http\Controllers\Controller;
+use App\Mail\StaffInviteMail;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class StaffController extends Controller
@@ -56,9 +60,20 @@ class StaffController extends Controller
     }
 
     /**
+     * Mailers that never deliver real email. Kept in sync with
+     * MarketingController::NON_DELIVERY_MAILERS.
+     */
+    private const NON_DELIVERY_MAILERS = ['log', 'array', 'fail', 'fake'];
+
+    /** How long an invitation setup link stays valid. */
+    private const INVITE_LINK_TTL_DAYS = 7;
+
+    /**
      * Invite a staff member. The account is created active with a random
-     * password; NO invitation email is sent (no invite mail flow exists),
-     * so the invited person must use password reset to sign in.
+     * password, and an invitation email with a signed 7-day setup link is
+     * queued for the new member. With no real mailer configured the mail
+     * cannot be delivered, so the setup link is shown to the admin instead
+     * so they can share it manually.
      */
     public function invite(Request $request): RedirectResponse
     {
@@ -82,7 +97,30 @@ class StaffController extends Controller
 
         $user->syncRoles(static::rolesFor($validated['role']));
 
-        return redirect()->back()->with('success', 'Staff account created. No invitation email was sent — the new member must reset their password to sign in.');
+        $setupUrl = URL::temporarySignedRoute(
+            'staff.invite.accept',
+            now()->addDays(self::INVITE_LINK_TTL_DAYS),
+            ['user' => $user->id],
+        );
+
+        Mail::to($user)->queue(new StaffInviteMail($user, $setupUrl));
+
+        if ($this->mailIsConfigured()) {
+            return redirect()->back()->with('success', 'Staff account created. An invitation email with a setup link was sent to '.$user->email.'.');
+        }
+
+        return redirect()->back()->with('success', 'Staff account created. No mailer is configured, so the invitation email was not delivered — share this setup link with the new member (valid '.self::INVITE_LINK_TTL_DAYS.' days): '.$setupUrl);
+    }
+
+    private function mailIsConfigured(): bool
+    {
+        $mailer = config('mail.default');
+
+        if (! $mailer || in_array($mailer, self::NON_DELIVERY_MAILERS, true)) {
+            return false;
+        }
+
+        return (bool) config('mail.from.address');
     }
 
     public function changeRole(Request $request, User $user): RedirectResponse
@@ -119,23 +157,42 @@ class StaffController extends Controller
 
     /**
      * Make sure every staff role exists. 'super-admin', 'support' and
-     * 'finance' are not part of the base seeder.
+     * 'finance' are not part of the base seeder. Support/Finance also get
+     * the `admin.access` permission so they can enter the admin panel
+     * (EnsureAdminAccess); admin-only areas still require role:admin.
      */
     private static function ensureStaffRoles(): void
     {
         foreach (array_values(static::ROLE_MAP) as $slug) {
             Role::findOrCreate($slug, 'web');
         }
+
+        static::ensureStaffPermissions();
+    }
+
+    /** Grant `admin.access` to the Support and Finance roles (idempotent). */
+    private static function ensureStaffPermissions(): void
+    {
+        $permission = Permission::findOrCreate('admin.access', 'web');
+
+        foreach (['support', 'finance'] as $slug) {
+            Role::findOrCreate($slug, 'web')->givePermissionTo($permission);
+        }
     }
 
     /**
      * Spatie roles for a display label. Super Admin keeps the base 'admin'
-     * role as well, because the admin panel routes require role:admin.
+     * role as well, because the admin-only areas (settings, staff, payout
+     * approvals, API keys, system, user/role management) require role:admin.
      */
     private static function rolesFor(string $label): array
     {
         $slug = static::ROLE_MAP[$label];
         Role::findOrCreate($slug, 'web');
+
+        if (in_array($slug, ['support', 'finance'], true)) {
+            static::ensureStaffPermissions();
+        }
 
         return $slug === 'super-admin' ? ['super-admin', 'admin'] : [$slug];
     }

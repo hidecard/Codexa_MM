@@ -8,6 +8,7 @@ use App\Models\Course;
 use App\Models\CoursePayment;
 use App\Models\Enrollment;
 use App\Models\Order;
+use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -62,7 +63,24 @@ class OrderController extends Controller
 
         return Inertia::render('Student/Checkout/Index', [
             'courses' => $this->serializeCourses($ids),
+            'gateways' => self::enabledGateways(),
         ]);
+    }
+
+    /**
+     * Which payment gateways are enabled (admin settings `gateway_*`,
+     * all enabled by default). Used by checkout display and order placement.
+     *
+     * @return array<string, bool>
+     */
+    public static function enabledGateways(): array
+    {
+        return [
+            'kbzpay' => (bool) Setting::getValue('gateway_kbz', true),
+            'wavepay' => (bool) Setting::getValue('gateway_wave', true),
+            'cbpay' => (bool) Setting::getValue('gateway_cb', true),
+            'bank' => (bool) Setting::getValue('gateway_bank', true),
+        ];
     }
 
     /** Validate a coupon code for the cart/checkout summary (read-only). */
@@ -98,6 +116,13 @@ class OrderController extends Controller
             'method' => ['required', 'string', 'in:kbzpay,wavepay,cbpay,bank'],
             'reference' => ['nullable', 'string', 'max:255'],
         ]);
+
+        // A disabled gateway cannot be used even by posting directly.
+        if (! (self::enabledGateways()[$validated['method']] ?? false)) {
+            throw ValidationException::withMessages([
+                'method' => 'ဤ ငွေပေးချေမှု နည်းလမ်း လက်ရှိ ပိတ်ထားပါသည်။',
+            ]);
+        }
 
         $userId = $request->user()->id;
         $courseIds = collect($validated['course_ids'])->unique()->values();

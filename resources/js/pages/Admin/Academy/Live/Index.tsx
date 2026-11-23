@@ -28,10 +28,25 @@ type SessionRow = {
     joined: number;
 };
 
+type RecordingRow = {
+    id: number;
+    live_session_id: number;
+    title: string;
+    video_url: string;
+    duration: string;
+    dur: string;
+    views: number;
+    session_title: string;
+    instructor: string;
+    date: string;
+    course: number;
+};
+
 type Props = {
     sessions?: SessionRow[];
     instructors?: { id: number; name: string }[];
     courses?: { id: number; title: string }[];
+    recordings?: RecordingRow[];
     stats?: { total: number; upcoming: number; live: number; ended: number };
 };
 
@@ -49,10 +64,11 @@ function toLocalInput(iso: string | null): string {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export default function Index({ sessions = [], instructors = [], courses = [], stats = { total: 0, upcoming: 0, live: 0, ended: 0 } }: Props) {
+export default function Index({ sessions = [], instructors = [], courses = [], recordings = [], stats = { total: 0, upcoming: 0, live: 0, ended: 0 } }: Props) {
     const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
     const [editingId, setEditingId] = useState<number | null>(null);
+    const [editingRecordingId, setEditingRecordingId] = useState<number | null>(null);
     const form = useForm({
         title: '',
         instructor_id: '',
@@ -62,6 +78,12 @@ export default function Index({ sessions = [], instructors = [], courses = [], s
         meeting_url: '',
         max_participants: '',
         description: '',
+    });
+    const recForm = useForm({
+        live_session_id: '',
+        title: '',
+        video_url: '',
+        duration: '',
     });
 
     const active = sessions.filter((s) => s.status !== 'cancelled');
@@ -132,6 +154,55 @@ export default function Index({ sessions = [], instructors = [], courses = [], s
         router.delete(`/admin/academy/live-classes/${s.id}`, {
             preserveScroll: true,
             onSuccess: () => setNotice(`"${s.title}" ဖျက်ပြီးပါပြီ`),
+        });
+    };
+
+    const startRecordingEdit = (r: RecordingRow) => {
+        setEditingRecordingId(r.id);
+        recForm.setData({
+            live_session_id: String(r.live_session_id),
+            title: r.title,
+            video_url: r.video_url,
+            duration: r.duration,
+        });
+        setNotice('');
+        setError('');
+    };
+
+    const cancelRecordingEdit = () => {
+        setEditingRecordingId(null);
+        recForm.reset();
+    };
+
+    const submitRecording = (e: FormEvent) => {
+        e.preventDefault();
+        setError('');
+        const opts = {
+            preserveScroll: true,
+            onSuccess: () => {
+                setNotice(editingRecordingId ? 'မှတ်တမ်း ပြင်ဆင်ပြီးပါပြီ' : 'မှတ်တမ်း ထည့်ပြီးပါပြီ');
+                setEditingRecordingId(null);
+                recForm.reset();
+            },
+            onError: () => setError('သိမ်းဆည်းခြင်း မအောင်မြင်ပါ — အချက်အလက်များ စစ်ဆေးပါ'),
+        };
+        recForm.transform((data) => ({
+            live_session_id: Number(data.live_session_id),
+            title: data.title,
+            video_url: data.video_url,
+            duration: data.duration === '' ? null : data.duration,
+        }));
+        if (editingRecordingId) {
+            recForm.put(`/admin/academy/live-classes/recordings/${editingRecordingId}`, opts);
+        } else {
+            recForm.post('/admin/academy/live-classes/recordings', opts);
+        }
+    };
+
+    const removeRecording = (r: RecordingRow) => {
+        router.delete(`/admin/academy/live-classes/recordings/${r.id}`, {
+            preserveScroll: true,
+            onSuccess: () => setNotice(`"${r.title}" မှတ်တမ်း ဖျက်ပြီးပါပြီ`),
         });
     };
 
@@ -295,6 +366,76 @@ export default function Index({ sessions = [], instructors = [], courses = [], s
                                     </button>
                                 </div>
                             </LmsCard>
+                        ))}
+                    </div>
+                )}
+            </SectionCard>
+
+            <SectionCard title={`Session မှတ်တမ်းများ (Recordings) — ${recordings.length} ခု`}>
+                <form onSubmit={submitRecording} className="grid gap-3 sm:grid-cols-4">
+                    <div className="sm:col-span-2">
+                        <label className={labelCls}>Session</label>
+                        <select className={inputCls} value={recForm.data.live_session_id} onChange={(e) => recForm.setData('live_session_id', e.target.value)} required>
+                            <option value="">ရွေးချယ်ပါ</option>
+                            {sessions.map((s) => (
+                                <option key={s.id} value={s.id}>
+                                    {s.title} — {s.when} {s.time}
+                                </option>
+                            ))}
+                        </select>
+                        {recForm.errors.live_session_id && <p className="mt-1 text-xs font-semibold text-rose-600">{recForm.errors.live_session_id}</p>}
+                    </div>
+                    <div className="sm:col-span-2">
+                        <label className={labelCls}>မှတ်တမ်း ခေါင်းစဉ်</label>
+                        <input className={inputCls} value={recForm.data.title} onChange={(e) => recForm.setData('title', e.target.value)} placeholder="ဥပမာ React Hooks Live — မှတ်တမ်း" required />
+                        {recForm.errors.title && <p className="mt-1 text-xs font-semibold text-rose-600">{recForm.errors.title}</p>}
+                    </div>
+                    <div className="sm:col-span-3">
+                        <label className={labelCls}>Video URL (YouTube / Zoom / Drive)</label>
+                        <input className={inputCls} type="url" value={recForm.data.video_url} onChange={(e) => recForm.setData('video_url', e.target.value)} placeholder="https://…" required />
+                        {recForm.errors.video_url && <p className="mt-1 text-xs font-semibold text-rose-600">{recForm.errors.video_url}</p>}
+                    </div>
+                    <div>
+                        <label className={labelCls}>ကြာချိန် (ဥပမာ 1:24:00)</label>
+                        <input className={inputCls} value={recForm.data.duration} onChange={(e) => recForm.setData('duration', e.target.value)} placeholder="1:24:00" />
+                    </div>
+                    <div className="flex flex-wrap items-end gap-2.5 sm:col-span-4">
+                        <button type="submit" className={btnAccentCls} disabled={recForm.processing}>
+                            <Video className="size-4" /> {editingRecordingId ? 'မှတ်တမ်း ပြင်ဆင်မှု သိမ်းရန်' : 'မှတ်တမ်း ထည့်ရန်'}
+                        </button>
+                        {editingRecordingId && (
+                            <button type="button" className={btnGhostCls} onClick={cancelRecordingEdit}>
+                                ပြင်ဆင်မှု ပယ်ဖျက်ရန်
+                            </button>
+                        )}
+                    </div>
+                </form>
+
+                {recordings.length === 0 ? (
+                    <p className={`mt-4 text-sm ${mutedCls}`}>မှတ်တမ်း မရှိသေးပါ — အပေါ်က form မှာ session အတွက် video URL ထည့်နိုင်ပါတယ်။</p>
+                ) : (
+                    <div className="mt-4 space-y-3">
+                        {recordings.map((r) => (
+                            <div key={r.id} className="flex flex-col gap-3 rounded-xl border border-slate-100 p-4 sm:flex-row sm:items-center dark:border-[#18264a]">
+                                <div className="min-w-0 flex-1">
+                                    <p className={`text-[.92rem] font-extrabold ${inkCls}`}>{r.title}</p>
+                                    <p className={`mt-0.5 text-[.8rem] ${mutedCls}`}>
+                                        {r.session_title} · {r.instructor} · {r.date}
+                                        {r.dur ? ` · ${r.dur}` : ''} · ကြည့်ရှုမှု {r.views.toLocaleString()} ကြိမ်
+                                    </p>
+                                    <a href={r.video_url} target="_blank" rel="noreferrer" className="mt-1 inline-block break-all text-[.8rem] font-bold text-teal-700 hover:underline dark:text-teal-300">
+                                        Video ဖွင့်ရန် →
+                                    </a>
+                                </div>
+                                <div className="flex flex-none items-center gap-2">
+                                    <button type="button" className={btnGhostCls} onClick={() => startRecordingEdit(r)}>
+                                        <Pencil className="size-4" /> ပြင်ရန်
+                                    </button>
+                                    <button type="button" className="rounded-lg p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40" onClick={() => removeRecording(r)} title="ဖျက်ရန်">
+                                        <Trash2 className="size-4" />
+                                    </button>
+                                </div>
+                            </div>
                         ))}
                     </div>
                 )}

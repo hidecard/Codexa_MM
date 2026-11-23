@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Academy;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\CourseCategory;
+use App\Models\ImportHistory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -18,13 +19,24 @@ class ImportController extends Controller
 
     private const MAX_PREVIEW_ROWS = 5;
 
+    private const MAX_HISTORY = 20;
+
     public function index(Request $request): Response
     {
+        $history = ImportHistory::query()
+            ->with('user:id,name')
+            ->latest()
+            ->limit(self::MAX_HISTORY)
+            ->get()
+            ->map(fn (ImportHistory $h) => $h->toDisplayArray())
+            ->values();
+
         return Inertia::render('Admin/Academy/Import/Index', [
             // Flash-only: preview/result survive exactly one redirect, which
             // is the upload → preview → confirm flow.
             'preview' => $request->session()->get('import_preview'),
             'result' => $request->session()->get('import_result'),
+            'history' => $history,
         ]);
     }
 
@@ -43,6 +55,11 @@ class ImportController extends Controller
         $path = 'imports/'.$token;
 
         Storage::disk('local')->put($path, file_get_contents($file->getRealPath()));
+        // Sidecar: confirm() only receives the token, so the original
+        // filename is kept next to the stored file for the history record.
+        Storage::disk('local')->put($path.'.meta', json_encode([
+            'filename' => $file->getClientOriginalName(),
+        ]));
 
         $parsed = $this->parseCsv(Storage::disk('local')->path($path));
 
@@ -74,6 +91,12 @@ class ImportController extends Controller
 
         $parsed = $this->parseCsv(Storage::disk('local')->path($path));
 
+        $filename = $data['token'];
+        if (Storage::disk('local')->exists($path.'.meta')) {
+            $meta = json_decode(Storage::disk('local')->get($path.'.meta'), true);
+            $filename = is_array($meta) && isset($meta['filename']) ? (string) $meta['filename'] : $filename;
+        }
+
         $created = 0;
         $skipped = 0;
         $errors = [];
@@ -100,16 +123,29 @@ class ImportController extends Controller
             $created++;
         }
 
-        // Rows rejected at parse time (bad price etc.) count as skipped too.
-        $skipped += $parsed['total_rows'] - count($parsed['rows']);
+        // Rows rejected at parse time (bad price etc.) count as failed.
+        $failed = $parsed['total_rows'] - count($parsed['rows']);
         $errors = array_merge($errors, array_slice($parsed['errors'], 0, self::MAX_ERRORS));
+        $errors = array_slice($errors, 0, self::MAX_ERRORS);
 
-        Storage::disk('local')->delete($path);
+        ImportHistory::create([
+            'user_id' => $request->user()->id,
+            'filename' => $filename,
+            'status' => ImportHistory::statusForOutcome($created, $skipped, $failed),
+            'rows_total' => $parsed['total_rows'],
+            'rows_imported' => $created,
+            'rows_skipped' => $skipped,
+            'rows_failed' => $failed,
+            'errors' => $errors,
+        ]);
+
+        Storage::disk('local')->delete([$path, $path.'.meta']);
 
         return back()->with('import_result', [
             'created' => $created,
             'skipped' => $skipped,
-            'errors' => array_slice($errors, 0, self::MAX_ERRORS),
+            'failed' => $failed,
+            'errors' => $errors,
             'date' => now()->format('Y-m-d H:i'),
         ])->with('success', $created.' သင်တန်း သွင်းပြီးပါပြီ'.($skipped ? ' · '.$skipped.' ကြောင်း ကျော်သွားပါတယ်' : '').'။');
     }

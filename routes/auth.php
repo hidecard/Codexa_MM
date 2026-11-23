@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\InviteAcceptController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
@@ -41,6 +42,17 @@ Route::middleware('guest')->group(function () {
 
     Route::post('/reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
+
+    // Staff invitation acceptance. The link is a temporary signed URL
+    // (7 days) emailed by StaffController::invite; 'signed' verifies the
+    // signature and expiry on both the page and the password submission.
+    Route::get('/staff-invite/{user}', [InviteAcceptController::class, 'create'])
+        ->middleware('signed')
+        ->name('staff.invite.accept');
+
+    Route::post('/staff-invite/{user}', [InviteAcceptController::class, 'store'])
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('staff.invite.accept.store');
 });
 
 Route::middleware('auth')->group(function () {

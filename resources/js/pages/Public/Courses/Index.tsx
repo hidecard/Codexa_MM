@@ -185,7 +185,7 @@ export default function Index({ courses, categories = [], filters = {} }: Props)
                     <>
                         <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                             {courses.data.map((course) => (
-                                <CourseCard key={course.id} course={mapApiCourse(course)} />
+                                <CourseCard key={course.id} course={mapApiCourse(course)} showAddToCart />
                             ))}
                         </div>
                         {courses.links.length > 3 && (

@@ -1,54 +1,39 @@
 import { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { LmsShell } from '@/components/shared/lms-shell';
-import { ChevronLeft, MessageCircle, Search, Send } from 'lucide-react';
+import { ChevronLeft, MessageCircle, Plus, Search, Send } from 'lucide-react';
 
 type Msg = { from: 'me' | 'them'; text: string; time: string };
 type Thread = { id: number; name: string; role: string; init: string; col: string; unread: number; time: string; msgs: Msg[] };
-type Props = { threads?: Thread[] };
+type Contact = { id: number; name: string; role: string; init: string; col: string; hasThread: boolean };
+type Props = { threads: Thread[]; contacts: Contact[] };
 
-/* SAMPLE DATA — fallback only; no messaging backend exists yet (from prototype). Messages are kept in this browser only. */
-const SAMPLE_THREADS: Thread[] = [
-    { id: 1, name: 'Thura Aung', role: 'Web Development Instructor', init: 'TA', col: 'linear-gradient(135deg,#0b3b5e,#0ea892)', unread: 1, time: 'လွန်ခဲ့သော 30 မိနစ်',
-        msgs: [
-            { from: 'them', text: 'မင်္ဂလာပါ Kaung Htet — Portfolio project ကို ကြည့်ပြီးပါပြီ။ Layout က တော်တော် သပ်ရပ်လာပါပြီ။', time: 'မနက် 10:12' },
-            { from: 'me', text: 'ကျေးဇူးပါ ဆရာ။ Mobile မှာ menu က နည်းနည်း ခက်နေသေးတယ် ဆရာ။', time: 'မနက် 10:20' },
-            { from: 'them', text: 'Hamburger menu အတွက် JavaScript toggle လေး ထည့်ကြည့်ပါ။ မရှင်းရင် ဒီနေ့ live class မှာ ဥပမာနဲ့ ပြပေးပါမယ်။', time: 'မနက် 10:24' },
-        ] },
-    { id: 2, name: 'May Thazin', role: 'JavaScript & Node.js Instructor', init: 'MT', col: 'linear-gradient(135deg,#7c2d12,#f59e0b)', unread: 2, time: 'လွန်ခဲ့သော 2 နာရီ',
-        msgs: [
-            { from: 'them', text: 'Assignment ကို စစ်ပြီးပါပြီ။ reduce() သုံးထားတာ ကောင်းပါတယ်။', time: 'နေ့လယ် 12:05' },
-            { from: 'them', text: 'နောက်တစ်ဆင့် အနေနဲ့ error handling လေး ထည့်ပြီး ပြန် practice လုပ်ကြည့်ပါ။', time: 'နေ့လယ် 12:06' },
-        ] },
-    { id: 3, name: 'Codexa MM Support', role: 'Support Team', init: 'CX', col: 'linear-gradient(135deg,#0d213f,#0a544b)', unread: 0, time: 'မနေ့က',
-        msgs: [
-            { from: 'them', text: 'မင်္ဂလာပါ — Codexa MM မှ ကြိုဆိုပါတယ်။ တစ်ခုခု အကူအညီ လိုရင် ဒီနေရာကနေ စာပို့နိုင်ပါတယ်။', time: 'မနေ့က · မနက် 9:00' },
-            { from: 'me', text: 'လက်မှတ် download လုပ်တာ အဆင်ပြေသွားပါပြီ။ ကျေးဇူးပါ။', time: 'မနေ့က · မနက် 9:15' },
-            { from: 'them', text: 'အဆင်ပြေတယ် ကြားရတာ ဝမ်းသာပါတယ်။ ဆက်လက် ကြိုးစားပါ!', time: 'မနေ့က · မနက် 9:18' },
-        ] },
-    { id: 4, name: 'Nilar Win', role: 'UI/UX Design Instructor', init: 'NW', col: 'linear-gradient(135deg,#831843,#ec4899)', unread: 0, time: 'လွန်ခဲ့သော 3 ရက်',
-        msgs: [
-            { from: 'them', text: 'Figma assignment ရဲ့ feedback ပေးပြီးပါပြီ။ Auto Layout အပိုင်းကို နောက်အပတ် live masterclass မှာ အသေးစိတ် ထပ်ပြပေးပါမယ်။', time: 'နိုဝင်ဘာ 19 · ည 8:40' },
-        ] },
-];
-
-export default function Index({ threads }: Props) {
-    const [list, setList] = useState<Thread[]>(threads && threads.length > 0 ? threads : SAMPLE_THREADS);
+export default function Index({ threads, contacts }: Props) {
     const [activeId, setActiveId] = useState<number | null>(null);
     const [query, setQuery] = useState('');
     const [input, setInput] = useState('');
-    const active = list.find((t) => t.id === activeId) ?? null;
-    const unreadTotal = list.reduce((s, t) => s + t.unread, 0);
-    const filtered = list.filter((t) => !query.trim() || t.name.toLowerCase().includes(query.trim().toLowerCase()));
+    const [showContacts, setShowContacts] = useState(false);
+    const active = threads.find((t) => t.id === activeId) ?? null;
+    const unreadTotal = threads.reduce((s, t) => s + t.unread, 0);
+    const filtered = threads.filter((t) => !query.trim() || t.name.toLowerCase().includes(query.trim().toLowerCase()));
+    const newContacts = contacts.filter((c) => !c.hasThread);
 
     const openThread = (id: number) => {
         setActiveId(id);
-        setList((l) => l.map((t) => (t.id === id ? { ...t, unread: 0 } : t)));
+        setShowContacts(false);
+        const thread = threads.find((t) => t.id === id);
+        if (thread && thread.unread > 0) {
+            router.post(`/student/messages/${id}/read`, {}, { preserveScroll: true });
+        }
     };
     const send = () => {
         if (!input.trim() || !active) return;
-        setList((l) => l.map((t) => (t.id === active.id ? { ...t, msgs: [...t.msgs, { from: 'me' as const, text: input.trim(), time: 'အခုလေးတင်' }], time: 'အခုလေးတင်' } : t)));
+        router.post('/student/messages', { recipient_id: active.id, body: input.trim() }, { preserveScroll: true });
         setInput('');
+    };
+    const startThread = (contact: Contact) => {
+        setActiveId(contact.id);
+        setShowContacts(false);
     };
 
     const threadList = (
@@ -57,7 +42,32 @@ export default function Index({ threads }: Props) {
                 <Search className="pointer-events-none absolute left-6 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                 <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ရှာဖွေရန်…" className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-teal-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
             </div>
+            <div className="px-3 pb-2">
+                <button onClick={() => setShowContacts((v) => !v)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+                    <Plus className="size-4" /> စာအသစ် ပို့ရန်
+                </button>
+            </div>
+            {showContacts && (
+                <div className="border-b border-slate-200 px-3 pb-3 dark:border-slate-800">
+                    {newContacts.length === 0 ? (
+                        <p className="py-2 text-xs text-slate-500 dark:text-slate-400">စာပို့နိုင်သူ အားလုံးနဲ့ စကားပြောခန်း ရှိပြီးပါပြီ။</p>
+                    ) : (
+                        newContacts.map((c) => (
+                            <button key={c.id} onClick={() => startThread(c)} className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800">
+                                <span className="grid size-9 shrink-0 place-items-center rounded-full text-[11px] font-extrabold text-white" style={{ background: c.col }}>{c.init}</span>
+                                <span className="min-w-0">
+                                    <span className="block truncate text-sm font-bold text-slate-900 dark:text-white">{c.name}</span>
+                                    <span className="block text-xs text-slate-500 dark:text-slate-400">{c.role}</span>
+                                </span>
+                            </button>
+                        ))
+                    )}
+                </div>
+            )}
             <div className="flex-1 overflow-y-auto">
+                {filtered.length === 0 && (
+                    <p className="p-4 text-center text-sm text-slate-500 dark:text-slate-400">မက်ဆေ့ချ် မရှိသေးပါ။</p>
+                )}
                 {filtered.map((t) => {
                     const last = t.msgs[t.msgs.length - 1];
                     return (
@@ -78,6 +88,9 @@ export default function Index({ threads }: Props) {
         </div>
     );
 
+    // A contact picked from "စာအသစ်" has no thread yet — show an empty composer.
+    const pendingContact = !active && activeId !== null ? contacts.find((c) => c.id === activeId) ?? null : null;
+
     return (
         <LmsShell title="မက်ဆေ့ချ်များ" nav="student">
             <Head title="Messages" />
@@ -90,8 +103,8 @@ export default function Index({ threads }: Props) {
             </div>
 
             <div className="mt-6 grid gap-0 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:grid-cols-[340px_1fr]" style={{ height: '640px' }}>
-                <div className={`${active ? 'hidden lg:block' : 'block'} border-r border-slate-200 dark:border-slate-800`}>{threadList}</div>
-                <div className={`${active ? 'flex' : 'hidden lg:flex'} flex-col`}>
+                <div className={`${active || pendingContact ? 'hidden lg:block' : 'block'} border-r border-slate-200 dark:border-slate-800`}>{threadList}</div>
+                <div className={`${active || pendingContact ? 'flex' : 'hidden lg:flex'} flex-col`}>
                     {active ? (
                         <>
                             <div className="flex items-center gap-3 border-b border-slate-200 p-4 dark:border-slate-800">
@@ -115,6 +128,26 @@ export default function Index({ threads }: Props) {
                                 <button onClick={send} disabled={!input.trim()} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-teal-700 disabled:opacity-50"><Send className="size-4" /> ပို့ရန်</button>
                             </div>
                         </>
+                    ) : pendingContact ? (
+                        <>
+                            <div className="flex items-center gap-3 border-b border-slate-200 p-4 dark:border-slate-800">
+                                <button onClick={() => setActiveId(null)} className="grid size-8 place-items-center rounded-lg border border-slate-200 lg:hidden dark:border-slate-700"><ChevronLeft className="size-4" /></button>
+                                <span className="grid size-11 shrink-0 place-items-center rounded-full text-xs font-extrabold text-white" style={{ background: pendingContact.col }}>{pendingContact.init}</span>
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate font-extrabold text-slate-900 dark:text-white">{pendingContact.name}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">{pendingContact.role}</p>
+                                </div>
+                            </div>
+                            <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
+                                <MessageCircle className="size-12 text-slate-300" />
+                                <p className="mt-3 font-bold text-slate-700 dark:text-slate-200">{pendingContact.name} နှင့် စကားပြောခန်း အသစ်</p>
+                                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">အောက်မှာ ပထမဆုံး မက်ဆေ့ချ် ရေးပြီး ပို့နိုင်ပါသည်။</p>
+                            </div>
+                            <div className="flex gap-2.5 border-t border-slate-200 p-3.5 dark:border-slate-800">
+                                <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && input.trim()) { router.post('/student/messages', { recipient_id: pendingContact.id, body: input.trim() }, { preserveScroll: true }); setInput(''); } }} placeholder="မက်ဆေ့ချ် ရေးရန်…" className="flex-1 rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+                                <button onClick={() => { if (!input.trim()) return; router.post('/student/messages', { recipient_id: pendingContact.id, body: input.trim() }, { preserveScroll: true }); setInput(''); }} disabled={!input.trim()} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-teal-700 disabled:opacity-50"><Send className="size-4" /> ပို့ရန်</button>
+                            </div>
+                        </>
                     ) : (
                         <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
                             <MessageCircle className="size-12 text-slate-300" />
@@ -124,7 +157,6 @@ export default function Index({ threads }: Props) {
                     )}
                 </div>
             </div>
-            <p className="mt-3 text-xs text-slate-400">မက်ဆေ့ချ် စနစ် အစစ်အမှန် မရှိသေးသဖြင့် ဤစာမျက်နှာသည် နမူနာ ပြသမှုသာ ဖြစ်သည်။</p>
         </LmsShell>
     );
 }

@@ -2,16 +2,30 @@
 
 use App\Http\Controllers\Instructor\AssignmentController as InstructorAssignmentController;
 use App\Http\Controllers\Instructor\CourseController as InstructorCourseController;
+use App\Http\Controllers\Instructor\DashboardController as InstructorDashboardController;
+use App\Http\Controllers\Instructor\PayoutController as InstructorPayoutController;
+use App\Http\Controllers\Instructor\StudentController as InstructorStudentController;
+use App\Http\Controllers\Student\AchievementController as StudentAchievementController;
 use App\Http\Controllers\Student\AnnouncementController;
+use App\Http\Controllers\Student\LeaderboardController as StudentLeaderboardController;
 use App\Http\Controllers\Student\AssignmentController as StudentAssignmentController;
 use App\Http\Controllers\Student\CertificateController as StudentCertificateController;
+use App\Http\Controllers\Student\CommunityPostController as StudentCommunityPostController;
 use App\Http\Controllers\Student\CourseLearnController;
 use App\Http\Controllers\Student\DashboardController;
 use App\Http\Controllers\Student\EnrollmentController;
+use App\Http\Controllers\Student\HelpController as StudentHelpController;
+use App\Http\Controllers\Student\LearningPathController as StudentLearningPathController;
+use App\Http\Controllers\Student\MessageController as StudentMessageController;
 use App\Http\Controllers\Student\MyCoursesController;
 use App\Http\Controllers\Student\NotificationController as StudentNotificationController;
+use App\Http\Controllers\Student\PaymentController as StudentPaymentController;
+use App\Http\Controllers\Student\ProgressController as StudentProgressController;
 use App\Http\Controllers\Student\QuizController;
+use App\Http\Controllers\Student\ResourceController as StudentResourceController;
 use App\Http\Controllers\Student\ReviewController;
+use App\Http\Controllers\Student\ScheduleController as StudentScheduleController;
+use App\Http\Controllers\Student\WishlistController as StudentWishlistController;
 use App\Models\Quiz;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -76,13 +90,11 @@ Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->name
     Route::post('/notifications/{notification}/read', [StudentNotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [StudentNotificationController::class, 'markAllRead'])->name('notifications.read-all');
 
-    Route::get('/payments', function () {
-        return Inertia::render('Student/Payments/Index');
-    })->name('payments.index');
+    Route::get('/payments', [StudentPaymentController::class, 'index'])->name('payments.index');
 
-    Route::get('/wishlist', function () {
-        return Inertia::render('Student/Wishlist');
-    })->name('wishlist');
+    Route::get('/wishlist', [StudentWishlistController::class, 'index'])->name('wishlist');
+    Route::post('/wishlist/{course}', [StudentWishlistController::class, 'store'])->name('wishlist.store');
+    Route::delete('/wishlist/{course}', [StudentWishlistController::class, 'destroy'])->name('wishlist.destroy');
 
     Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
 
@@ -91,23 +103,28 @@ Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->name
     })->name('profile');
 
     Route::get('/certificates/{certificate}', [StudentCertificateController::class, 'show'])->name('certificates.show');
+    Route::get('/certificates/{certificate}/print', [StudentCertificateController::class, 'print'])->name('certificates.print');
 
     Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
 
     // Live classes, notes, cart, checkout, orders and refunds are served by
     // controller routes in routes/admin_ops.php and routes/academy_writes.php
     // (loaded before this file).
-    Route::get('/community', fn () => Inertia::render('Student/Community/Index'))->name('community.index');
-    Route::get('/community/{id}', fn ($id) => Inertia::render('Student/Community/Show'))->name('community.show');
-    Route::get('/leaderboard', fn () => Inertia::render('Student/Leaderboard'))->name('leaderboard.index');
-    Route::get('/paths', fn () => Inertia::render('Student/Paths/Index'))->name('paths.index');
-    Route::get('/paths/{id}', fn ($id) => Inertia::render('Student/Paths/Show'))->name('paths.show');
-    Route::get('/resources', fn () => Inertia::render('Student/Resources/Index'))->name('resources.index');
-    Route::get('/achievements', fn () => Inertia::render('Student/Achievements/Index'))->name('achievements.index');
-    Route::get('/messages', fn () => Inertia::render('Student/Messages/Index'))->name('messages.index');
-    Route::get('/schedule', fn () => Inertia::render('Student/Schedule/Index'))->name('schedule.index');
-    Route::get('/progress', fn () => Inertia::render('Student/Progress/Index'))->name('progress.index');
-    Route::get('/help', fn () => Inertia::render('Student/Help/Index'))->name('help.index');
+    Route::get('/community', [StudentCommunityPostController::class, 'index'])->name('community.index');
+    Route::get('/community/{post}', [StudentCommunityPostController::class, 'show'])->name('community.show');
+    Route::get('/leaderboard', [StudentLeaderboardController::class, 'index'])->name('leaderboard.index');
+    Route::get('/paths', [StudentLearningPathController::class, 'index'])->name('paths.index');
+    Route::get('/paths/{path}', [StudentLearningPathController::class, 'show'])->name('paths.show');
+    Route::post('/paths/{path}/follow', [StudentLearningPathController::class, 'toggleFollow'])->name('paths.follow');
+    Route::get('/resources', [StudentResourceController::class, 'index'])->name('resources.index');
+    Route::get('/resources/{resource}/download', [StudentResourceController::class, 'download'])->name('resources.download');
+    Route::get('/achievements', [StudentAchievementController::class, 'index'])->name('achievements.index');
+    Route::get('/messages', [StudentMessageController::class, 'index'])->name('messages.index');
+    Route::post('/messages', [StudentMessageController::class, 'store'])->name('messages.store');
+    Route::post('/messages/{user}/read', [StudentMessageController::class, 'markRead'])->name('messages.read');
+    Route::get('/schedule', [StudentScheduleController::class, 'index'])->name('schedule.index');
+    Route::get('/progress', [StudentProgressController::class, 'index'])->name('progress.index');
+    Route::get('/help', [StudentHelpController::class, 'index'])->name('help.index');
     Route::get('/payment-methods', fn () => Inertia::render('Student/PaymentMethods/Index'))->name('payment-methods.index');
     Route::get('/membership', fn () => Inertia::render('Student/Membership/Index'))->name('membership.index');
     Route::get('/security', fn () => Inertia::render('Student/Security/Index'))->name('security.index');
@@ -123,9 +140,7 @@ Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->name
 });
 
 Route::middleware(['auth', 'verified', 'role:instructor'])->prefix('instructor')->name('instructor.')->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Instructor/Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', InstructorDashboardController::class)->name('dashboard');
 
     Route::get('/courses', [InstructorCourseController::class, 'index'])->name('courses.index');
     Route::get('/courses/create', [InstructorCourseController::class, 'create'])->name('courses.create');
@@ -145,9 +160,7 @@ Route::middleware(['auth', 'verified', 'role:instructor'])->prefix('instructor')
     Route::get('/lessons', fn () => redirect()->route('instructor.courses.index'))->name('lessons.index');
     Route::get('/resources', fn () => redirect()->route('instructor.courses.index'))->name('resources.index');
 
-    Route::get('/students', function () {
-        return Inertia::render('Instructor/Students/Index');
-    })->name('students.index');
+    Route::get('/students', [InstructorStudentController::class, 'index'])->name('students.index');
 
     Route::get('/assignments', [InstructorAssignmentController::class, 'index'])->name('assignments.index');
     Route::post('/assignments', [InstructorAssignmentController::class, 'store'])->name('assignments.store');
@@ -170,7 +183,5 @@ Route::middleware(['auth', 'verified', 'role:instructor'])->prefix('instructor')
     // served by controller routes in routes/academy_writes.php and
     // routes/admin_ops.php (loaded before this file).
 
-    Route::get('/earnings/{id}', function ($id) {
-        return Inertia::render('Instructor/Earnings/Show', ['courseId' => (int) $id]);
-    })->name('earnings.show');
+    Route::get('/earnings/{course}', [InstructorPayoutController::class, 'show'])->name('earnings.show');
 });

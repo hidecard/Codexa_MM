@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { Bell, CalendarDays, Eye, PlayCircle, Radio, Users } from 'lucide-react';
+import { postJson } from '@/lib/csrf';
 
 type LiveClass = {
     id: number;
@@ -17,7 +18,7 @@ type LiveClass = {
     joined: number;
 };
 
-type Recorded = { title: string; instructor: string; date: string; dur: string; views: number; course: number };
+type Recorded = { id: number; live_session_id: number; title: string; instructor: string; date: string; dur: string; views: number; course: number; video_url: string | null; session_title: string };
 
 type Props = { upcoming?: LiveClass[]; recorded?: Recorded[] };
 
@@ -27,6 +28,11 @@ export default function Index({ upcoming = [], recorded = [] }: Props) {
     const [tab, setTab] = useState<'all' | 'upcoming' | 'recorded'>('all');
     const [reminded, setReminded] = useState<number[]>([]);
     const toggleRemind = (id: number) => setReminded((r) => (r.includes(id) ? r.filter((x) => x !== id) : [...r, id]));
+
+    // Fire-and-forget view count; the video opens in a new tab.
+    const trackView = (r: Recorded) => {
+        postJson(`/student/live-classes/${r.live_session_id}/recordings/${r.id}/view`).catch(() => {});
+    };
 
     return (
         <LmsShell title="Live Classes" nav="student">
@@ -101,17 +107,30 @@ export default function Index({ upcoming = [], recorded = [] }: Props) {
                     ) : (
                     <div className="mt-4 grid gap-4 md:grid-cols-3">
                         {recs.map((r) => (
-                            <article key={r.title} className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-                                <div className="grid aspect-video place-items-center rounded-xl bg-slate-950 text-white"><PlayCircle className="size-10 opacity-80" /></div>
+                            <article key={r.id > 0 ? `rec-${r.id}` : `sess-${r.live_session_id}`} className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+                                {r.video_url ? (
+                                    <a href={r.video_url} target="_blank" rel="noreferrer" onClick={() => trackView(r)} className="grid aspect-video place-items-center rounded-xl bg-slate-950 text-white transition hover:bg-slate-800">
+                                        <PlayCircle className="size-10 opacity-80" />
+                                    </a>
+                                ) : (
+                                    <div className="grid aspect-video place-items-center rounded-xl bg-slate-950 text-white"><PlayCircle className="size-10 opacity-80" /></div>
+                                )}
                                 <h3 className="mt-3 font-extrabold leading-snug text-slate-900 dark:text-white">{r.title}</h3>
                                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{r.instructor} · {r.date}</p>
                                 <p className="mt-2 flex items-center gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                    <span className="inline-flex items-center gap-1"><CalendarDays className="size-3.5" /> {r.dur}</span>
+                                    <span className="inline-flex items-center gap-1"><CalendarDays className="size-3.5" /> {r.dur || '—'}</span>
                                     <span className="inline-flex items-center gap-1"><Eye className="size-3.5" /> {r.views.toLocaleString()} ကြည့်ရှုမှု</span>
                                 </p>
-                                {r.course > 0 && (
-                                    <Link href={`/student/courses/${r.course}/learn`} className="mt-3 inline-block text-sm font-bold text-teal-600 hover:text-teal-700">သင်တန်း ဖွင့်ရန် →</Link>
-                                )}
+                                <div className="mt-3 flex flex-wrap gap-3">
+                                    {r.video_url ? (
+                                        <a href={r.video_url} target="_blank" rel="noreferrer" onClick={() => trackView(r)} className="text-sm font-bold text-teal-600 hover:text-teal-700">မှတ်တမ်း ကြည့်ရန် →</a>
+                                    ) : (
+                                        <span className="text-sm font-semibold text-slate-400 dark:text-slate-500">မှတ်တမ်း မရှိသေးပါ</span>
+                                    )}
+                                    {r.course > 0 && (
+                                        <Link href={`/student/courses/${r.course}/learn`} className="text-sm font-bold text-teal-600 hover:text-teal-700">သင်တန်း ဖွင့်ရန် →</Link>
+                                    )}
+                                </div>
                             </article>
                         ))}
                     </div>

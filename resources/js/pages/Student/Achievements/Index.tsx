@@ -4,33 +4,9 @@ import { LmsShell } from '@/components/shared/lms-shell';
 import { ProgressBar } from '@/components/lms/progress-bar';
 import { Award, BookOpen, Flame, HelpCircle, MessageCircle, Moon, Target, Video } from 'lucide-react';
 
-type Achievement = { name: string; desc: string; icon: string; earned: boolean; date?: string; cur?: number; total?: number; unit?: string };
+type Achievement = { name: string; desc: string; icon: string; earned: boolean; date?: string | null; cur?: number; total?: number; unit?: string };
 type XpEntry = { label: string; xp: number; when: string };
 type Props = { achievements?: Achievement[]; xpHistory?: XpEntry[]; totalXp?: number };
-
-/* SAMPLE DATA — fallback only; no gamification backend exists yet (from prototype). */
-const SAMPLE_ACHIEVEMENTS: Achievement[] = [
-    { name: 'ပထမဆုံး သင်တန်း', desc: 'သင်တန်း 1 ခု ပြီးဆုံးပြီး', icon: 'book', earned: true, date: 'စက်တင်ဘာ 02' },
-    { name: 'ပထမဆုံး လက်မှတ်', desc: 'Certificate 1 စောင် ရရှိပြီး', icon: 'cert', earned: true, date: 'စက်တင်ဘာ 02' },
-    { name: '12 ရက် Streak', desc: '12 ရက် ဆက်တိုက် လေ့လာပြီး', icon: 'flame', earned: true, date: 'နိုဝင်ဘာ 22' },
-    { name: 'Quiz Master', desc: 'Quiz 10 ခု အောင်မြင်ပြီး', icon: 'quiz', earned: true, date: 'နိုဝင်ဘာ 10' },
-    { name: 'Assignment Star', desc: 'Assignment 14 ခု ပြီးဆုံးပြီး', icon: 'pen', earned: true, date: 'နိုဝင်ဘာ 18' },
-    { name: 'Community Helper', desc: 'Community မှာ အကူအညီ အဖြေ 10 ခု ပေးပြီး', icon: 'chat', earned: true, date: 'နိုဝင်ဘာ 15' },
-    { name: 'သင်တန်း 5 ခု ပြီးဆုံး', desc: 'သင်တန်း 5 ခု ပြီးဆုံးရန်', icon: 'cert', earned: false, cur: 3, total: 5, unit: 'ခု' },
-    { name: '30 ရက် Streak', desc: '30 ရက် ဆက်တိုက် လေ့လာရန်', icon: 'flame', earned: false, cur: 12, total: 30, unit: 'ရက်' },
-    { name: 'Perfect Quiz', desc: 'Quiz မှာ အမှတ်ပြည့် 3 ကြိမ် ရရန်', icon: 'quiz', earned: false, cur: 2, total: 3, unit: 'ကြိမ်' },
-    { name: 'Live Regular', desc: 'Live class 5 ခု တက်ရောက်ရန်', icon: 'live', earned: false, cur: 3, total: 5, unit: 'ခု' },
-    { name: 'Night Owl', desc: 'ည 10 နာရီနောက်ပိုင်း 10 ရက် လေ့လာရန်', icon: 'moon', earned: false, cur: 6, total: 10, unit: 'ရက်' },
-    { name: 'XP 5,000', desc: 'စုစုပေါင်း 5,000 XP ပြည့်ရန်', icon: 'target', earned: false, cur: 2310, total: 5000, unit: 'XP' },
-];
-const SAMPLE_XP: XpEntry[] = [
-    { label: 'Assignment တင်သွင်းပြီး — JS Array Methods', xp: 80, when: 'ယနေ့' },
-    { label: 'သင်ခန်းစာ ပြီးဆုံး — Python OOP Basics', xp: 20, when: 'ယနေ့' },
-    { label: 'နေ့စဉ် streak bonus', xp: 10, when: 'ယနေ့' },
-    { label: 'Live class တက်ရောက်ပြီး — CSS Grid Masterclass', xp: 40, when: 'မနေ့က' },
-    { label: 'Quiz အောင်မြင် — Python Chapter 5', xp: 50, when: 'မနေ့က' },
-    { label: 'သင်ခန်းစာ ၃ ခု ပြီးဆုံး — JavaScript Deep Dive', xp: 60, when: 'လွန်ခဲ့သော 2 ရက်' },
-];
 
 const ICONS: Record<string, typeof Award> = {
     book: BookOpen,
@@ -44,9 +20,9 @@ const ICONS: Record<string, typeof Award> = {
     target: Target,
 };
 
-export default function Index({ achievements, xpHistory, totalXp = 2310 }: Props) {
-    const list = achievements && achievements.length > 0 ? achievements : SAMPLE_ACHIEVEMENTS;
-    const xp = xpHistory && xpHistory.length > 0 ? xpHistory : SAMPLE_XP;
+export default function Index({ achievements = [], xpHistory = [], totalXp = 0 }: Props) {
+    const list = achievements;
+    const xp = xpHistory;
     const [filter, setFilter] = useState<'all' | 'earned' | 'locked'>('all');
     const earned = list.filter((a) => a.earned);
     const filtered = list.filter((a) => filter === 'all' || (filter === 'earned' ? a.earned : !a.earned));
@@ -85,6 +61,12 @@ export default function Index({ achievements, xpHistory, totalXp = 2310 }: Props
                 ))}
             </div>
 
+            {filtered.length === 0 && (
+                <p className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900">
+                    {filter === 'earned' ? 'Badge မရရှိသေးပါ — သင်ခန်းစာများ ပြီးဆုံးအောင် လေ့လာလိုက်ပါ။' : 'Badge မရှိသေးပါ။'}
+                </p>
+            )}
+
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {filtered.map((a) => {
                     const Icon = ICONS[a.icon] ?? Award;
@@ -116,6 +98,7 @@ export default function Index({ achievements, xpHistory, totalXp = 2310 }: Props
 
             <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
                 <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">XP မှတ်တမ်း</h2>
+                {xp.length === 0 && <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">XP မှတ်တမ်း မရှိသေးပါ — သင်ခန်းစာ ပြီးဆုံးခြင်း၊ Quiz အောင်မြင်ခြင်း၊ Assignment တင်သွင်းခြင်းတို့မှ XP ရနိုင်ပါတယ်။</p>}
                 <ul className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
                     {xp.map((x, i) => (
                         <li key={i} className="flex items-center justify-between gap-3 py-3">

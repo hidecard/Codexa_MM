@@ -15,17 +15,27 @@ type ReviewRow = {
     stars: number;
     text: string;
     date: string;
-    status: 'pending' | 'approved' | 'hidden';
+    status: 'pending' | 'approved' | 'hidden' | 'reported';
     reply: string | null;
+};
+
+type ReportRow = {
+    id: number;
+    review_id: number;
+    reporter: string;
+    reason: string;
+    date: string;
+    review: { author: string; course: string; stars: number; text: string } | null;
 };
 
 function statusPill(status: string) {
     if (status === 'pending') return <Pill tone="amber">စစ်ဆေးရန်</Pill>;
     if (status === 'hidden') return <Pill tone="slate">ဖျောက်ထား</Pill>;
+    if (status === 'reported') return <Pill tone="rose">Report လုပ်ထား</Pill>;
     return <Pill tone="teal">အတည်ပြုပြီး</Pill>;
 }
 
-export default function Index({ reviews = [], stats = { average: 0, total: 0 } }: { reviews?: ReviewRow[]; stats?: { average: number; total: number } }) {
+export default function Index({ reviews = [], reports = [], stats = { average: 0, total: 0 } }: { reviews?: ReviewRow[]; reports?: ReportRow[]; stats?: { average: number; total: number } }) {
     const [tab, setTab] = useState<'all' | 'pending' | 'reported' | 'approved'>('all');
     const [reply, setReply] = useState<Record<number, string>>({});
     const [notice, setNotice] = useState('');
@@ -48,6 +58,12 @@ export default function Index({ reviews = [], stats = { average: 0, total: 0 } }
             { reply: reply[id].trim() },
             { preserveScroll: true, onSuccess: () => { setReply({ ...reply, [id]: '' }); setNotice('အကြောင်းပြန်ချက် သိမ်းပြီးပါပြီ'); } },
         );
+    };
+    const resolveReport = (id: number) => {
+        router.post(`/admin/academy/review-reports/${id}/resolve`, {}, { preserveScroll: true, onSuccess: () => setNotice('Report ကို ဖြေရှင်းပြီးပါပြီ — review ကို ဖျောက်ထားပါတယ်') });
+    };
+    const dismissReport = (id: number) => {
+        router.post(`/admin/academy/review-reports/${id}/dismiss`, {}, { preserveScroll: true, onSuccess: () => setNotice('Report ကို ပယ်ချပြီးပါပြီ') });
     };
 
     return (
@@ -80,7 +96,7 @@ export default function Index({ reviews = [], stats = { average: 0, total: 0 } }
                     စစ်ဆေးရန်
                 </Chip>
                 <Chip active={tab === 'reported'} onClick={() => setTab('reported')}>
-                    Report လုပ်ထား
+                    Report လုပ်ထား ({reports.length})
                 </Chip>
                 <Chip active={tab === 'approved'} onClick={() => setTab('approved')}>
                     အတည်ပြုပြီး
@@ -88,10 +104,45 @@ export default function Index({ reviews = [], stats = { average: 0, total: 0 } }
             </div>
 
             <p className={`mt-4 text-sm font-semibold ${mutedCls}`}>
-                စစ်ဆေးရန် ကျန်ရှိ {pendingCount} ခု · ပြသနေသော review {reviews.filter((r) => r.status === 'approved').length} ခု
+                စစ်ဆေးရန် ကျန်ရှိ {pendingCount} ခု · ပြသနေသော review {reviews.filter((r) => r.status === 'approved').length} ခု · Report စောင့်ဆိုင်းဆဲ {reports.length} ခု
             </p>
 
-            {list.length === 0 ? (
+            {tab === 'reported' ? (
+                reports.length === 0 ? (
+                    <div className="mt-6">
+                        <EmptyBox title="Report လုပ်ထားသော review မရှိပါ" description="ကျောင်းသားများ report တင်ရင် ဒီမှာ ပေါ်လာပါမယ်" />
+                    </div>
+                ) : (
+                    <div className="mt-4 space-y-3.5">
+                        {reports.map((rep) => (
+                            <LmsCard key={rep.id} className="p-5">
+                                <div className="flex flex-wrap items-start gap-3.5">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <p className={`text-[.93rem] font-extrabold ${inkCls}`}>{rep.review?.author ?? '—'}</p>
+                                            {rep.review && <Stars value={rep.review.stars} />}
+                                            <Pill tone="rose">Report လုပ်ထား</Pill>
+                                        </div>
+                                        <p className={`mt-0.5 text-[.78rem] ${mutedCls}`}>
+                                            {rep.review?.course ?? '—'} · {rep.date} · Report တင်သူ — {rep.reporter}
+                                        </p>
+                                        {rep.review?.text && <p className={`mt-1.5 text-[.88rem] leading-relaxed ${mutedCls}`}>{rep.review.text}</p>}
+                                        <p className="mt-1.5 text-[.8rem] font-bold text-rose-600">Report အကြောင်းရင်း — {rep.reason}</p>
+                                    </div>
+                                    <div className="flex flex-none flex-wrap gap-2">
+                                        <button type="button" className={btnGhostCls} onClick={() => resolveReport(rep.id)}>
+                                            <EyeOff className="size-4" /> ဖြေရှင်းရန် (review ဖျောက်ရန်)
+                                        </button>
+                                        <button type="button" className={btnGhostCls} onClick={() => dismissReport(rep.id)}>
+                                            <Check className="size-4" /> ပယ်ချရန်
+                                        </button>
+                                    </div>
+                                </div>
+                            </LmsCard>
+                        ))}
+                    </div>
+                )
+            ) : list.length === 0 ? (
                 <div className="mt-6">
                     <EmptyBox title="ဒီ filter မှာ review မရှိပါ" description="တခြား filter ဖြင့် ပြန်ကြည့်ပါ" />
                 </div>

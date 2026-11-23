@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin\Academy;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Models\LiveAttendance;
 use App\Models\LiveSession;
+use App\Models\SessionRecording;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,6 +22,7 @@ class LiveSessionController extends Controller
     {
         $sessions = LiveSession::query()
             ->with(['course:id,title', 'instructor:id,name'])
+            ->withCount('attendances')
             ->orderBy('scheduled_at')
             ->get()
             ->map(fn (LiveSession $s) => $s->toDisplayArray())
@@ -29,6 +32,12 @@ class LiveSessionController extends Controller
             'sessions' => $sessions,
             'instructors' => User::role('instructor')->orderBy('name')->get(['id', 'name'])->values(),
             'courses' => Course::orderBy('title')->get(['id', 'title'])->values(),
+            'recordings' => SessionRecording::query()
+                ->with(['session:id,title,scheduled_at,course_id', 'session.instructor:id,name'])
+                ->latest()
+                ->get()
+                ->map(fn (SessionRecording $r) => $r->toDisplayArray())
+                ->values(),
             'stats' => [
                 'total' => LiveSession::count(),
                 'upcoming' => LiveSession::where('status', LiveSession::STATUS_SCHEDULED)->count(),
@@ -81,6 +90,7 @@ class LiveSessionController extends Controller
         }
 
         $liveSession->update(['status' => LiveSession::STATUS_ENDED]);
+        LiveAttendance::closeOpenForSession($liveSession->id);
 
         return back()->with('success', 'Live session ပြီးဆုံးပါပြီ။');
     }
@@ -92,6 +102,7 @@ class LiveSessionController extends Controller
         }
 
         $liveSession->update(['status' => LiveSession::STATUS_CANCELLED]);
+        LiveAttendance::closeOpenForSession($liveSession->id);
 
         return back()->with('success', 'Live session ဖျက်သိမ်းပြီးပါပြီ။');
     }
@@ -113,6 +124,7 @@ class LiveSessionController extends Controller
     {
         $sessions = LiveSession::query()
             ->with(['course:id,title', 'instructor:id,name'])
+            ->withCount('attendances')
             ->where('instructor_id', $request->user()->id)
             ->whereIn('status', [LiveSession::STATUS_SCHEDULED, LiveSession::STATUS_LIVE])
             ->orderBy('scheduled_at')
@@ -145,27 +157,44 @@ class LiveSessionController extends Controller
     {
         $upcoming = LiveSession::query()
             ->with(['course:id,title', 'instructor:id,name'])
+            ->withCount('attendances')
             ->whereIn('status', [LiveSession::STATUS_SCHEDULED, LiveSession::STATUS_LIVE])
             ->orderBy('scheduled_at')
             ->get()
             ->map(fn (LiveSession $s) => $s->toDisplayArray())
             ->values();
 
-        // Ended sessions surface as recordings. No recording files or view
-        // counts exist yet, so views are honestly 0.
-        $recorded = LiveSession::query()
+        // Real recordings attached to sessions, with real view counts,
+        // plus ended sessions that have no recording yet (shown without
+        // a video link, so they don't vanish from the recordings tab).
+        $recorded = SessionRecording::query()
+            ->with(['session:id,title,scheduled_at,course_id', 'session.instructor:id,name'])
+            ->latest()
+            ->get()
+            ->map(fn (SessionRecording $r) => $r->toDisplayArray());
+
+        $unrecorded = LiveSession::query()
             ->with(['course:id,title', 'instructor:id,name'])
             ->where('status', LiveSession::STATUS_ENDED)
+            ->whereDoesntHave('recordings')
             ->orderByDesc('scheduled_at')
             ->get()
             ->map(fn (LiveSession $s) => [
+                'id' => 0,
+                'live_session_id' => $s->id,
                 'title' => $s->title,
-                'instructor' => $s->instructor?->name ?? '',
-                'date' => $s->scheduled_at?->format('Y-m-d') ?? '',
+                'video_url' => null,
+                'duration' => '',
                 'dur' => $this->formatDuration($s->duration_minutes),
                 'views' => 0,
+                'session_title' => $s->title,
+                'instructor' => $s->instructor?->name ?? '',
+                'date' => $s->scheduled_at?->format('Y-m-d') ?? '',
                 'course' => $s->course_id ?? 0,
-            ])
+            ]);
+
+        $recorded = $recorded->concat($unrecorded)
+            ->sortByDesc('date')
             ->values();
 
         return Inertia::render('Student/LiveClasses/Index', [
@@ -181,17 +210,20 @@ class LiveSessionController extends Controller
         }
 
         $liveSession->load(['course:id,title', 'instructor:id,name']);
+        $liveSession->loadCount('attendances');
+
+        $recordings = SessionRecording::query()
+            ->with(['session:id,title,scheduled_at,course_id', 'session.instructor:id,name'])
+            ->where('live_session_id', $liveSession->id)
+            ->latest()
+            ->get()
+            ->map(fn (SessionRecording $r) => $r->toDisplayArray())
+            ->values();
 
         return Inertia::render('Student/LiveClasses/Show', [
             'live' => $liveSession->toDisplayArray(),
+            'recordings' => $recordings,
         ]);
-    }
-
-    private function authorizeOwnSession(Request $request, LiveSession $liveSession): void
-    {
-        if ($liveSession->instructor_id !== $request->user()->id) {
-            abort(403, 'မိမိ၏ session ကိုသာ စီမံနိုင်ပါတယ်။');
-        }
     }
 
     private function formatDuration(?int $minutes): string
@@ -201,6 +233,13 @@ class LiveSessionController extends Controller
         }
 
         return sprintf('%d:%02d', intdiv($minutes, 60), $minutes % 60);
+    }
+
+    private function authorizeOwnSession(Request $request, LiveSession $liveSession): void
+    {
+        if ($liveSession->instructor_id !== $request->user()->id) {
+            abort(403, 'မိမိ၏ session ကိုသာ စီမံနိုင်ပါတယ်။');
+        }
     }
 
     /**

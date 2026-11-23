@@ -42,6 +42,7 @@ type Props = {
     categories?: ApiCategory[];
     instructors?: ApiInstructor[];
     stats?: { courses?: number; students?: number; instructors?: number; rating?: number | null };
+    landing?: { promo?: string | null; heroTitle?: string | null; heroIntro?: string | null };
 };
 
 const features = [
@@ -105,7 +106,7 @@ function slugify(name: string): string {
         .replace(/(^-|-$)/g, '');
 }
 
-export default function Home({ courses: apiCourses, categories: apiCategories, instructors: apiInstructors, stats }: Props) {
+export default function Home({ courses: apiCourses, categories: apiCategories, instructors: apiInstructors, stats, landing }: Props) {
     const usingSampleCourses = !apiCourses || apiCourses.length === 0;
     const courses: LmsCourse[] = useMemo(
         () => (usingSampleCourses ? SAMPLE_COURSES : apiCourses.map(mapApiCourse)),
@@ -180,7 +181,11 @@ export default function Home({ courses: apiCourses, categories: apiCategories, i
                 >
                     <span className="flex-none rounded-full bg-amber-400 px-3 py-1 text-xs font-extrabold text-amber-950">ပရိုမိုးရှင်း</span>
                     <p className="min-w-[220px] flex-1 text-sm font-semibold">
-                        သင်တန်းအားလုံး 50% အထိ လျှော့ဈေး — Checkout မှာ <b className="font-mono">CODEXA10</b> သုံးရင် အပို 10% ထပ် လျှော့ပေးပါတယ်
+                        {landing?.promo ?? (
+                            <>
+                                သင်တန်းအားလုံး 50% အထိ လျှော့ဈေး — Checkout မှာ <b className="font-mono">CODEXA10</b> သုံးရင် အပို 10% ထပ် လျှော့ပေးပါတယ်
+                            </>
+                        )}
                     </p>
                     <Link href="/courses" className="flex-none rounded-lg bg-white px-3.5 py-2 text-xs font-bold text-teal-900 transition hover:bg-teal-50">
                         သင်တန်းများ ကြည့်ရန်
@@ -195,12 +200,17 @@ export default function Home({ courses: apiCourses, categories: apiCategories, i
                             မြန်မာဘာသာဖြင့် Programming သင်ယူရန်
                         </span>
                         <h1 className="mt-4 text-3xl font-extrabold leading-snug tracking-tight sm:text-4xl lg:text-[2.85rem] lg:leading-[1.35]">
-                            မြန်မာလို ရှင်းလင်းစွာ သင်ယူပြီး
-                            <br />
-                            <span className="text-teal-600 dark:text-teal-300">Developer</span> တစ်ဦး ဖြစ်လာပါ
+                            {landing?.heroTitle ?? (
+                                <>
+                                    မြန်မာလို ရှင်းလင်းစွာ သင်ယူပြီး
+                                    <br />
+                                    <span className="text-teal-600 dark:text-teal-300">Developer</span> တစ်ဦး ဖြစ်လာပါ
+                                </>
+                            )}
                         </h1>
                         <p className="mt-4 max-w-[540px] text-base leading-relaxed text-[#5a6a8a] dark:text-[#97a6c6]">
-                            Codexa MM မှာ Web, Mobile, Backend နဲ့ Design သင်တန်းတွေကို လက်တွေ့ project တွေနဲ့ အဆင့်ဆင့် သင်ယူနိုင်ပါတယ်။ Live class, assignment အမှတ်ပေးမှုနဲ့ အတည်ပြုနိုင်တဲ့ လက်မှတ်ပါ တစ်နေရာတည်းမှာ ရရှိပါမယ်။
+                            {landing?.heroIntro ??
+                                'Codexa MM မှာ Web, Mobile, Backend နဲ့ Design သင်တန်းတွေကို လက်တွေ့ project တွေနဲ့ အဆင့်ဆင့် သင်ယူနိုင်ပါတယ်။ Live class, assignment အမှတ်ပေးမှုနဲ့ အတည်ပြုနိုင်တဲ့ လက်မှတ်ပါ တစ်နေရာတည်းမှာ ရရှိပါမယ်။'}
                         </p>
                         <div className="mt-6 flex flex-wrap gap-3">
                             <Link

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CertificateVerificationController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\InstructorApplicationController;
 use App\Http\Controllers\PublicBlogController;
 use App\Http\Controllers\PublicCourseController;
 use App\Http\Controllers\PublicFaqController;
@@ -15,19 +16,28 @@ use Inertia\Inertia;
 
 Route::get('/', PublicHomeController::class)->name('home');
 
+// Maintenance notice: authenticated non-admin users are redirected here
+// while feature_maintenance is on (EnsureNotUnderMaintenance middleware).
+Route::get('/maintenance', function () {
+    return Inertia::render('Auth/Maintenance');
+})->name('maintenance');
+
 Route::get('/jobs', function () {
     return Inertia::render('Public/Jobs');
 })->name('jobs');
 
-Route::get('/teach', function () {
-    return Inertia::render('Public/Teach');
-})->name('teach');
+Route::get('/teach', [InstructorApplicationController::class, 'show'])->name('teach');
+Route::post('/teach/apply', [InstructorApplicationController::class, 'store'])
+    ->middleware(['auth', 'verified'])
+    ->name('teach.apply');
 
 Route::get('/dashboard', function () {
     $user = request()->user();
 
     return match (true) {
         $user->hasRole('admin') => redirect()->route('admin.dashboard'),
+        // Support/Finance staff enter the admin panel via `admin.access`.
+        $user->hasAnyRole(['support', 'finance']) => redirect()->route('admin.dashboard'),
         $user->hasRole('instructor') => redirect()->route('instructor.dashboard'),
         $user->hasRole('client') => redirect()->route('client.dashboard'),
         $user->hasRole('student') => redirect()->route('student.dashboard'),

@@ -7,12 +7,12 @@ import { Input } from '@/components/ui/input';
 import { LmsCard, PageIntro, Pill, btnAccentCls, btnGhostCls, inkCls, inputCls, labelCls, mutedCls } from '@/pages/Admin/Academy/_shared';
 
 const SERVICES = [
-    { name: 'KBZPay', desc: 'ငွေပေးချေမှု gateway · QR / App', connected: true },
-    { name: 'WavePay', desc: 'ငွေပေးချေမှု gateway · QR / App', connected: true },
-    { name: 'CB Pay', desc: 'ငွေပေးချေမှု gateway', connected: true },
-    { name: 'YouTube', desc: 'သင်ခန်းစာ video embed', connected: true },
-    { name: 'Zoom', desc: 'Live class ချိတ်ဆက်မှု', connected: false },
-    { name: 'Google Analytics', desc: 'ဝင်ရောက်မှု တိုင်းတာခြင်း', connected: false },
+    { key: 'kbzpay', name: 'KBZPay', desc: 'ငွေပေးချေမှု gateway · QR / App', connected: true },
+    { key: 'wavepay', name: 'WavePay', desc: 'ငွေပေးချေမှု gateway · QR / App', connected: true },
+    { key: 'cbpay', name: 'CB Pay', desc: 'ငွေပေးချေမှု gateway', connected: true },
+    { key: 'youtube', name: 'YouTube', desc: 'သင်ခန်းစာ video embed', connected: true },
+    { key: 'zoom', name: 'Zoom', desc: 'Live class ချိတ်ဆက်မှု', connected: false },
+    { key: 'ga', name: 'Google Analytics', desc: 'ဝင်ရောက်မှု တိုင်းတာခြင်း', connected: false },
 ];
 
 type ApiKeyRow = { id: number; name: string; provider: string; last4: string; is_active: boolean; last_used_at: string | null; created: string };
@@ -20,13 +20,16 @@ type ApiKeyRow = { id: number; name: string; provider: string; last4: string; is
 type Props = {
     keys?: ApiKeyRow[];
     providers?: string[];
+    integrations?: { webhook_url: string; services: Record<string, boolean> };
     newKey?: string | null;
     newKeyName?: string | null;
 };
 
-export default function Index({ keys = [], providers = ['general'], newKey = null, newKeyName = null }: Props) {
-    const [connected, setConnected] = useState<Record<string, boolean>>(Object.fromEntries(SERVICES.map((s) => [s.name, s.connected])));
-    const [webhook, setWebhook] = useState('https://codexamm.com/webhooks/payments');
+export default function Index({ keys = [], providers = ['general'], integrations, newKey = null, newKeyName = null }: Props) {
+    const [connected, setConnected] = useState<Record<string, boolean>>(
+        Object.fromEntries(SERVICES.map((s) => [s.key, integrations?.services?.[s.key] ?? s.connected])),
+    );
+    const [webhook, setWebhook] = useState(integrations?.webhook_url ?? 'https://codexamm.com/webhooks/payments');
     const [lastTest, setLastTest] = useState('မရှိသေး');
     const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
@@ -36,13 +39,28 @@ export default function Index({ keys = [], providers = ['general'], newKey = nul
 
     const form = useForm({ name: '', provider: 'general' });
 
-    const toggle = (name: string) => setConnected({ ...connected, [name]: !connected[name] });
+    const saveSettings = (nextServices: Record<string, boolean>, nextWebhook: string, successMsg: string) => {
+        setError('');
+        router.put(
+            '/admin/academy/integrations/settings',
+            { webhook_url: nextWebhook, services: nextServices },
+            {
+                preserveScroll: true,
+                onSuccess: () => setNotice(successMsg),
+                onError: (errs) => setError((errs.webhook_url as string) ?? 'သိမ်းဆည်းခြင်း မအောင်မြင်ပါ'),
+            },
+        );
+    };
+
+    const toggle = (key: string, name: string) => {
+        const next = { ...connected, [key]: !connected[key] };
+        setConnected(next);
+        saveSettings(next, webhook, `"${name}" ${next[key] ? 'ချိတ်ဆက်ပြီးပါပြီ' : 'ဖြတ်တောက်ပြီးပါပြီ'}`);
+    };
 
     const saveWebhook = (e: FormEvent) => {
         e.preventDefault();
-        // Webhook URL persistence has no settings model yet — kept as a
-        // local display value until one exists.
-        setNotice('Webhook URL ကို ဤ page မှာသာ မှတ်ထားပါပြီ (server မှာ သိမ်းရန် setting မရှိသေးပါ)');
+        saveSettings(connected, webhook, 'Webhook URL သိမ်းပြီးပါပြီ');
     };
 
     const testWebhook = () => setLastTest('ယနေ့ · အောင်မြင်ပါတယ် (စမ်းသပ်မှု — အစစ် မဟုတ်ပါ)');
@@ -142,8 +160,8 @@ export default function Index({ keys = [], providers = ['general'], newKey = nul
                                     <p className={`text-[.92rem] font-extrabold ${inkCls}`}>{s.name}</p>
                                     <p className={`mt-0.5 text-[.78rem] ${mutedCls}`}>{s.desc}</p>
                                 </div>
-                                <button type="button" className={btnGhostCls} onClick={() => toggle(s.name)}>
-                                    {connected[s.name] ? 'ချိတ်ထားပြီး' : 'ချိတ်ဆက်ရန်'}
+                                <button type="button" className={btnGhostCls} onClick={() => toggle(s.key, s.name)}>
+                                    {connected[s.key] ? 'ချိတ်ထားပြီး' : 'ချိတ်ဆက်ရန်'}
                                 </button>
                             </div>
                         ))}

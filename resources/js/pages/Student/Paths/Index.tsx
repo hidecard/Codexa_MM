@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { ProgressBar } from '@/components/lms/progress-bar';
 import { Map, Route } from 'lucide-react';
@@ -17,44 +16,11 @@ type Path = {
     outcomes: string[];
 };
 
-type Props = { paths?: Path[] };
-
-/* SAMPLE DATA — fallback only; no LearningPath model exists yet (from prototype). */
-const SAMPLE_PATHS: Path[] = [
-    { id: 1, title: 'Web Developer လမ်းကြောင်း', goal: 'Frontend ကနေ Backend အထိ ပြည့်စုံတဲ့ web developer တစ်ဦး ဖြစ်ရန်', grad: 'linear-gradient(130deg,#0b3b5e,#0ea892)', glyph: '</>', months: '၅–၇ လ', level: 'Beginner → Advanced', joined: true,
-        steps: [
-            { id: 1, title: 'HTML & CSS Foundations', progress: 68 },
-            { id: 2, title: 'JavaScript Deep Dive', progress: 32 },
-            { id: 4, title: 'React.js Complete Course', progress: 0 },
-            { id: 9, title: 'Node.js API Development', progress: 0 },
-            { id: 5, title: 'PHP & Laravel Framework', progress: 0 },
-        ],
-        outcomes: ['Portfolio website နဲ့ web app ၃ ခု တည်ဆောက်ပြီး', 'React ဖြင့် modern frontend တည်ဆောက်နိုင်ခြင်း', 'Node.js / Laravel ဖြင့် API တည်ဆောက်နိုင်ခြင်း', 'Junior Web Developer အလုပ်များ လျှောက်ရန် အဆင်သင့်'] },
-    { id: 2, title: 'Python & Data လမ်းကြောင်း', goal: 'Python ကို ကျွမ်းကျင်ပြီး data analysis လမ်းကြောင်းသို့ ဝင်ရောက်ရန်', grad: 'linear-gradient(130deg,#14532d,#22c55e)', glyph: 'Py', months: '၄–၆ လ', level: 'Beginner → Intermediate', joined: false,
-        steps: [
-            { id: 3, title: 'Python for Beginners', progress: 85 },
-            { id: 8, title: 'MySQL & Database Design', progress: 0 },
-        ],
-        outcomes: ['Python program များကို ကိုယ်တိုင် ရေးနိုင်ခြင်း', 'Database design နဲ့ SQL ကျွမ်းကျင်ခြင်း', 'Data project ၂ ခု portfolio တွင် ထည့်နိုင်ခြင်း'] },
-    { id: 3, title: 'Mobile Developer လမ်းကြောင်း', goal: 'Flutter ဖြင့် Android / iOS app များ တည်ဆောက်ပြီး store ပေါ် တင်နိုင်ရန်', grad: 'linear-gradient(130deg,#123a6d,#38bdf8)', glyph: 'Fl', months: '၄–၅ လ', level: 'Beginner → Intermediate', joined: false,
-        steps: [
-            { id: 3, title: 'Python for Beginners', progress: 85 },
-            { id: 6, title: 'Flutter Mobile Development', progress: 0 },
-            { id: 10, title: 'Git, GitHub & Team Workflow', progress: 100 },
-        ],
-        outcomes: ['Dart နဲ့ Flutter အခြေခံ ခိုင်မာခြင်း', 'App ၂ ခု ကိုယ်တိုင် တည်ဆောက်ပြီး', 'Play Store / App Store တင်နည်း နားလည်ခြင်း'] },
-    { id: 4, title: 'UI/UX Designer လမ်းကြောင်း', goal: 'Design အခြေခံကနေ professional UI/UX designer တစ်ဦး ဖြစ်ရန်', grad: 'linear-gradient(130deg,#831843,#ec4899)', glyph: 'UX', months: '၃–၄ လ', level: 'Beginner → Intermediate', joined: false,
-        steps: [
-            { id: 7, title: 'UI/UX Design with Figma', progress: 100 },
-            { id: 1, title: 'HTML & CSS Foundations', progress: 68 },
-            { id: 10, title: 'Git, GitHub & Team Workflow', progress: 100 },
-        ],
-        outcomes: ['Figma ကို ကျွမ်းကျင်စွာ အသုံးပြုနိုင်ခြင်း', 'Design system နဲ့ component library တည်ဆောက်နိုင်ခြင်း', 'Case study ၂ ခုပါ portfolio ပြင်ဆင်ပြီး'] },
-];
+type Props = { paths: Path[] };
 
 export default function Index({ paths }: Props) {
-    const [list, setList] = useState<Path[]>(paths && paths.length > 0 ? paths : SAMPLE_PATHS);
-    const toggleJoin = (id: number) => setList((l) => l.map((p) => (p.id === id ? { ...p, joined: !p.joined } : p)));
+    const list = paths;
+    const toggleJoin = (id: number) => router.post(`/student/paths/${id}/follow`, {}, { preserveScroll: true });
 
     return (
         <LmsShell title="သင်ယူမှု လမ်းကြောင်းများ" nav="student">
@@ -64,7 +30,10 @@ export default function Index({ paths }: Props) {
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">ရည်မှန်းချက်အလိုက် အဆင့်ဆင့် စီစဉ်ထားသော သင်တန်း အစုအဖွဲ့များ</p>
             </div>
 
-            <div className="mt-6 flex flex-col gap-5">
+            {list.length === 0 ? (
+                <p className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900">သင်ယူမှု လမ်းကြောင်း မရှိသေးပါ။</p>
+            ) : (
+                <div className="mt-6 flex flex-col gap-5">
                 {list.map((p) => {
                     const pct = p.steps.length > 0 ? Math.round(p.steps.reduce((s, st) => s + st.progress, 0) / p.steps.length) : 0;
                     const done = p.steps.filter((st) => st.progress >= 100).length;
@@ -110,7 +79,8 @@ export default function Index({ paths }: Props) {
                         </article>
                     );
                 })}
-            </div>
+                </div>
+            )}
         </LmsShell>
     );
 }

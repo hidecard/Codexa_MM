@@ -6,13 +6,30 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyBox, LmsCard, PageIntro, Pill, btnAccentCls, btnGhostCls, inkCls, inputCls, labelCls, mutedCls } from '@/pages/Admin/Academy/_shared';
 
-type AnnouncementRow = { id: number; title: string; content: string; course_id: number; type: string; audience: string; pinned: boolean; date: string; draft?: boolean };
+type AnnouncementRow = { id: number; title: string; content: string; course_id: number; course_title?: string | null; type: string; type_label?: string; audience: string; audience_label?: string; pinned: boolean; date: string; draft?: boolean };
 type CourseOption = { id: number; title: string };
+
+const TYPE_OPTIONS = [
+    { value: 'general', label: 'အထွေထွေ' },
+    { value: 'course', label: 'သင်တန်း' },
+    { value: 'live', label: 'Live Class' },
+    { value: 'promo', label: 'ပရိုမိုးရှင်း' },
+    { value: 'system', label: 'စနစ်' },
+];
+
+const AUDIENCE_OPTIONS = [
+    { value: 'all', label: 'ကျောင်းသား အားလုံး' },
+    { value: 'students', label: 'ကျောင်းသားများ' },
+    { value: 'instructors', label: 'ဆရာများ (ကျောင်းသား မမြင်ရ)' },
+];
 
 export default function Index({ announcements = [], courses = [] }: { announcements?: AnnouncementRow[]; courses?: CourseOption[] }) {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [courseId, setCourseId] = useState<number | ''>('');
+    const [type, setType] = useState('general');
+    const [audience, setAudience] = useState('all');
+    const [pinned, setPinned] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [notice, setNotice] = useState('');
 
@@ -20,6 +37,9 @@ export default function Index({ announcements = [], courses = [] }: { announceme
         setTitle('');
         setContent('');
         setCourseId('');
+        setType('general');
+        setAudience('all');
+        setPinned(false);
         setEditingId(null);
     };
 
@@ -27,6 +47,9 @@ export default function Index({ announcements = [], courses = [] }: { announceme
         setTitle(a.title);
         setContent(a.content);
         setCourseId(a.course_id);
+        setType(a.type);
+        setAudience(a.audience);
+        setPinned(a.pinned);
         setEditingId(a.id);
         setNotice('');
     };
@@ -34,9 +57,8 @@ export default function Index({ announcements = [], courses = [] }: { announceme
     const submit = (e: FormEvent | React.MouseEvent, draft: boolean) => {
         e.preventDefault();
         if (!title.trim() || !courseId) return;
-        const data = editingId
-            ? { title: title.trim(), content: content.trim(), course_id: courseId }
-            : { title: title.trim(), content: content.trim(), course_id: courseId, publish: !draft };
+        const fields = { title: title.trim(), content: content.trim(), course_id: courseId, type, audience, is_pinned: pinned };
+        const data = editingId ? fields : { ...fields, publish: !draft };
         const done = () => {
             resetForm();
             setNotice(editingId ? 'ကြေညာချက် ပြင်ဆင်ပြီးပါပြီ' : draft ? 'Draft အဖြစ် သိမ်းပြီးပါပြီ' : 'ကြေညာချက် ထုတ်ပြန်ပြီးပါပြီ');
@@ -79,7 +101,7 @@ export default function Index({ announcements = [], courses = [] }: { announceme
                                 <div className="flex flex-wrap items-center gap-2">
                                     <Megaphone className="size-4 text-teal-700 dark:text-teal-300" />
                                     <p className={`text-[.95rem] font-extrabold leading-snug ${inkCls}`}>{a.title}</p>
-                                    <Pill tone="blue">{a.type}</Pill>
+                                    <Pill tone="blue">{a.type_label ?? a.type}</Pill>
                                     {a.pinned && (
                                         <Pill tone="amber">
                                             <Pin className="mr-1 size-3" /> Pin
@@ -88,7 +110,7 @@ export default function Index({ announcements = [], courses = [] }: { announceme
                                     {a.draft && <Pill tone="slate">မူကြမ်း</Pill>}
                                 </div>
                                 <p className={`mt-1 text-[.8rem] ${mutedCls}`}>
-                                    {a.audience} · {a.date}
+                                    {a.course_title ?? a.audience_label ?? a.audience} · {a.audience_label ?? a.audience} · {a.date}
                                 </p>
                                 <p className={`mt-2 text-[.88rem] leading-relaxed ${mutedCls}`}>{a.content}</p>
                                 <div className="mt-3 flex flex-wrap gap-2">
@@ -142,6 +164,32 @@ export default function Index({ announcements = [], courses = [] }: { announceme
                                 ))}
                             </select>
                         </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className={labelCls}>အမျိုးအစား</label>
+                                <select className={inputCls} value={type} onChange={(e) => setType(e.target.value)}>
+                                    {TYPE_OPTIONS.map((o) => (
+                                        <option key={o.value} value={o.value}>
+                                            {o.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className={labelCls}>ပရိသတ်</label>
+                                <select className={inputCls} value={audience} onChange={(e) => setAudience(e.target.value)}>
+                                    {AUDIENCE_OPTIONS.map((o) => (
+                                        <option key={o.value} value={o.value}>
+                                            {o.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                            <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="size-5 accent-teal-700" />
+                            အပေါ်ဆုံး မှာ Pin လုပ်ထားရန်
+                        </label>
                         <button type="submit" className={`${btnAccentCls} w-full`}>
                             {editingId ? 'သိမ်းဆည်းရန်' : 'ထုတ်ပြန်ရန်'}
                         </button>

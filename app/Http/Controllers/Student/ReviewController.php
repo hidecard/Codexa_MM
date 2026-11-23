@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\CourseReview;
 use App\Models\Enrollment;
+use App\Models\ReviewReport;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -100,5 +101,47 @@ class ReviewController extends Controller
         );
 
         return back()->with('success', 'သုံးသပ်ချက် တင်ပြီးပါပြီ — အတည်ပြုရန် စောင့်နေပါသည်');
+    }
+
+    /**
+     * Report another student's review for admin moderation. One report
+     * per reporter per review (any status).
+     */
+    public function report(Request $request, CourseReview $review): RedirectResponse
+    {
+        if ($review->student_id === $request->user()->id) {
+            throw ValidationException::withMessages([
+                'reason' => 'ကိုယ့်ရဲ့ သုံးသပ်ချက်ကို ကိုယ်တိုင် report လုပ်၍ မရပါ။',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        $existing = ReviewReport::query()
+            ->where('course_review_id', $review->id)
+            ->where('reporter_id', $request->user()->id)
+            ->first();
+
+        if ($existing) {
+            // One report per reporter per review (unique constraint) — a
+            // dismissed/resolved report cannot be filed again either, so
+            // answer with a friendly error instead of a 500.
+            throw ValidationException::withMessages([
+                'reason' => $existing->status === ReviewReport::STATUS_PENDING
+                    ? 'ဒီ review ကို report လုပ်ထားပြီးပါပြီ — Admin စစ်ဆေးနေပါတယ်။'
+                    : 'ဒီ review ကို report လုပ်ထားပြီးပါပြီ။',
+            ]);
+        }
+
+        ReviewReport::create([
+            'course_review_id' => $review->id,
+            'reporter_id' => $request->user()->id,
+            'reason' => $validated['reason'],
+            'status' => ReviewReport::STATUS_PENDING,
+        ]);
+
+        return back()->with('success', 'Report တင်ပြီးပါပြီ — Admin အဖွဲ့က စစ်ဆေးပါမယ်။');
     }
 }

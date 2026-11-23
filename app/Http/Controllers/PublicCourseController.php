@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Course;
 use App\Models\CourseCategory;
+use App\Models\CourseReview;
 use App\Models\Enrollment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -103,10 +104,30 @@ class PublicCourseController extends Controller
                 ->first(['id', 'status', 'course_id', 'student_id']);
         }
 
+        // Reviews are gated to enrolled students, one per course (the
+        // student review endpoint upserts, so resubmitting updates it).
+        $canReview = (bool) ($user && $user->hasRole('student')
+            && $enrollment && in_array($enrollment->status, ['active', 'completed'], true));
+        $myReview = null;
+        if ($canReview) {
+            $review = CourseReview::query()
+                ->where('student_id', $user->id)
+                ->where('course_id', $course->id)
+                ->first(['id', 'rating', 'comment', 'is_approved']);
+            $myReview = $review ? [
+                'id' => $review->id,
+                'rating' => $review->rating,
+                'comment' => $review->comment,
+                'is_approved' => (bool) $review->is_approved,
+            ] : null;
+        }
+
         return Inertia::render('Public/Courses/Show', [
             'course' => $course,
             'enrollment' => $enrollment ? ['id' => $enrollment->id, 'status' => $enrollment->status] : null,
             'canEnroll' => (bool) ($user && $user->hasRole('student')),
+            'canReview' => $canReview,
+            'myReview' => $myReview,
         ]);
     }
 }

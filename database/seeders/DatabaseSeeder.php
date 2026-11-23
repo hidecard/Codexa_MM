@@ -18,8 +18,10 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             UserSeeder::class,
             CourseCatalogSeeder::class,
+            LearningPathSeeder::class,
             ServiceCatalogSeeder::class,
             PublicContentSeeder::class,
+            BadgeSeeder::class,
         ]);
     }
 }

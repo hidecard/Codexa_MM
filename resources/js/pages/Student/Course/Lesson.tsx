@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { YouTubeEmbed } from '@/components/lms/youtube-embed';
-import { CheckCircle2, ChevronLeft, ChevronRight, Clock3, FileText, Gauge, ListVideo, NotebookPen } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, Clock3, FileText, Gauge, HelpCircle, ListVideo, NotebookPen } from 'lucide-react';
 
 type NavLesson = { id: number; title: string; duration: number; is_completed: boolean };
 type Props = {
@@ -24,11 +24,12 @@ type Props = {
         resume_position?: number;
         playback_speeds?: number[];
     };
+    questions?: { id: number; question: string; answer?: string | null; is_answered: boolean; answered_by?: string | null; created_at?: string | null }[];
 };
 
-type Tab = 'content' | 'resources' | 'notes';
+type Tab = 'content' | 'resources' | 'notes' | 'qa';
 
-export default function Lesson({ course, modules = [], lesson }: Props) {
+export default function Lesson({ course, modules = [], lesson, questions = [] }: Props) {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const lastSentRef = useRef(0);
     const [speed, setSpeed] = useState(1);
@@ -36,6 +37,23 @@ export default function Lesson({ course, modules = [], lesson }: Props) {
     const [tab, setTab] = useState<Tab>('content');
     const [note, setNote] = useState('');
     const [savedNote, setSavedNote] = useState(false);
+    const [question, setQuestion] = useState('');
+    const [questionSent, setQuestionSent] = useState(false);
+
+    const askQuestion = () => {
+        if (!question.trim()) return;
+        router.post(
+            '/student/questions',
+            { course_id: course.id, lesson_id: lesson.id, question: question.trim() },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setQuestion('');
+                    setQuestionSent(true);
+                },
+            },
+        );
+    };
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const speeds = lesson.playback_speeds?.length ? lesson.playback_speeds : [1];
 
@@ -162,6 +180,7 @@ export default function Lesson({ course, modules = [], lesson }: Props) {
                             { key: 'content', label: 'အကြောင်းအရာ' },
                             { key: 'resources', label: `ရင်းမြစ် (${lesson.resources.length})` },
                             { key: 'notes', label: 'မှတ်စု' },
+                            { key: 'qa', label: `မေးခွန်း (${questions.length})` },
                         ] as { key: Tab; label: string }[]).map((t) => (
                             <button key={t.key} onClick={() => setTab(t.key)} className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-bold ${tab === t.key ? 'border-teal-600 text-teal-700 dark:text-teal-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'}`}>{t.label}</button>
                         ))}
@@ -201,6 +220,34 @@ export default function Lesson({ course, modules = [], lesson }: Props) {
                                 {savedNote && <span className="text-sm font-semibold text-emerald-600">သိမ်းပြီးပါပြီ (ဤ browser တွင်သာ)</span>}
                             </div>
                             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">မှတ်စုများကို <Link href="/student/notes" className="font-bold text-teal-600">မှတ်စုများ စာမျက်နှာ</Link> တွင် စုစည်း ကြည့်နိုင်သည်။</p>
+                        </section>
+                    )}
+
+                    {tab === 'qa' && (
+                        <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+                            <h2 className="flex items-center gap-2 font-extrabold text-slate-900 dark:text-white"><HelpCircle className="size-5 text-teal-600" /> ဆရာကို မေးခွန်း မေးရန်</h2>
+                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">ဤ သင်ခန်းစာနဲ့ ပတ်သက်ပြီး နားမလည်တာ ရှိရင် မေးနိုင်ပါတယ် — ဆရာက ဖြေကြားပေးပါမယ်။</p>
+                            {questionSent && <p className="mt-3 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-medium text-teal-800 dark:border-teal-900 dark:bg-teal-950/30 dark:text-teal-200">မေးခွန်း တင်ပြီးပါပြီ — ဆရာ ဖြေကြားပေးပါမယ်။</p>}
+                            <textarea value={question} onChange={(e) => { setQuestion(e.target.value); setQuestionSent(false); }} rows={3} maxLength={5000} placeholder="မေးခွန်း ရေးရန်…" className="mt-3 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+                            <button onClick={askQuestion} disabled={!question.trim()} className="mt-3 rounded-xl bg-teal-600 px-4 py-2 text-sm font-bold text-white hover:bg-teal-700 disabled:opacity-50">မေးခွန်း တင်ရန်</button>
+
+                            {questions.length > 0 && (
+                                <div className="mt-6 space-y-4 border-t border-slate-200 pt-5 dark:border-slate-800">
+                                    <h3 className="font-extrabold text-slate-900 dark:text-white">သင့် မေးခွန်းများ</h3>
+                                    {questions.map((q) => (
+                                        <div key={q.id} className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+                                            <p className="text-sm leading-6 text-slate-800 dark:text-slate-100">{q.question}</p>
+                                            {q.is_answered && q.answer ? (
+                                                <p className="mt-3 border-l-2 border-teal-500 pl-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                                    <span className="font-bold text-teal-700 dark:text-teal-300">{q.answered_by ?? 'ဆရာ'}:</span> {q.answer}
+                                                </p>
+                                            ) : (
+                                                <p className="mt-2 text-xs font-semibold text-amber-600">အဖြေ စောင့်နေပါတယ်</p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </section>
                     )}
 

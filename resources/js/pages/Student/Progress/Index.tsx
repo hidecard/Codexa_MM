@@ -7,35 +7,17 @@ import { BarChart3 } from 'lucide-react';
 
 type CourseProgress = { id: number; title: string; progress: number; completed: number; total: number };
 type Props = {
-    weeklyActivity?: { day: string; minutes: number }[];
-    totalWatchMinutes?: number;
-    courses?: CourseProgress[];
-    quizAverage?: number;
-    assignmentDone?: number;
-    assignmentTotal?: number;
+    weeklyActivity: { day: string; minutes: number }[];
+    totalWatchMinutes: number;
+    courses: CourseProgress[];
+    quizAverage: number;
+    assignmentDone: number;
+    assignmentTotal: number;
 };
 
-/* SAMPLE DATA — fallback only (from prototype PROG_WEEK + COURSES progress). */
-const SAMPLE_WEEK = [
-    { day: 'တနင်္လာ', minutes: 35 },
-    { day: 'အင်္ဂါ', minutes: 50 },
-    { day: 'ဗုဒ္ဓဟူး', minutes: 25 },
-    { day: 'ကြာသပတေး', minutes: 45 },
-    { day: 'သောကြာ', minutes: 20 },
-    { day: 'စနေ', minutes: 41 },
-    { day: 'တနင်္ဂနွေ', minutes: 0 },
-];
-const SAMPLE_COURSES: CourseProgress[] = [
-    { id: 1, title: 'HTML & CSS Foundations', progress: 68, completed: 33, total: 48 },
-    { id: 2, title: 'JavaScript Deep Dive', progress: 32, completed: 28, total: 86 },
-    { id: 3, title: 'Python for Beginners', progress: 85, completed: 54, total: 64 },
-    { id: 7, title: 'UI/UX Design with Figma', progress: 100, completed: 42, total: 42 },
-    { id: 10, title: 'Git, GitHub & Team Workflow', progress: 100, completed: 24, total: 24 },
-];
-
-export default function Index({ weeklyActivity, totalWatchMinutes = 0, courses, quizAverage = 87, assignmentDone = 14, assignmentTotal = 16 }: Props) {
-    const week = weeklyActivity && weeklyActivity.length > 0 ? weeklyActivity : SAMPLE_WEEK;
-    const list = courses && courses.length > 0 ? courses : SAMPLE_COURSES;
+export default function Index({ weeklyActivity, totalWatchMinutes, courses, quizAverage, assignmentDone, assignmentTotal }: Props) {
+    const week = weeklyActivity;
+    const list = courses;
     const maxMinutes = Math.max(1, ...week.map((d) => d.minutes));
     const weekTotal = week.reduce((s, d) => s + d.minutes, 0);
     const avgProgress = list.length > 0 ? Math.round(list.reduce((s, c) => s + c.progress, 0) / list.length) : 0;
@@ -51,7 +33,7 @@ export default function Index({ weeklyActivity, totalWatchMinutes = 0, courses, 
             <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
                 <StatCard label="ပျမ်းမျှ ပြီးစီးမှု" value={`${avgProgress}%`} tone="teal" />
                 <StatCard label="ဒီအပတ် လေ့လာချိန်" value={formatMinutes(weekTotal)} tone="blue" />
-                <StatCard label="စုစုပေါင်း လေ့လာချိန်" value={totalWatchMinutes > 0 ? formatMinutes(totalWatchMinutes) : '48.5 နာရီ'} tone="purple" />
+                <StatCard label="စုစုပေါင်း လေ့လာချိန်" value={formatMinutes(totalWatchMinutes)} tone="purple" />
                 <StatCard label="Quiz ပျမ်းမျှ ရမှတ်" value={`${quizAverage}%`} tone="amber" />
             </div>
 
@@ -98,7 +80,10 @@ export default function Index({ weeklyActivity, totalWatchMinutes = 0, courses, 
 
             <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
                 <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">သင်တန်းအလိုက် တိုးတက်မှု</h2>
-                <ul className="mt-4 space-y-5">
+                {list.length === 0 ? (
+                    <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">စာရင်းသွင်းထားသော သင်တန်း မရှိသေးပါ။</p>
+                ) : (
+                    <ul className="mt-4 space-y-5">
                     {list.map((c) => (
                         <li key={c.id}>
                             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -108,7 +93,8 @@ export default function Index({ weeklyActivity, totalWatchMinutes = 0, courses, 
                             <div className="mt-2"><ProgressBar value={c.progress} tone={c.progress >= 100 ? 'green' : 'teal'} /></div>
                         </li>
                     ))}
-                </ul>
+                    </ul>
+                )}
             </div>
         </LmsShell>
     );

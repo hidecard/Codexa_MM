@@ -16,6 +16,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -344,6 +345,7 @@ test('sending a campaign fails clearly when no real mailer is configured', funct
 });
 
 test('sending a campaign with a mailer configured marks it sent with the audience count', function () {
+    Mail::fake();
     config(['mail.default' => 'smtp']);
     makeStudent();
     makeStudent();

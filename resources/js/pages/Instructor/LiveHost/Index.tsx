@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import { Hand, Mic, MonitorUp, Play, Radio, Send, Square, Users } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { SectionCard } from '@/components/lms/section-card';
 import { Avatar, EmptyBox, LmsCard, PageIntro, Pill, btnAccentCls, btnGhostCls, inkCls, inputCls, mutedCls } from '@/pages/Admin/Academy/_shared';
+import { getJson, postJson } from '@/lib/csrf';
 
 type SessionRow = {
     id: number;
@@ -21,18 +22,17 @@ type SessionRow = {
 
 type Props = { sessions?: SessionRow[] };
 
-const ATTENDEES = [
-    { name: 'Kaung Htet', init: 'KH', col: '#0ea892', hand: false },
-    { name: 'May Thandar', init: 'MT', col: '#ec4899', hand: true },
-    { name: 'Zaw Lin Htet', init: 'ZL', col: '#f59e0b', hand: false },
-    { name: 'Thiri Nanda', init: 'TN', col: '#6366f1', hand: true },
-    { name: 'Aung Min Khant', init: 'AM', col: '#38bdf8', hand: false },
-];
-
-const CHAT_SEED = [
-    { name: 'May Thandar', text: 'ဆရာ အသံ ကောင်းပါတယ်၊ စလို့ ရပါပြီ', time: '6:58 PM' },
-    { name: 'Kaung Htet', text: 'useEffect အခန်းကို စောင့်နေတာ ကြာပြီ', time: '6:59 PM' },
-];
+type RoomAttendee = { user_id: number; name: string; initials: string; color: string; hand_raised: boolean; joined_at: string | null };
+type RoomMessage = { id: number; user_id: number; name: string; message: string; time: string; is_host: boolean; is_mine: boolean };
+type RaisedHand = { id: number; user_id: number; name: string; status: string; raised_at: string };
+type RoomState = {
+    attendees: RoomAttendee[];
+    chat: RoomMessage[];
+    raised_hands: RaisedHand[];
+    attendance_count: number;
+    joined: boolean;
+    my_hand_raised: boolean;
+};
 
 export default function Index({ sessions = [] }: Props) {
     const defaultSession = sessions.find((s) => s.status === 'live') ?? sessions[0] ?? null;
@@ -41,19 +41,65 @@ export default function Index({ sessions = [] }: Props) {
 
     const [recording, setRecording] = useState(false);
     const [sharing, setSharing] = useState(false);
-    const [chat, setChat] = useState(CHAT_SEED);
+    const [room, setRoom] = useState<RoomState | null>(null);
     const [msg, setMsg] = useState('');
     const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
-    const raised = ATTENDEES.filter((a) => a.hand);
+    const chatBoxRef = useRef<HTMLDivElement | null>(null);
 
     const live = session?.status === 'live';
+    const sessionId = session?.id ?? null;
 
-    const send = () => {
+    const fetchRoom = useCallback(async () => {
+        if (!sessionId) return;
+        try {
+            const res = await getJson(`/instructor/live-host/${sessionId}/room`);
+            if (!res.ok) return;
+            setRoom((await res.json()) as RoomState);
+        } catch {
+            // Polling is best-effort; a failed refresh keeps the last state.
+        }
+    }, [sessionId]);
+
+    // Poll room state while the selected session is live.
+    useEffect(() => {
+        setRoom(null);
+        if (!live) return;
+        fetchRoom();
+        const timer = setInterval(fetchRoom, 5000);
+        return () => clearInterval(timer);
+    }, [live, fetchRoom]);
+
+    // Keep the chat scrolled to the latest message.
+    useEffect(() => {
+        const el = chatBoxRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
+    }, [room?.chat.length]);
+
+    const send = async () => {
         const text = msg.trim();
-        if (!text) return;
-        setChat([...chat, { name: 'သင် (Host)', text, time: 'ယခု' }]);
-        setMsg('');
+        if (!text || !sessionId || !live) return;
+        try {
+            const res = await postJson(`/instructor/live-host/${sessionId}/chat`, { message: text });
+            if (!res.ok) {
+                setError('Chat ပို့ခြင်း မအောင်မြင်ပါ');
+                return;
+            }
+            setMsg('');
+            fetchRoom();
+        } catch {
+            setError('Chat ပို့ခြင်း မအောင်မြင်ပါ');
+        }
+    };
+
+    const lowerHand = async (handId: number) => {
+        if (!sessionId) return;
+        try {
+            await postJson(`/instructor/live-host/${sessionId}/raise-hands/${handId}/lower`);
+            fetchRoom();
+        } catch {
+            setError('လက်ချခြင်း မအောင်မြင်ပါ');
+        }
     };
 
     const start = () => {
@@ -136,7 +182,7 @@ export default function Index({ sessions = [] }: Props) {
                                     {live ? (
                                         <>
                                             <span className="flex items-center gap-2 rounded-full bg-rose-600 px-3 py-1 text-xs font-extrabold text-white">
-                                                <Radio className="size-3.5 animate-pulse" /> LIVE · ကြည့်ရှုသူ {session.joined} ဦး
+                                                <Radio className="size-3.5 animate-pulse" /> LIVE · ကြည့်ရှုသူ {room?.attendance_count ?? session.joined} ဦး
                                             </span>
                                             <p className="text-lg font-extrabold text-white">{session.title}</p>
                                             <p className="text-sm text-slate-300">အတန်း လုပ်ဆောင်နေပါတယ် — ကျောင်းသားတွေ ဝင်ရောက်ကြည့်ရှုနေပါတယ်</p>
@@ -174,16 +220,22 @@ export default function Index({ sessions = [] }: Props) {
                                 </div>
                             </LmsCard>
 
-                            <SectionCard title={`လက်ထောင်ထားသူများ (Raise Hand) — ${raised.length} ဦး`}>
-                                {raised.length === 0 ? (
+                            <SectionCard title={`လက်ထောင်ထားသူများ (Raise Hand) — ${room?.raised_hands.length ?? 0} ဦး`}>
+                                {!live ? (
+                                    <p className={`text-sm ${mutedCls}`}>အတန်း မစတင်ရသေးပါ — live ဖြစ်နေမှ ကျောင်းသားတွေ လက်ထောင်နိုင်ပါတယ်။</p>
+                                ) : (room?.raised_hands ?? []).length === 0 ? (
                                     <p className={`text-sm ${mutedCls}`}>လက်ထောင်ထားသူ မရှိသေးပါ။</p>
                                 ) : (
                                     <div className="space-y-2">
-                                        {raised.map((a) => (
-                                            <div key={a.name} className="flex items-center gap-3">
-                                                <Avatar init={a.init} color={a.col} size="sm" />
-                                                <span className={`flex-1 text-sm font-bold ${inkCls}`}>{a.name}</span>
+                                        {room!.raised_hands.map((h) => (
+                                            <div key={h.id} className="flex items-center gap-3">
+                                                <Avatar init={h.name.slice(0, 2).toUpperCase()} color="#f59e0b" size="sm" />
+                                                <span className={`flex-1 text-sm font-bold ${inkCls}`}>{h.name}</span>
+                                                <span className={`text-[.76rem] font-semibold ${mutedCls}`}>{h.raised_at}</span>
                                                 <Hand className="size-4 text-amber-500" />
+                                                <button type="button" className={btnGhostCls} onClick={() => lowerHand(h.id)}>
+                                                    လက်ချရန်
+                                                </button>
                                             </div>
                                         ))}
                                     </div>
@@ -192,41 +244,54 @@ export default function Index({ sessions = [] }: Props) {
                         </div>
 
                         <div className="min-w-0 space-y-5">
-                            <SectionCard title={`တက်ရောက်သူ စာရင်း — ${ATTENDEES.length} ဦး`}>
-                                <div className="space-y-2.5">
-                                    {ATTENDEES.map((a) => (
-                                        <div key={a.name} className="flex items-center gap-3">
-                                            <Avatar init={a.init} color={a.col} size="sm" />
-                                            <span className={`flex-1 text-sm font-bold ${inkCls}`}>{a.name}</span>
-                                            {a.hand && <Hand className="size-4 text-amber-500" />}
-                                        </div>
-                                    ))}
-                                </div>
-                                <p className={`mt-3 text-[.78rem] ${mutedCls}`}>စာရင်းပေးထားသူ စုစုပေါင်း {session.joined} ဦး</p>
+                            <SectionCard title={`တက်ရောက်သူ စာရင်း — ${room?.attendance_count ?? 0} ဦး`}>
+                                {!live ? (
+                                    <p className={`text-sm ${mutedCls}`}>အတန်း မစတင်ရသေးပါ — စတင်မှ တက်ရောက်သူ စာရင်း ပေါ်လာပါမယ်။</p>
+                                ) : (room?.attendees ?? []).length === 0 ? (
+                                    <p className={`text-sm ${mutedCls}`}>တက်ရောက်သူ မရှိသေးပါ။</p>
+                                ) : (
+                                    <div className="space-y-2.5">
+                                        {room!.attendees.map((a) => (
+                                            <div key={a.user_id} className="flex items-center gap-3">
+                                                <Avatar init={a.initials} color={a.color} size="sm" />
+                                                <span className={`flex-1 text-sm font-bold ${inkCls}`}>{a.name}</span>
+                                                {a.hand_raised && <Hand className="size-4 text-amber-500" />}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <p className={`mt-3 text-[.78rem] ${mutedCls}`}>ပါဝင်ဖူးသူ စုစုပေါင်း {session.joined} ဦး</p>
                             </SectionCard>
 
                             <SectionCard title="Live Chat">
-                                <div className="max-h-64 space-y-3 overflow-y-auto">
-                                    {chat.map((m, i) => (
-                                        <div key={i}>
-                                            <p className={`text-[.78rem] font-bold ${inkCls}`}>
-                                                {m.name} <span className={`font-semibold ${mutedCls}`}>{m.time}</span>
-                                            </p>
-                                            <p className={`mt-0.5 text-[.86rem] leading-relaxed ${mutedCls}`}>{m.text}</p>
-                                        </div>
-                                    ))}
+                                <div ref={chatBoxRef} className="max-h-64 space-y-3 overflow-y-auto">
+                                    {(room?.chat ?? []).length === 0 ? (
+                                        <p className={`text-sm ${mutedCls}`}>{live ? 'Chat မရှိသေးပါ — ပထမဆုံး စာတို ပို့နိုင်ပါတယ်။' : 'အတန်း မစတင်ရသေးပါ — live ဖြစ်မှ chat သုံးနိုင်ပါတယ်။'}</p>
+                                    ) : (
+                                        room!.chat.map((m) => (
+                                            <div key={m.id}>
+                                                <p className={`text-[.78rem] font-bold ${inkCls}`}>
+                                                    {m.name}
+                                                    {m.is_host && <span className="ml-1.5 rounded-full bg-teal-100 px-1.5 py-0.5 text-[10px] font-extrabold text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">HOST</span>}
+                                                    <span className={`ml-1.5 font-semibold ${mutedCls}`}>{m.time}</span>
+                                                </p>
+                                                <p className={`mt-0.5 text-[.86rem] leading-relaxed ${mutedCls}`}>{m.message}</p>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                                 <div className="mt-3 flex gap-2">
                                     <input
                                         className="h-10 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm dark:border-[#1e2c52] dark:bg-[#070d1f] dark:text-[#e9eefb]"
                                         placeholder="စာတို ရေးရန်…"
                                         value={msg}
+                                        disabled={!live}
                                         onChange={(e) => setMsg(e.target.value)}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') send();
                                         }}
                                     />
-                                    <button type="button" className={btnAccentCls} onClick={send}>
+                                    <button type="button" className={btnAccentCls} onClick={send} disabled={!live}>
                                         <Send className="size-4" /> ပို့ရန်
                                     </button>
                                 </div>

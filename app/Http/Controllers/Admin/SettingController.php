@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -75,6 +76,39 @@ class SettingController extends Controller
                 'refund' => ['subject' => $values['email_refund_subject'], 'body' => $values['email_refund_body']],
             ],
         ]);
+    }
+
+    /**
+     * Download every stored setting as a JSON backup file. Values are
+     * decoded to their typed values; keys are grouped by their group.
+     */
+    public function export(): HttpResponse
+    {
+        $settings = Setting::query()
+            ->orderBy('group')
+            ->orderBy('key')
+            ->get()
+            ->map(fn (Setting $setting) => [
+                'key' => $setting->key,
+                'value' => Setting::getValue($setting->key),
+                'type' => $setting->type,
+                'group' => $setting->group,
+            ])->values();
+
+        $payload = [
+            'exported_at' => now()->toDateTimeString(),
+            'app' => config('app.name', 'Codexa MM'),
+            'settings' => $settings,
+        ];
+
+        return response(
+            json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            200,
+            [
+                'Content-Type' => 'application/json',
+                'Content-Disposition' => 'attachment; filename="codexa-mm-settings-'.now()->format('Y-m-d').'.json"',
+            ],
+        );
     }
 
     public function update(Request $request): RedirectResponse

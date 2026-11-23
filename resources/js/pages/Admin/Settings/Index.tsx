@@ -152,7 +152,7 @@ export default function Index({ settings, emailTemplates }: SettingsProps) {
                 title="Platform Settings"
                 description="Platform ရဲ့ အထွေထွေ ချိန်ညှိမှု၊ ငွေပေးချေမှု gateway နဲ့ email template များ စီမံရန်"
                 actions={
-                    <button type="button" className={btnGhostCls}>
+                    <button type="button" className={btnGhostCls} onClick={() => { window.location.href = '/admin/settings/export'; }}>
                         <Download className="size-4" /> Settings Backup ဒေါင်းလုဒ်ရန်
                     </button>
                 }

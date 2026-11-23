@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\CourseCategory;
 use App\Models\CourseReview;
 use App\Models\Enrollment;
+use App\Models\Setting;
 use App\Models\User;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -50,6 +51,14 @@ class PublicHomeController extends Controller
             'courses' => $courses,
             'categories' => $categories,
             'instructors' => $instructors,
+            // Landing-page content from the admin CMS (keys landing_promo,
+            // landing_hero_title, landing_hero_intro). Null when no CMS
+            // value exists yet — the page falls back to its hardcoded copy.
+            'landing' => [
+                'promo' => Setting::getValue('landing_promo'),
+                'heroTitle' => Setting::getValue('landing_hero_title'),
+                'heroIntro' => Setting::getValue('landing_hero_intro'),
+            ],
             'stats' => [
                 'courses' => Course::query()->published()->count(),
                 'students' => Enrollment::query()->distinct('student_id')->count('student_id'),

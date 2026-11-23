@@ -6,7 +6,7 @@ import { formatKyat } from '@/lib/format';
 import { BadgeCheck, Building2, CheckCircle2, CreditCard, Landmark, ShieldCheck, ShoppingCart, Smartphone, Tag } from 'lucide-react';
 
 type CartCourse = { id: number; slug: string; title: string; price: number; oldPrice?: number | null };
-type Props = { courses?: CartCourse[] };
+type Props = { courses?: CartCourse[]; gateways?: Record<Method, boolean> };
 
 type CouponResult = { valid: boolean; code?: string; discount_type?: 'percent' | 'fixed'; discount_value?: number };
 
@@ -23,8 +23,10 @@ async function validateCouponCode(code: string): Promise<CouponResult> {
     return (await res.json()) as CouponResult;
 }
 
-export default function Index({ courses = [] }: Props) {
-    const [method, setMethod] = useState<Method>('kbzpay');
+export default function Index({ courses = [], gateways }: Props) {
+    // Only gateways the admin has enabled are shown (all enabled by default).
+    const enabledMethods = METHODS.filter((m) => gateways?.[m.key] !== false);
+    const [method, setMethod] = useState<Method>(enabledMethods[0]?.key ?? 'kbzpay');
     const [coupon, setCoupon] = useState('');
     const [applied, setApplied] = useState<CouponResult | null>(null);
     const [couponError, setCouponError] = useState('');
@@ -173,8 +175,13 @@ export default function Index({ courses = [] }: Props) {
 
                     <section className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
                         <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">ငွေပေးချေမှု နည်းလမ်း</h2>
+                        {enabledMethods.length === 0 && (
+                            <p className="mt-4 rounded-xl bg-amber-50 p-4 text-sm font-semibold text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+                                ငွေပေးချေမှု နည်းလမ်း အားလုံး လက်ရှိ ပိတ်ထားပါသည် — နောက်မှ ပြန်ကြိုးစားပါ။
+                            </p>
+                        )}
                         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                            {METHODS.map((m) => (
+                            {enabledMethods.map((m) => (
                                 <button
                                     key={m.key}
                                     onClick={() => setMethod(m.key)}
@@ -226,7 +233,7 @@ export default function Index({ courses = [] }: Props) {
                         {applied?.valid && <p className="mt-1.5 text-xs font-bold text-emerald-600">ကူပွန် အသုံးပြုပြီးပါပြီ — {applied.discount_type === 'percent' ? `${applied.discount_value}%` : formatKyat(applied.discount_value ?? 0)} လျှော့ပေးထားသည်။</p>}
                     </div>
 
-                    <button onClick={pay} disabled={(method !== 'bank' && phone.trim().length < 7) || processing} className="mt-6 w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white hover:bg-teal-700 disabled:opacity-50">
+                    <button onClick={pay} disabled={enabledMethods.length === 0 || (method !== 'bank' && phone.trim().length < 7) || processing} className="mt-6 w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white hover:bg-teal-700 disabled:opacity-50">
                         {formatKyat(total)} ပေးချေရန်
                     </button>
                     <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-slate-400"><ShieldCheck className="size-3.5" /> ငွေပေးချေမှု လုံခြုံစွာ ကာကွယ်ထားပါသည် · 7 ရက် ငွေပြန်အမ်းမည်</p>

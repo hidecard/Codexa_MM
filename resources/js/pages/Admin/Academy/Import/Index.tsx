@@ -16,13 +16,32 @@ type Preview = {
     sample: PreviewRow[];
 };
 
-type ImportResult = { created: number; skipped: number; errors: string[]; date: string };
+type ImportResult = { created: number; skipped: number; failed?: number; errors: string[]; date: string };
 
-type Props = { preview?: Preview | null; result?: ImportResult | null };
+type HistoryRow = {
+    id: number;
+    filename: string;
+    status: 'completed' | 'partial' | 'failed';
+    rows_total: number;
+    rows_imported: number;
+    rows_skipped: number;
+    rows_failed: number;
+    errors: string[];
+    imported_by: string;
+    date: string;
+};
+
+type Props = { preview?: Preview | null; result?: ImportResult | null; history?: HistoryRow[] };
+
+const HISTORY_STATUS: Record<HistoryRow['status'], { tone: 'teal' | 'amber' | 'rose'; label: string }> = {
+    completed: { tone: 'teal', label: 'ပြီးဆုံး' },
+    partial: { tone: 'amber', label: 'တစ်စိတ်တစ်ပိုင်း' },
+    failed: { tone: 'rose', label: 'မအောင်မြင်' },
+};
 
 const SAMPLE_CSV = 'title,category,price,level\nReact Hooks Masterclass,Web Development,95000,intermediate\nPython Data Analysis,Programming,110000,beginner\nFigma for Beginners,Design,40000,beginner\n';
 
-export default function Index({ preview = null, result = null }: Props) {
+export default function Index({ preview = null, result = null, history = [] }: Props) {
     const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
     const [dismissedPreview, setDismissedPreview] = useState(false);
@@ -179,6 +198,7 @@ export default function Index({ preview = null, result = null }: Props) {
                                 <p className={`text-[.92rem] font-extrabold ${inkCls}`}>သင်တန်းများ</p>
                                 <Pill tone="teal">{result.created} အောင်မြင်</Pill>
                                 {result.skipped > 0 && <Pill tone="amber">{result.skipped} ကျော်သွား</Pill>}
+                                {(result.failed ?? 0) > 0 && <Pill tone="rose">{result.failed} မအောင်မြင်</Pill>}
                                 <span className={`ml-auto text-[.76rem] font-semibold ${mutedCls}`}>{result.date}</span>
                             </div>
                             {result.errors.length > 0 && (
@@ -192,7 +212,43 @@ export default function Index({ preview = null, result = null }: Props) {
                             )}
                         </div>
                     ) : (
-                        <p className={`text-sm ${mutedCls}`}>သွင်းမှု ရလဒ် မရှိသေးပါ — CSV တင်ပြီး အတည်ပြုရင် ဒီမှာ ရလဒ် ပေါ်လာပါမယ်။ သွင်းမှု မှတ်တမ်း အဟောင်းများကို သိမ်းမထားပါ။</p>
+                        <p className={`text-sm ${mutedCls}`}>သွင်းမှု ရလဒ် မရှိသေးပါ — CSV တင်ပြီး အတည်ပြုရင် ဒီမှာ ရလဒ် ပေါ်လာပါမယ်။</p>
+                    )}
+                </SectionCard>
+            </div>
+
+            <div className="mt-5">
+                <SectionCard title={`သွင်းမှု မှတ်တမ်း — ${history.length} ခု`}>
+                    {history.length === 0 ? (
+                        <p className={`text-sm ${mutedCls}`}>သွင်းမှု မှတ်တမ်း မရှိသေးပါ — ပထမဆုံး CSV သွင်းပြီးရင် ဒီမှာ ပေါ်လာပါမယ်။</p>
+                    ) : (
+                        <div className="space-y-3">
+                            {history.map((h) => (
+                                <div key={h.id} className="rounded-xl border border-slate-100 p-4 dark:border-[#18264a]">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <p className={`text-[.92rem] font-extrabold ${inkCls}`}>{h.filename}</p>
+                                        <Pill tone={HISTORY_STATUS[h.status].tone}>{HISTORY_STATUS[h.status].label}</Pill>
+                                        <span className={`ml-auto text-[.76rem] font-semibold ${mutedCls}`}>
+                                            {h.imported_by ? `${h.imported_by} · ` : ''}
+                                            {h.date}
+                                        </span>
+                                    </div>
+                                    <p className={`mt-1.5 text-[.8rem] font-semibold ${mutedCls}`}>
+                                        စုစုပေါင်း {h.rows_total} ကြောင်း · သွင်းပြီး {h.rows_imported} · ကျော်သွား {h.rows_skipped} · မအောင်မြင် {h.rows_failed}
+                                    </p>
+                                    {h.errors.length > 0 && (
+                                        <ul className="mt-2 space-y-1">
+                                            {h.errors.slice(0, 3).map((err, i) => (
+                                                <li key={i} className="text-[.8rem] text-rose-600">
+                                                    {err}
+                                                </li>
+                                            ))}
+                                            {h.errors.length > 3 && <li className={`text-[.8rem] ${mutedCls}`}>… အမှား {h.errors.length - 3} ခု ကျန်သေးသည်</li>}
+                                        </ul>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
                     )}
                 </SectionCard>
             </div>
