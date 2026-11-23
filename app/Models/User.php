@@ -36,6 +36,11 @@ class User extends Authenticatable implements HasMedia
         return $this->hasOne(UserPreference::class);
     }
 
+    public function client()
+    {
+        return $this->hasOne(Client::class);
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('avatar')

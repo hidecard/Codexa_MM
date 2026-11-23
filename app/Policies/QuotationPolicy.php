@@ -14,12 +14,12 @@ class QuotationPolicy
 
     public function view(User $user, Quotation $quotation): bool
     {
-        if ($user->can('quotations.view')) {
-            return true;
-        }
-
         if ($user->hasRole('client')) {
             return $quotation->client->user_id === $user->id;
+        }
+
+        if ($user->can('quotations.view')) {
+            return true;
         }
 
         return true; // Admin and staff can view

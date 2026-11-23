@@ -19,7 +19,7 @@ class DashboardController extends Controller
         $user = $request->user();
 
         $enrollments = Enrollment::query()
-            ->with(['course.category', 'course.modules.lessons'])
+            ->with(['course.category', 'course.instructor:id,name', 'course.modules.lessons'])
             ->where('student_id', $user->id)
             ->latest('enrolled_at')
             ->get();
@@ -61,6 +61,8 @@ class DashboardController extends Controller
                     'title' => $enrollment->course->title,
                     'slug' => $enrollment->course->slug,
                     'category' => $enrollment->course->category?->name,
+                    'instructor' => $enrollment->course->instructor?->name,
+                    'thumbnail' => $enrollment->course->thumbnail,
                 ],
                 'continue_lesson' => $continueLesson ? [
                     'id' => $continueLesson->id,
@@ -121,6 +123,27 @@ class DashboardController extends Controller
                 'created_at' => optional($n->created_at)?->toDateTimeString(),
             ])->values();
 
+        // Weekly study activity (last 7 days) from lesson watch time.
+        $dayNames = ['တနင်္ဂနွေ', 'တနင်္လာ', 'အင်္ဂါ', 'ဗုဒ္ဓဟူး', 'ကြာသပတေး', 'သောကြာ', 'စနေ'];
+        $weeklySeconds = LessonProgress::query()
+            ->whereIn('enrollment_id', $enrollmentIds)
+            ->where('updated_at', '>=', now()->subDays(6)->startOfDay())
+            ->selectRaw('DATE(updated_at) as day, SUM(watch_time) as seconds')
+            ->groupBy('day')
+            ->pluck('seconds', 'day');
+        $weeklyActivity = collect(range(6, 0))->map(function ($ago) use ($weeklySeconds, $dayNames) {
+            $date = now()->subDays($ago);
+            $seconds = (int) ($weeklySeconds[$date->toDateString()] ?? 0);
+
+            return [
+                'day' => $dayNames[$date->dayOfWeek],
+                'minutes' => (int) round($seconds / 60),
+            ];
+        })->values();
+        $totalWatchMinutes = (int) round(
+            LessonProgress::query()->whereIn('enrollment_id', $enrollmentIds)->sum('watch_time') / 60
+        );
+
         return Inertia::render('Student/Dashboard', [
             'enrollments' => $cards,
             'stats' => [
@@ -132,6 +155,8 @@ class DashboardController extends Controller
             'activities' => $activities,
             'certificates' => $certificates,
             'notifications' => $notifications,
+            'weeklyActivity' => $weeklyActivity,
+            'totalWatchMinutes' => $totalWatchMinutes,
         ]);
     }
 }

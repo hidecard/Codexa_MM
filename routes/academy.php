@@ -2,14 +2,16 @@
 
 use App\Http\Controllers\Instructor\AssignmentController as InstructorAssignmentController;
 use App\Http\Controllers\Instructor\CourseController as InstructorCourseController;
+use App\Http\Controllers\Student\AnnouncementController;
 use App\Http\Controllers\Student\AssignmentController as StudentAssignmentController;
 use App\Http\Controllers\Student\CertificateController as StudentCertificateController;
 use App\Http\Controllers\Student\CourseLearnController;
 use App\Http\Controllers\Student\DashboardController;
 use App\Http\Controllers\Student\EnrollmentController;
+use App\Http\Controllers\Student\MyCoursesController;
 use App\Http\Controllers\Student\NotificationController as StudentNotificationController;
 use App\Http\Controllers\Student\QuizController;
-use App\Models\Enrollment;
+use App\Http\Controllers\Student\ReviewController;
 use App\Models\Quiz;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -17,26 +19,7 @@ use Inertia\Inertia;
 Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->name('student.')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
-    Route::get('/my-courses', function () {
-        $enrollments = Enrollment::query()
-            ->with(['course.category'])
-            ->where('student_id', request()->user()->id)
-            ->latest('enrolled_at')
-            ->get()
-            ->map(fn (Enrollment $e) => [
-                'id' => $e->id,
-                'status' => $e->status,
-                'enrolled_at' => optional($e->enrolled_at)?->toDateString(),
-                'course' => [
-                    'id' => $e->course->id,
-                    'title' => $e->course->title,
-                    'slug' => $e->course->slug,
-                    'category' => $e->course->category?->name,
-                ],
-            ])->values();
-
-        return Inertia::render('Student/MyCourses', ['enrollments' => $enrollments]);
-    })->name('my-courses');
+    Route::get('/my-courses', [MyCoursesController::class, 'index'])->name('my-courses');
 
     Route::post('/courses/{course:slug}/enroll', [EnrollmentController::class, 'store'])->name('courses.enroll');
 
@@ -101,13 +84,46 @@ Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->name
         return Inertia::render('Student/Wishlist');
     })->name('wishlist');
 
-    Route::get('/reviews', function () {
-        return Inertia::render('Student/Reviews/Index');
-    })->name('reviews.index');
+    Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
 
     Route::get('/profile', function () {
         return Inertia::render('Student/Profile');
     })->name('profile');
+
+    Route::get('/certificates/{certificate}', [StudentCertificateController::class, 'show'])->name('certificates.show');
+
+    Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
+
+    Route::get('/live-classes', fn () => Inertia::render('Student/LiveClasses/Index'))->name('live-classes.index');
+    Route::get('/live-classes/{id}', fn ($id) => Inertia::render('Student/LiveClasses/Show'))->name('live-classes.show');
+    Route::get('/community', fn () => Inertia::render('Student/Community/Index'))->name('community.index');
+    Route::get('/community/{id}', fn ($id) => Inertia::render('Student/Community/Show'))->name('community.show');
+    Route::get('/leaderboard', fn () => Inertia::render('Student/Leaderboard'))->name('leaderboard.index');
+    Route::get('/paths', fn () => Inertia::render('Student/Paths/Index'))->name('paths.index');
+    Route::get('/paths/{id}', fn ($id) => Inertia::render('Student/Paths/Show'))->name('paths.show');
+    Route::get('/notes', fn () => Inertia::render('Student/Notes/Index'))->name('notes.index');
+    Route::get('/resources', fn () => Inertia::render('Student/Resources/Index'))->name('resources.index');
+    Route::get('/achievements', fn () => Inertia::render('Student/Achievements/Index'))->name('achievements.index');
+    Route::get('/cart', fn () => Inertia::render('Student/Cart/Index'))->name('cart.index');
+    Route::get('/checkout', fn () => Inertia::render('Student/Checkout/Index'))->name('checkout.index');
+    Route::get('/orders', fn () => Inertia::render('Student/Orders/Index'))->name('orders.index');
+    Route::get('/messages', fn () => Inertia::render('Student/Messages/Index'))->name('messages.index');
+    Route::get('/schedule', fn () => Inertia::render('Student/Schedule/Index'))->name('schedule.index');
+    Route::get('/progress', fn () => Inertia::render('Student/Progress/Index'))->name('progress.index');
+    Route::get('/help', fn () => Inertia::render('Student/Help/Index'))->name('help.index');
+    Route::get('/payment-methods', fn () => Inertia::render('Student/PaymentMethods/Index'))->name('payment-methods.index');
+    Route::get('/refunds', fn () => Inertia::render('Student/Refunds/Index'))->name('refunds.index');
+    Route::get('/membership', fn () => Inertia::render('Student/Membership/Index'))->name('membership.index');
+    Route::get('/security', fn () => Inertia::render('Student/Security/Index'))->name('security.index');
+    Route::get('/challenges', fn () => Inertia::render('Student/Challenges/Index'))->name('challenges.index');
+    Route::get('/events', fn () => Inertia::render('Student/Events/Index'))->name('events.index');
+    Route::get('/mentors', fn () => Inertia::render('Student/Mentors/Index'))->name('mentors.index');
+    Route::get('/referrals', fn () => Inertia::render('Student/Referrals/Index'))->name('referrals.index');
+    Route::get('/search', fn () => Inertia::render('Student/Search/Index'))->name('search.index');
+    Route::get('/study-groups', fn () => Inertia::render('Student/StudyGroups/Index'))->name('study-groups.index');
+    Route::get('/gift-cards', fn () => Inertia::render('Student/GiftCards/Index'))->name('gift-cards.index');
+    Route::get('/whats-new', fn () => Inertia::render('Student/WhatsNew/Index'))->name('whats-new.index');
+    Route::get('/onboarding', fn () => Inertia::render('Student/Onboarding/Index'))->name('onboarding.index');
 });
 
 Route::middleware(['auth', 'verified', 'role:instructor'])->prefix('instructor')->name('instructor.')->group(function () {
@@ -165,4 +181,20 @@ Route::middleware(['auth', 'verified', 'role:instructor'])->prefix('instructor')
     Route::get('/profile', function () {
         return Inertia::render('Instructor/Profile');
     })->name('profile');
+
+    Route::get('/earnings', function () {
+        return Inertia::render('Instructor/Earnings/Index');
+    })->name('earnings.index');
+
+    Route::get('/earnings/{id}', function ($id) {
+        return Inertia::render('Instructor/Earnings/Show', ['courseId' => (int) $id]);
+    })->name('earnings.show');
+
+    Route::get('/qa', function () {
+        return Inertia::render('Instructor/QA/Index');
+    })->name('qa.index');
+
+    Route::get('/live-host', function () {
+        return Inertia::render('Instructor/LiveHost/Index');
+    })->name('live-host.index');
 });

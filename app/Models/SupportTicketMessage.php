@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['ticket_id', 'user_id', 'message', 'is_internal'])]
 class SupportTicketMessage extends Model
 {
+    protected $table = 'ticket_messages';
+
     protected function casts(): array
     {
         return ['is_internal' => 'boolean'];

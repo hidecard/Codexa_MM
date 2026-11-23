@@ -1,12 +1,10 @@
-import { usePage, Link, Head } from '@inertiajs/react';
-import { AppShell } from '@/components/shared/app-shell';
-import { PageHeader } from '@/components/ui/page-header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Trophy, CheckCircle, XCircle, User, ArrowLeft, Eye } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { ArrowLeft, CheckCircle, Eye, Trophy, XCircle } from 'lucide-react';
+import { LmsShell } from '@/components/shared/lms-shell';
+import { formatDate } from '@/lib/format';
+import { Avatar, EmptyBox, LmsCard, PageIntro, Pill, btnGhostCls, inkCls, mutedCls } from '@/pages/Admin/Academy/_shared';
 
-interface Attempt {
+type Attempt = {
     id: number;
     student: { id: number; name: string; email: string } | null;
     score: number;
@@ -14,140 +12,116 @@ interface Attempt {
     started_at: string;
     completed_at: string | null;
     answers_count: number;
+};
+
+type Quiz = { id: number; title: string; pass_mark: number };
+
+// The controller passes `attempts` as a plain mapped array (not the paginator);
+// accept both shapes so the page keeps working either way.
+type AttemptsProp = Attempt[] | { data: Attempt[]; total: number };
+
+function initials(name: string) {
+    return name
+        .split(' ')
+        .map((w) => w[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase();
 }
 
-interface Quiz {
-    id: number;
-    title: string;
-    pass_mark: number;
+function statusPill(status: string) {
+    if (status === 'passed')
+        return (
+            <Pill tone="teal">
+                <CheckCircle className="mr-1 size-3" /> အောင်မြင်
+            </Pill>
+        );
+    if (status === 'failed')
+        return (
+            <Pill tone="rose">
+                <XCircle className="mr-1 size-3" /> ကျရှုံး
+            </Pill>
+        );
+    if (status === 'in_progress') return <Pill tone="amber">ဖြေဆိုနေဆဲ</Pill>;
+    if (status === 'completed') return <Pill tone="slate">ပြီးဆုံး</Pill>;
+    return <Pill tone="slate">{status}</Pill>;
 }
 
-interface PageProps {
-    quiz: Quiz;
-    attempts: {
-        data: Attempt[];
-        current_page: number;
-        last_page: number;
-        per_page: number;
-        total: number;
-    };
-    [key: string]: unknown;
-}
-
-export default function Results() {
-    const { quiz, attempts } = usePage<PageProps>().props;
-
-    const formatDate = (dateStr: string | null) => {
-        if (!dateStr) return '-';
-        return new Date(dateStr).toLocaleString();
-    };
-
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'passed':
-                return <Badge variant="default"><CheckCircle className="mr-1 h-3 w-3" /> Passed</Badge>;
-            case 'failed':
-                return <Badge variant="danger"><XCircle className="mr-1 h-3 w-3" /> Failed</Badge>;
-            case 'completed':
-                return <Badge variant="secondary">Completed</Badge>;
-            case 'in_progress':
-                return <Badge variant="outline">In Progress</Badge>;
-            default:
-                return <Badge variant="outline">{status}</Badge>;
-        }
-    };
-
-    const headerActions = (
-        <div className="flex flex-wrap items-center gap-3 mt-4">
-            <Link href="/instructor/quizzes">
-                <Button variant="outline"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Quizzes</Button>
-            </Link>
-            <Link href={`/instructor/quizzes/${quiz.id}`}>
-                <Button variant="outline"><Eye className="mr-2 h-4 w-4" /> Edit Quiz</Button>
-            </Link>
-        </div>
-    );
+export default function Results({ quiz, attempts }: { quiz: Quiz; attempts: AttemptsProp }) {
+    const list: Attempt[] = Array.isArray(attempts) ? attempts : (attempts?.data ?? []);
+    const total = Array.isArray(attempts) ? attempts.length : (attempts?.total ?? list.length);
+    const passed = list.filter((a) => a.status === 'passed').length;
+    const avg = list.length ? Math.round(list.reduce((s, a) => s + a.score, 0) / list.length) : 0;
 
     return (
-        <AppShell>
-            <Head title={`Quiz Results: ${quiz.title}`} />
-            <PageHeader
-                eyebrow="Codexa MM"
-                title="Quiz Results"
-                description={quiz.title}
-                actions={headerActions}
+        <LmsShell title="Quiz ရလဒ်များ" nav="instructor">
+            <Head title={`Quiz ရလဒ်များ · ${quiz.title}`} />
+            <PageIntro
+                title="Quiz ရလဒ်များ"
+                description={`${quiz.title} · အောင်မှတ် ${quiz.pass_mark}% · ဖြေဆိုမှု ${total} ကြိမ် · အောင်မြင် ${passed} ဦး · ပျမ်းမျှ ${avg}%`}
+                actions={
+                    <>
+                        <Link href="/instructor/quizzes" className={btnGhostCls}>
+                            <ArrowLeft className="size-4" /> Quiz အားလုံး
+                        </Link>
+                        <Link href={`/instructor/quizzes/${quiz.id}`} className={btnGhostCls}>
+                            <Eye className="size-4" /> Quiz ပြင်ရန်
+                        </Link>
+                    </>
+                }
             />
 
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle>Attempts ({attempts.total})</CardTitle>
-                        <div className="flex items-center gap-4 text-sm text-slate-600">
-                            <span className="font-medium">Pass Mark: {quiz.pass_mark}%</span>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                    {attempts.data.length === 0 ? (
-                        <div className="py-12 text-center">
-                            <Trophy className="mx-auto h-12 w-12 text-slate-300" />
-                            <h3 className="mt-4 text-lg font-semibold text-slate-900">No attempts yet</h3>
-                            <p className="mt-2 text-slate-500">Students haven't attempted this quiz yet.</p>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-slate-200">
-                                        <th className="text-left py-3 px-4 font-medium text-slate-500">Student</th>
-                                        <th className="text-left py-3 px-4 font-medium text-slate-500">Score</th>
-                                        <th className="text-left py-3 px-4 font-medium text-slate-500">Status</th>
-                                        <th className="text-left py-3 px-4 font-medium text-slate-500">Started</th>
-                                        <th className="text-left py-3 px-4 font-medium text-slate-500">Completed</th>
-                                        <th className="text-left py-3 px-4 font-medium text-slate-500">Answers</th>
-                                        <th className="text-right py-3 px-4 font-medium text-slate-500">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {attempts.data.map((attempt) => (
-                                        <tr key={attempt.id} className="hover:bg-slate-50">
-                                            <td className="py-4 px-4">
-                                                <div className="flex items-center gap-3">
-                                                    <User className="h-5 w-5 text-slate-400" />
-                                                    <div>
-                                                        <p className="font-medium text-slate-900">{attempt.student?.name || 'Unknown'}</p>
-                                                        <p className="text-sm text-slate-500">{attempt.student?.email}</p>
-                                                    </div>
+            {list.length === 0 ? (
+                <div className="mt-6">
+                    <EmptyBox title="ဖြေဆိုမှု မရှိသေးပါ" description="ကျောင်းသားတွေ ဒီ quiz ကို ဖြေဆိုရင် ဒီမှာ ပေါ်လာပါမယ်" />
+                </div>
+            ) : (
+                <LmsCard className="mt-6 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className={`border-b border-slate-200 text-left dark:border-[#1e2c52] ${mutedCls}`}>
+                                    <th className="px-4 py-3 font-semibold">ကျောင်းသား</th>
+                                    <th className="px-4 py-3 font-semibold">အမှတ်</th>
+                                    <th className="px-4 py-3 font-semibold">အခြေအနေ</th>
+                                    <th className="px-4 py-3 font-semibold">စတင်ချိန်</th>
+                                    <th className="px-4 py-3 font-semibold">ပြီးဆုံးချိန်</th>
+                                    <th className="px-4 py-3 font-semibold">အဖြေ</th>
+                                    <th className="px-4 py-3 text-right font-semibold">လုပ်ဆောင်ချက်</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-[#18264a]">
+                                {list.map((attempt) => (
+                                    <tr key={attempt.id} className="hover:bg-slate-50 dark:hover:bg-[#12234a]">
+                                        <td className="px-4 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <Avatar init={initials(attempt.student?.name ?? '?')} color="#0ea892" size="sm" />
+                                                <div>
+                                                    <p className={`font-medium ${inkCls}`}>{attempt.student?.name || 'Unknown'}</p>
+                                                    <p className={`text-xs ${mutedCls}`}>{attempt.student?.email}</p>
                                                 </div>
-                                            </td>
-                                            <td className="py-4 px-4">
-                                                <div className="font-medium text-slate-900">{attempt.score}%</div>
-                                            </td>
-                                            <td className="py-4 px-4">
-                                                {getStatusBadge(attempt.status)}
-                                            </td>
-                                            <td className="py-4 px-4 text-sm text-slate-600">
-                                                {formatDate(attempt.started_at)}
-                                            </td>
-                                            <td className="py-4 px-4 text-sm text-slate-600">
-                                                {formatDate(attempt.completed_at)}
-                                            </td>
-                                            <td className="py-4 px-4 text-sm text-slate-600">
-                                                {attempt.answers_count}
-                                            </td>
-                                            <td className="py-4 px-4 text-right">
-                                                <Link href={`/instructor/quizzes/${quiz.id}/attempts/${attempt.id}`}>
-                                                    <Button variant="ghost" size="sm"><Eye className="h-4 w-4" /> View</Button>
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-        </AppShell>
+                                            </div>
+                                        </td>
+                                        <td className={`px-4 py-4 font-bold ${inkCls}`}>{attempt.score}%</td>
+                                        <td className="px-4 py-4">{statusPill(attempt.status)}</td>
+                                        <td className={`px-4 py-4 ${mutedCls}`}>{formatDate(attempt.started_at)}</td>
+                                        <td className={`px-4 py-4 ${mutedCls}`}>{formatDate(attempt.completed_at)}</td>
+                                        <td className={`px-4 py-4 ${mutedCls}`}>{attempt.answers_count}</td>
+                                        <td className="px-4 py-4 text-right">
+                                            <Link href={`/instructor/quizzes/${quiz.id}/attempts/${attempt.id}`} className={btnGhostCls}>
+                                                <Eye className="size-4" /> ကြည့်ရန်
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className={`flex items-center gap-2 border-t border-slate-100 px-4 py-3 text-sm dark:border-[#18264a] ${mutedCls}`}>
+                        <Trophy className="size-4" /> ဖြေဆိုမှု စုစုပေါင်း {total} ကြိမ်
+                    </div>
+                </LmsCard>
+            )}
+        </LmsShell>
     );
 }

@@ -5,6 +5,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\PublicBlogController;
 use App\Http\Controllers\PublicCourseController;
 use App\Http\Controllers\PublicFaqController;
+use App\Http\Controllers\PublicHomeController;
 use App\Http\Controllers\PublicInstructorController;
 use App\Http\Controllers\PublicPortfolioController;
 use App\Http\Controllers\PublicServiceController;
@@ -12,9 +13,15 @@ use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Public/Home');
-})->name('home');
+Route::get('/', PublicHomeController::class)->name('home');
+
+Route::get('/jobs', function () {
+    return Inertia::render('Public/Jobs');
+})->name('jobs');
+
+Route::get('/teach', function () {
+    return Inertia::render('Public/Teach');
+})->name('teach');
 
 Route::get('/dashboard', function () {
     $user = request()->user();
@@ -34,15 +41,11 @@ Route::get('/about', function () {
 
 Route::get('/courses', [PublicCourseController::class, 'index'])->name('courses.index');
 
-Route::get('/courses/categories', function () {
-    return Inertia::render('Public/Courses/Categories');
-})->name('courses.categories');
+Route::get('/courses/categories', [PublicCourseController::class, 'categories'])->name('courses.categories');
 
 Route::get('/courses/{course:slug}', [PublicCourseController::class, 'show'])->name('courses.show');
 
-Route::get('/courses/{course:slug}/curriculum', function () {
-    return Inertia::render('Public/Courses/Curriculum');
-})->name('courses.curriculum');
+Route::get('/courses/{course:slug}/curriculum', [PublicCourseController::class, 'curriculum'])->name('courses.curriculum');
 
 Route::get('/services', [PublicServiceController::class, 'index'])->name('services.index');
 

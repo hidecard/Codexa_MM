@@ -2,6 +2,8 @@
 @import 'tailwindcss';
 @plugin 'tailwindcss-animate';
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../js/**/*.tsx';
@@ -10,10 +12,93 @@
     --font-sans: 'Inter', 'Noto Sans Myanmar', ui-sans-serif, system-ui, sans-serif;
     --font-myanmar: 'Noto Sans Myanmar', ui-sans-serif, system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+
+    /* LMS semantic colours — driven by CSS vars so they flip with data-theme. */
+    --color-lms-bg: var(--lms-bg);
+    --color-lms-surface: var(--lms-surface);
+    --color-lms-surface-2: var(--lms-surface-2);
+    --color-lms-surface-3: var(--lms-surface-3);
+    --color-lms-ink: var(--lms-ink);
+    --color-lms-muted: var(--lms-muted);
+    --color-lms-faint: var(--lms-faint);
+    --color-lms-line: var(--lms-line);
+    --color-lms-line-soft: var(--lms-line-soft);
+    --color-lms-chip: var(--lms-chip);
+    --color-lms-accent: var(--lms-accent);
+    --color-lms-accent-ink: var(--lms-accent-ink);
+    --color-lms-glow: var(--lms-glow);
+
+    /* LMS accent palette (static). */
+    --color-lms-teal: #0ea892;
+    --color-lms-teal-bright: #2dd4bf;
+    --color-lms-navy: #0d1730;
+    --color-lms-navy-deep: #070d1f;
+    --color-lms-blue: #2563eb;
+    --color-lms-indigo: #6366f1;
+    --color-lms-purple: #7c3aed;
+    --color-lms-pink: #ec4899;
+    --color-lms-amber: #f59e0b;
+    --color-lms-red: #dc2626;
+    --color-lms-green: #22c55e;
+    --color-lms-sky: #0284c7;
 }
 
 @layer base {
+    :root {
+        --lms-bg: #edf0f7;
+        --lms-surface: #ffffff;
+        --lms-surface-2: #f5f7fc;
+        --lms-surface-3: #e9edf6;
+        --lms-ink: #0d1730;
+        --lms-muted: #5a6a8a;
+        --lms-faint: #8494b3;
+        --lms-line: #dce3f0;
+        --lms-line-soft: #e7ecf5;
+        --lms-accent: #078575;
+        --lms-accent-ink: #ffffff;
+        --lms-chip: #eef3fb;
+        --lms-glow: rgba(20, 184, 166, 0.16);
+    }
+
+    [data-theme="dark"] {
+        --lms-bg: #070d1f;
+        --lms-surface: #0d1730;
+        --lms-surface-2: #101d3a;
+        --lms-surface-3: #152448;
+        --lms-ink: #e9eefb;
+        --lms-muted: #97a6c6;
+        --lms-faint: #67779c;
+        --lms-line: #1e2c52;
+        --lms-line-soft: #18264a;
+        --lms-accent: #2dd4bf;
+        --lms-accent-ink: #04241f;
+        --lms-chip: #12234a;
+        --lms-glow: rgba(45, 212, 191, 0.14);
+    }
+
     html { scroll-behavior: smooth; }
     body { margin: 0; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
     button, a { -webkit-tap-highlight-color: transparent; }
 }
+
+@layer components {
+    .lms-card { background: var(--lms-surface); border: 1px solid var(--lms-line); border-radius: 20px; }
+    .lms-card-soft { background: var(--lms-surface-2); border: 1px solid var(--lms-line-soft); border-radius: 16px; }
+    .clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+}
+
+@layer utilities {
+    .lms-scrollbar { scrollbar-width: thin; scrollbar-color: var(--lms-line) transparent; }
+    .lms-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .lms-scrollbar::-webkit-scrollbar-thumb { background: var(--lms-line); border-radius: 99px; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { scrollbar-width: none; }
+}
+
+@keyframes lms-fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes lms-slide-up { from { transform: translateY(24px); opacity: .4; } to { transform: none; opacity: 1; } }
+@keyframes lms-slide-in-left { from { transform: translateX(-24px); opacity: .4; } to { transform: none; opacity: 1; } }
+
+.lms-animate-fade-in { animation: lms-fade-in .18s ease both; }
+.lms-animate-slide-up { animation: lms-slide-up .22s ease both; }
+.lms-animate-slide-in-left { animation: lms-slide-in-left .22s ease both; }

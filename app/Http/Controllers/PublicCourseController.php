@@ -13,6 +13,20 @@ class PublicCourseController extends Controller
 {
     public function index(Request $request): Response
     {
+        // `category` accepts either a category id or a slug (footer / landing
+        // links use slugs like ?category=web-development).
+        $categoryParam = $request->string('category')->trim()->value();
+        $categoryId = null;
+        if ($categoryParam !== '') {
+            $categoryId = is_numeric($categoryParam)
+                ? (int) $categoryParam
+                : CourseCategory::query()->where('slug', $categoryParam)->value('id');
+        }
+
+        $level = $request->string('level')->trim()->value();
+        $sort = $request->string('sort')->trim()->value();
+        $sort = in_array($sort, ['newest', 'priceAsc', 'priceDesc'], true) ? $sort : 'newest';
+
         $courses = Course::query()
             ->published()
             ->with(['category', 'instructor', 'instructors:id,name'])
@@ -22,8 +36,11 @@ class PublicCourseController extends Controller
                         ->orWhere('short_description', 'like', "%{$search}%");
                 });
             })
-            ->when($request->integer('category'), fn ($query, int $category) => $query->where('category_id', $category))
-            ->latest('published_at')
+            ->when($categoryId, fn ($query, int $category) => $query->where('category_id', $category))
+            ->when(in_array($level, ['Beginner', 'Intermediate', 'Advanced'], true), fn ($query) => $query->where('level', $level))
+            ->when($sort === 'priceAsc', fn ($query) => $query->orderByRaw('COALESCE(sale_price, price) asc'))
+            ->when($sort === 'priceDesc', fn ($query) => $query->orderByRaw('COALESCE(sale_price, price) desc'))
+            ->when($sort === 'newest', fn ($query) => $query->latest('published_at'))
             ->paginate(9)
             ->withQueryString();
 
@@ -32,8 +49,34 @@ class PublicCourseController extends Controller
             'categories' => CourseCategory::query()->where('is_active', true)->orderBy('position')->get(['id', 'name', 'slug']),
             'filters' => [
                 'q' => $request->string('q')->trim()->value(),
-                'category' => $request->integer('category') ?: null,
+                'category' => $categoryId,
+                'level' => $level !== '' ? $level : null,
+                'sort' => $sort,
             ],
+        ]);
+    }
+
+    public function categories(): Response
+    {
+        $categories = CourseCategory::query()
+            ->where('is_active', true)
+            ->withCount(['courses' => fn ($query) => $query->published()])
+            ->orderBy('position')
+            ->get(['id', 'name', 'slug', 'description']);
+
+        return Inertia::render('Public/Courses/Categories', [
+            'categories' => $categories,
+        ]);
+    }
+
+    public function curriculum(Course $course): Response
+    {
+        abort_unless($course->status === 'published' && $course->published_at && $course->category?->is_active, 404);
+
+        $course->load(['category:id,name,slug', 'instructor:id,name', 'modules.lessons']);
+
+        return Inertia::render('Public/Courses/Curriculum', [
+            'course' => $course,
         ]);
     }
 

@@ -1,15 +1,10 @@
-import { usePage, Link, useForm, Head } from '@inertiajs/react';
-import { route } from 'ziggy-js';
-import { AppShell } from '@/components/shared/app-shell';
-import { PageHeader } from '@/components/ui/page-header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Trophy, Clock, Eye, BarChart2 } from 'lucide-react';
+import { useState } from 'react';
+import { Head, Link } from '@inertiajs/react';
+import { BarChart2, Clock, Eye, Plus, Search, Trophy } from 'lucide-react';
+import { LmsShell } from '@/components/shared/lms-shell';
+import { EmptyBox, LmsCard, PageIntro, Pill, btnAccentCls, btnGhostCls, inkCls, inputCls, mutedCls } from '@/pages/Admin/Academy/_shared';
 
-interface Quiz {
+type Quiz = {
     id: number;
     title: string;
     pass_mark: number;
@@ -17,149 +12,96 @@ interface Quiz {
     questions_count: number;
     attempts_count: number;
     course: { id: number; title: string } | null;
-}
+};
 
-interface Course {
-    id: number;
-    title: string;
-}
+type Course = { id: number; title: string };
 
-interface PageProps {
-    quizzes: Quiz[];
-    courses: Course[];
-    [key: string]: unknown;
-}
+export default function Index({ quizzes = [], courses = [] }: { quizzes: Quiz[]; courses: Course[] }) {
+    const [query, setQuery] = useState('');
+    const [courseId, setCourseId] = useState('');
 
-export default function Index() {
-    const { quizzes, courses } = usePage<PageProps>().props;
-    const { data, setData, get, processing } = useForm({
-        search: '',
-        course_id: '',
+    const filtered = quizzes.filter((q) => {
+        if (courseId && String(q.course?.id) !== courseId) return false;
+        if (query && !q.title.toLowerCase().includes(query.toLowerCase())) return false;
+        return true;
     });
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        get(route('instructor.quizzes.index'), { preserveState: true, preserveScroll: true });
-    };
-
-    const headerActions = (
-        <Link href="/instructor/quizzes/create">
-            <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Quiz
-            </Button>
-        </Link>
-    );
-
     return (
-        <AppShell>
+        <LmsShell title="Quizzes" nav="instructor">
             <Head title="Quizzes" />
-            <PageHeader
-                eyebrow="Codexa MM"
+            <PageIntro
                 title="Quizzes"
-                description="Manage quizzes for your courses."
-                actions={headerActions}
+                description="သင်တန်းတွေအတွက် quiz ဖန်တီး၊ မေးခွန်း ပြင်ဆင်ပြီး ကျောင်းသားတွေရဲ့ ရလဒ်ကို ကြည့်ရန်"
+                actions={
+                    <Link href="/instructor/quizzes/create" className={btnAccentCls}>
+                        <Plus className="size-4" /> Quiz အသစ်
+                    </Link>
+                }
             />
 
-            <Card className="mt-6">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Filters</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                    <form onSubmit={handleSearch} className="flex flex-wrap items-end gap-4">
-                        <div className="flex-1 min-w-[200px]">
-                            <label htmlFor="search" className="block text-sm font-medium text-slate-700 mb-1">
-                                Search
-                            </label>
-                            <Input
-                                id="search"
-                                placeholder="Search quizzes..."
-                                value={data.search}
-                                onChange={(e) => setData('search', e.target.value)}
-                            />
+            <LmsCard className="mt-6 p-5">
+                <div className="flex flex-wrap items-end gap-4">
+                    <div className="min-w-[200px] flex-1">
+                        <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-[#97a6c6]">ရှာဖွေရန်</label>
+                        <div className="relative">
+                            <Search className={`pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 ${mutedCls}`} />
+                            <input className={`${inputCls} pl-9`} placeholder="Quiz ခေါင်းစဉ် ရှာရန်…" value={query} onChange={(e) => setQuery(e.target.value)} />
                         </div>
-                        <div className="min-w-[200px]">
-                            <label htmlFor="course_id" className="block text-sm font-medium text-slate-700 mb-1">
-                                Course
-                            </label>
-                            <Select value={data.course_id} onValueChange={(value) => setData('course_id', value)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="All courses" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="">All courses</SelectItem>
-                                    {courses.map((course) => (
-                                        <SelectItem key={course.id} value={course.id.toString()}>
-                                            {course.title}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <Button type="submit" disabled={processing}>
-                            <Search className="mr-2 h-4 w-4" />
-                            Filter
-                        </Button>
-                    </form>
-                </CardContent>
-            </Card>
+                    </div>
+                    <div className="min-w-[200px]">
+                        <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-[#97a6c6]">သင်တန်း</label>
+                        <select className={inputCls} value={courseId} onChange={(e) => setCourseId(e.target.value)}>
+                            <option value="">သင်တန်း အားလုံး</option>
+                            {courses.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                    {c.title}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            </LmsCard>
 
-            {quizzes.length === 0 ? (
-                <div className="mt-8 text-center py-12">
-                    <Trophy className="mx-auto h-12 w-12 text-slate-300" />
-                    <h3 className="mt-4 text-lg font-semibold text-slate-900">No quizzes found</h3>
-                    <p className="mt-2 text-slate-500">Create your first quiz to get started.</p>
-                    <Link href="/instructor/quizzes/create" className="mt-4 inline-block">
-                        <Button><Plus className="mr-2 h-4 w-4" /> Create Quiz</Button>
-                    </Link>
+            {filtered.length === 0 ? (
+                <div className="mt-6">
+                    <EmptyBox title="Quiz မရှိသေးပါ" description="ပထမဆုံး quiz ကို ဖန်တီးပြီး မေးခွန်းတွေ ထည့်နိုင်ပါတယ်" />
                 </div>
             ) : (
                 <div className="mt-6 space-y-4">
-                    {quizzes.map((quiz) => (
-                        <Card key={quiz.id} className="hover:shadow-md transition">
-                            <CardContent className="p-4">
-                                <div className="flex flex-wrap items-center justify-between gap-4">
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-semibold text-slate-900 truncate">{quiz.title}</h3>
-                                        <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-slate-500">
-                                            {quiz.course && (
-                                                <Badge variant="outline" className="gap-1">
-                                                    {quiz.course.title}
-                                                </Badge>
-                                            )}
-                                            <Badge variant="secondary" className="gap-1">
-                                                <Trophy className="h-3 w-3" />
-                                                <span>Pass: {quiz.pass_mark}%</span>
-                                            </Badge>
-                                            {quiz.time_limit && (
-                                                <Badge variant="outline" className="gap-1">
-                                                    <Clock className="h-3 w-3" />
-                                                    <span>{quiz.time_limit} min</span>
-                                                </Badge>
-                                            )}
-                                            <Badge variant="outline" className="gap-1">
-                                                <span>{quiz.questions_count} questions</span>
-                                            </Badge>
-                                            <Badge variant="outline" className="gap-1">
-                                                <BarChart2 className="h-3 w-3" />
-                                                <span>{quiz.attempts_count} attempts</span>
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Link href={`/instructor/quizzes/${quiz.id}`}>
-                                            <Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button>
-                                        </Link>
-                                        <Link href={`/instructor/quizzes/${quiz.id}/results`}>
-                                            <Button variant="ghost" size="icon"><BarChart2 className="h-4 w-4" /></Button>
-                                        </Link>
+                    {filtered.map((quiz) => (
+                        <LmsCard key={quiz.id} className="p-4 transition hover:border-teal-300 dark:hover:border-teal-700">
+                            <div className="flex flex-wrap items-center justify-between gap-4">
+                                <div className="min-w-0 flex-1">
+                                    <h3 className={`truncate font-bold ${inkCls}`}>{quiz.title}</h3>
+                                    <div className="mt-1.5 flex flex-wrap items-center gap-2 text-sm">
+                                        {quiz.course && <Pill tone="slate">{quiz.course.title}</Pill>}
+                                        <Pill tone="amber">
+                                            <Trophy className="mr-1 size-3" /> အောင်မှတ် {quiz.pass_mark}%
+                                        </Pill>
+                                        {quiz.time_limit && (
+                                            <Pill tone="blue">
+                                                <Clock className="mr-1 size-3" /> {quiz.time_limit} မိနစ်
+                                            </Pill>
+                                        )}
+                                        <Pill tone="slate">{quiz.questions_count} မေးခွန်း</Pill>
+                                        <Pill tone="slate">
+                                            <BarChart2 className="mr-1 size-3" /> {quiz.attempts_count} ကြိမ် ဖြေထား
+                                        </Pill>
                                     </div>
                                 </div>
-                            </CardContent>
-                        </Card>
+                                <div className="flex items-center gap-2">
+                                    <Link href={`/instructor/quizzes/${quiz.id}`} className={btnGhostCls}>
+                                        <Eye className="size-4" /> ကြည့်ရန် / ပြင်ရန်
+                                    </Link>
+                                    <Link href={`/instructor/quizzes/${quiz.id}/results`} className={btnGhostCls}>
+                                        <BarChart2 className="size-4" /> ရလဒ်
+                                    </Link>
+                                </div>
+                            </div>
+                        </LmsCard>
                     ))}
                 </div>
             )}
-        </AppShell>
+        </LmsShell>
     );
 }

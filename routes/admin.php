@@ -1,5 +1,19 @@
 <?php
 
+use App\Http\Controllers\Admin\Academy\AnnouncementController as AcademyAnnouncementController;
+use App\Http\Controllers\Admin\Academy\AssignmentController as AcademyAssignmentController;
+use App\Http\Controllers\Admin\Academy\CategoryController as AcademyCategoryController;
+use App\Http\Controllers\Admin\Academy\CertificateController as AcademyCertificateController;
+use App\Http\Controllers\Admin\Academy\CourseController as AcademyCourseController;
+use App\Http\Controllers\Admin\Academy\EnrollmentController as AcademyEnrollmentController;
+use App\Http\Controllers\Admin\Academy\InstructorController as AcademyInstructorController;
+use App\Http\Controllers\Admin\Academy\LessonController as AcademyLessonController;
+use App\Http\Controllers\Admin\Academy\ModuleController as AcademyModuleController;
+use App\Http\Controllers\Admin\Academy\QuizController as AcademyQuizController;
+use App\Http\Controllers\Admin\Academy\RefundController as AcademyRefundController;
+use App\Http\Controllers\Admin\Academy\ReviewController as AcademyReviewController;
+use App\Http\Controllers\Admin\Academy\StudentController as AcademyStudentController;
+use App\Http\Controllers\Admin\Academy\TicketController as AcademyTicketController;
 use App\Http\Controllers\Admin\Solutions\ClientController;
 use App\Http\Controllers\Admin\Solutions\InvoiceController;
 use App\Http\Controllers\Admin\Solutions\LeadController;
@@ -28,45 +42,35 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     })->name('permissions.index');
 
     Route::prefix('academy')->name('academy.')->group(function () {
-        Route::get('/courses', function () {
-            return Inertia::render('Admin/Academy/Courses/Index');
-        })->name('courses.index');
+        Route::get('/courses', [AcademyCourseController::class, 'index'])->name('courses.index');
+        Route::get('/categories', [AcademyCategoryController::class, 'index'])->name('categories.index');
+        Route::get('/modules', [AcademyModuleController::class, 'index'])->name('modules.index');
+        Route::get('/lessons', [AcademyLessonController::class, 'index'])->name('lessons.index');
+        Route::get('/enrollments', [AcademyEnrollmentController::class, 'index'])->name('enrollments.index');
+        Route::get('/students', [AcademyStudentController::class, 'index'])->name('students.index');
+        Route::get('/instructors', [AcademyInstructorController::class, 'index'])->name('instructors.index');
+        Route::get('/assignments', [AcademyAssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('/quizzes', [AcademyQuizController::class, 'index'])->name('quizzes.index');
+        Route::get('/certificates', [AcademyCertificateController::class, 'index'])->name('certificates.index');
+        Route::get('/reviews', [AcademyReviewController::class, 'index'])->name('reviews.index');
+        Route::get('/announcements', [AcademyAnnouncementController::class, 'index'])->name('announcements.index');
+        Route::get('/refunds', [AcademyRefundController::class, 'index'])->name('refunds.index');
+        Route::get('/tickets', [AcademyTicketController::class, 'index'])->name('tickets.index');
 
-        Route::get('/categories', function () {
-            return Inertia::render('Admin/Academy/Categories/Index');
-        })->name('categories.index');
-
-        Route::get('/modules', function () {
-            return Inertia::render('Admin/Academy/Modules/Index');
-        })->name('modules.index');
-
-        Route::get('/lessons', function () {
-            return Inertia::render('Admin/Academy/Lessons/Index');
-        })->name('lessons.index');
-
-        Route::get('/enrollments', function () {
-            return Inertia::render('Admin/Academy/Enrollments/Index');
-        })->name('enrollments.index');
-
-        Route::get('/students', function () {
-            return Inertia::render('Admin/Academy/Students/Index');
-        })->name('students.index');
-
-        Route::get('/instructors', function () {
-            return Inertia::render('Admin/Academy/Instructors/Index');
-        })->name('instructors.index');
-
-        Route::get('/assignments', function () {
-            return Inertia::render('Admin/Academy/Assignments/Index');
-        })->name('assignments.index');
-
-        Route::get('/quizzes', function () {
-            return Inertia::render('Admin/Academy/Quizzes/Index');
-        })->name('quizzes.index');
-
-        Route::get('/certificates', function () {
-            return Inertia::render('Admin/Academy/Certificates/Index');
-        })->name('certificates.index');
+        Route::get('/payments', fn () => Inertia::render('Admin/Academy/Payments/Index'))->name('payments.index');
+        Route::get('/live-classes', fn () => Inertia::render('Admin/Academy/Live/Index'))->name('live-classes.index');
+        Route::get('/coupons', fn () => Inertia::render('Admin/Academy/Coupons/Index'))->name('coupons.index');
+        Route::get('/payouts', fn () => Inertia::render('Admin/Academy/Payouts/Index'))->name('payouts.index');
+        Route::get('/moderation', fn () => Inertia::render('Admin/Academy/Moderation/Index'))->name('moderation.index');
+        Route::get('/cms', fn () => Inertia::render('Admin/Academy/Cms/Index'))->name('cms.index');
+        Route::get('/gamification', fn () => Inertia::render('Admin/Academy/Gamification/Index'))->name('gamification.index');
+        Route::get('/marketing', fn () => Inertia::render('Admin/Academy/Marketing/Index'))->name('marketing.index');
+        Route::get('/system', fn () => Inertia::render('Admin/Academy/System/Index'))->name('system.index');
+        Route::get('/import', fn () => Inertia::render('Admin/Academy/Import/Index'))->name('import.index');
+        Route::get('/integrations', fn () => Inertia::render('Admin/Academy/Integrations/Index'))->name('integrations.index');
+        Route::get('/cert-templates', fn () => Inertia::render('Admin/Academy/CertTemplate/Index'))->name('cert-templates.index');
+        Route::get('/curriculum', fn () => Inertia::render('Admin/Academy/Curriculum/Index'))->name('curriculum.index');
+        Route::get('/staff', fn () => Inertia::render('Admin/Academy/Staff/Index'))->name('staff.index');
     });
 
     Route::prefix('solutions')->name('solutions.')->group(function () {

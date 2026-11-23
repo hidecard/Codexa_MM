@@ -40,7 +40,7 @@ class ProjectTask extends Model
 
     public function milestone(): BelongsTo
     {
-        return $this->belongsTo(ProjectMilestone::class);
+        return $this->belongsTo(ProjectMilestone::class, 'milestone_id');
     }
 
     public function assignee(): BelongsTo

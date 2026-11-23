@@ -1,34 +1,15 @@
-import { usePage, useForm, Link, Head } from '@inertiajs/react';
-import { route } from 'ziggy-js';
-import { AppShell } from '@/components/shared/app-shell';
-import { PageHeader } from '@/components/ui/page-header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useState, type FormEvent } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { ArrowLeft, Eye, GripVertical, Plus, Save, Trash2 } from 'lucide-react';
+import { LmsShell } from '@/components/shared/lms-shell';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, GripVertical, ArrowLeft, Save, Eye } from 'lucide-react';
+import { Chip, LmsCard, PageIntro, Pill, btnAccentCls, btnDangerCls, btnGhostCls, inkCls, inputCls, labelCls, mutedCls } from '@/pages/Admin/Academy/_shared';
+import { cn } from '@/lib/utils';
 
-interface Option {
-    id: number;
-    text: string;
-    is_correct: boolean;
-    position: number;
-}
-
-interface Question {
-    id: number;
-    question: string;
-    type: string;
-    points: number;
-    position: number;
-    explanation: string | null;
-    options: Option[];
-}
-
-interface Quiz {
+type Option = { id: number; text: string; is_correct: boolean; position: number };
+type Question = { id: number; question: string; type: string; points: number; position: number; explanation: string | null; options: Option[] };
+type Quiz = {
     id: number;
     title: string;
     description: string | null;
@@ -38,12 +19,7 @@ interface Quiz {
     show_correct_answers: boolean;
     course: { id: number; title: string } | null;
     questions: Question[];
-}
-
-interface PageProps {
-    quiz: Quiz;
-    [key: string]: unknown;
-}
+};
 
 const questionTypes = [
     { value: 'single_choice', label: 'Single Choice' },
@@ -52,15 +28,25 @@ const questionTypes = [
     { value: 'short_answer', label: 'Short Answer' },
 ] as const;
 
-export default function Show() {
-    const { quiz } = usePage<PageProps>().props;
-    const questions = [...quiz.questions].sort((a, b) => a.position - b.position);
+type FormQuestion = {
+    id: number;
+    question: string;
+    type: string;
+    points: number;
+    position: number;
+    explanation: string;
+    options: { id: number; text: string; is_correct: boolean; position: number }[];
+};
+
+export default function Show({ quiz }: { quiz: Quiz }) {
+    const [tab, setTab] = useState<'details' | 'questions' | 'settings'>('details');
+    const questions = [...(quiz.questions ?? [])].sort((a, b) => a.position - b.position);
 
     const { data, setData, put, delete: destroy, processing } = useForm({
         title: quiz.title,
         description: quiz.description || '',
         pass_mark: quiz.pass_mark,
-        time_limit: quiz.time_limit || '',
+        time_limit: quiz.time_limit || ('' as string | number),
         shuffle_questions: quiz.shuffle_questions,
         show_correct_answers: quiz.show_correct_answers,
         questions: questions.map((q) => ({
@@ -70,366 +56,266 @@ export default function Show() {
             points: q.points,
             position: q.position,
             explanation: q.explanation || '',
-            options: q.options.map((o) => ({
-                id: o.id,
-                text: o.text,
-                is_correct: o.is_correct,
-                position: o.position,
-            })),
-        })),
+            options: q.options.map((o) => ({ id: o.id, text: o.text, is_correct: o.is_correct, position: o.position })),
+        })) as FormQuestion[],
     });
 
     const addQuestion = () => {
-        const newPosition = questions.length > 0 ? Math.max(...questions.map((q) => q.position)) + 1 : 1;
-        const newQuestion = {
-            id: Date.now(),
-            question: '',
-            type: 'single_choice' as const,
-            points: 1,
-            position: newPosition,
-            explanation: '',
-            options: [
-                { id: Date.now(), text: '', is_correct: true, position: 1 },
-                { id: Date.now() + 1, text: '', is_correct: false, position: 2 },
-            ],
-        };
-        setData('questions', [...data.questions, newQuestion]);
+        const newPosition = data.questions.length > 0 ? Math.max(...data.questions.map((q) => q.position)) + 1 : 1;
+        const now = Date.now();
+        setData('questions', [
+            ...data.questions,
+            {
+                id: now,
+                question: '',
+                type: 'single_choice',
+                points: 1,
+                position: newPosition,
+                explanation: '',
+                options: [
+                    { id: now, text: '', is_correct: true, position: 1 },
+                    { id: now + 1, text: '', is_correct: false, position: 2 },
+                ],
+            },
+        ]);
     };
 
-    const removeQuestion = (questionId: number) => {
-        setData('questions', data.questions.filter((q: any) => q.id !== questionId));
-    };
+    const removeQuestion = (questionId: number) => setData('questions', data.questions.filter((q) => q.id !== questionId));
 
     const addOption = (questionIndex: number) => {
-        const newQuestions = [...data.questions];
-        const newPosition = newQuestions[questionIndex].options.length + 1;
-        newQuestions[questionIndex].options.push({
-            id: Date.now(),
-            text: '',
-            is_correct: false,
-            position: newPosition,
-        });
-        setData('questions', newQuestions);
+        const next = [...data.questions];
+        next[questionIndex] = {
+            ...next[questionIndex],
+            options: [...next[questionIndex].options, { id: Date.now(), text: '', is_correct: false, position: next[questionIndex].options.length + 1 }],
+        };
+        setData('questions', next);
     };
 
     const removeOption = (questionIndex: number, optionId: number) => {
-        const newQuestions = [...data.questions];
-        newQuestions[questionIndex].options = newQuestions[questionIndex].options.filter((o: any) => o.id !== optionId);
-        setData('questions', newQuestions);
+        const next = [...data.questions];
+        next[questionIndex] = { ...next[questionIndex], options: next[questionIndex].options.filter((o) => o.id !== optionId) };
+        setData('questions', next);
     };
 
-    const updateQuestion = (questionIndex: number, field: string, value: any) => {
-        const newQuestions = [...data.questions];
-        newQuestions[questionIndex] = { ...newQuestions[questionIndex], [field]: value };
-        setData('questions', newQuestions);
+    const updateQuestion = (questionIndex: number, field: keyof Omit<FormQuestion, 'id' | 'options'>, value: string | number) => {
+        const next = [...data.questions];
+        next[questionIndex] = { ...next[questionIndex], [field]: value };
+        setData('questions', next);
     };
 
-    const updateOption = (questionIndex: number, optionIndex: number, field: string, value: any) => {
-        const newQuestions = [...data.questions];
-        newQuestions[questionIndex].options = [...newQuestions[questionIndex].options];
-        newQuestions[questionIndex].options[optionIndex] = { ...newQuestions[questionIndex].options[optionIndex], [field]: value };
-        setData('questions', newQuestions);
+    const updateOption = (questionIndex: number, optionIndex: number, field: 'text' | 'is_correct', value: string | boolean) => {
+        const next = [...data.questions];
+        const options = [...next[questionIndex].options];
+        options[optionIndex] = { ...options[optionIndex], [field]: value };
+        next[questionIndex] = { ...next[questionIndex], options };
+        setData('questions', next);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const markSingleCorrect = (questionIndex: number, optionIndex: number) => {
+        const next = [...data.questions];
+        next[questionIndex] = {
+            ...next[questionIndex],
+            options: next[questionIndex].options.map((o, i) => ({ ...o, is_correct: i === optionIndex })),
+        };
+        setData('questions', next);
+    };
+
+    const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        put(route('instructor.quizzes.update', quiz.id));
+        put(`/instructor/quizzes/${quiz.id}`);
     };
 
     const handleDelete = () => {
-        if (confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
-            destroy(route('instructor.quizzes.destroy', quiz.id));
+        if (confirm('ဒီ quiz ကို ဖျက်မှာ သေချာပါသလား? မေးခွန်းနဲ့ ကျောင်းသား ဖြေဆိုမှုတွေပါ ပျက်သွားပါမယ်။')) {
+            destroy(`/instructor/quizzes/${quiz.id}`);
         }
     };
 
-    const headerActions = (
-        <div className="flex flex-wrap items-center gap-3 mt-4">
-            <Link href="/instructor/quizzes">
-                <Button variant="outline"><ArrowLeft className="mr-2 h-4 w-4" /> Back</Button>
-            </Link>
-            <Link href={`/instructor/quizzes/${quiz.id}/results`}>
-                <Button variant="outline"><Eye className="mr-2 h-4 w-4" /> View Results</Button>
-            </Link>
-            <Button onClick={handleSubmit} disabled={processing}>
-                <Save className="mr-2 h-4 w-4" />
-                Save Changes
-            </Button>
-        </div>
-    );
-
     return (
-        <AppShell>
-            <Head title={`Edit Quiz: ${quiz.title}`} />
-            <PageHeader
-                eyebrow="Codexa MM"
+        <LmsShell title={quiz.title} nav="instructor">
+            <Head title={`Quiz ပြင်ဆင်ရန် · ${quiz.title}`} />
+            <PageIntro
                 title={quiz.title}
                 description={quiz.course?.title}
-                actions={headerActions}
+                actions={
+                    <>
+                        <Link href="/instructor/quizzes" className={btnGhostCls}>
+                            <ArrowLeft className="size-4" /> Quiz အားလုံး
+                        </Link>
+                        <Link href={`/instructor/quizzes/${quiz.id}/results`} className={btnGhostCls}>
+                            <Eye className="size-4" /> ရလဒ် ကြည့်ရန်
+                        </Link>
+                        <button type="button" className={btnAccentCls} disabled={processing} onClick={handleSubmit}>
+                            <Save className="size-4" /> သိမ်းရန်
+                        </button>
+                    </>
+                }
             />
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-                <Tabs defaultValue="details" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="details">Quiz Details</TabsTrigger>
-                        <TabsTrigger value="questions">Questions ({questions.length})</TabsTrigger>
-                        <TabsTrigger value="settings">Settings</TabsTrigger>
-                    </TabsList>
+                <div className="flex flex-wrap gap-2">
+                    <Chip active={tab === 'details'} onClick={() => setTab('details')}>
+                        Quiz အသေးစိတ်
+                    </Chip>
+                    <Chip active={tab === 'questions'} onClick={() => setTab('questions')}>
+                        မေးခွန်းများ ({data.questions.length})
+                    </Chip>
+                    <Chip active={tab === 'settings'} onClick={() => setTab('settings')}>
+                        ချိန်ညှိမှုများ
+                    </Chip>
+                </div>
 
-                    <TabsContent value="details" className="mt-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Basic Information</CardTitle>
-                                <CardDescription>Edit the quiz title, description, and passing criteria.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4 pt-0">
-                                <div>
-                                    <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-1">
-                                        Quiz Title *
-                                    </label>
-                                    <Input
-                                        id="title"
-                                        value={data.title}
-                                        onChange={(e) => setData('title', e.target.value)}
-                                        placeholder="Enter quiz title"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label htmlFor="description" className="block text-sm font-medium text-slate-700 mb-1">
-                                        Description
-                                    </label>
-                                    <Textarea
-                                        id="description"
-                                        value={data.description}
-                                        onChange={(e) => setData('description', e.target.value)}
-                                        placeholder="Optional description for students"
-                                        rows={3}
-                                    />
-                                </div>
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <div>
-                                        <label htmlFor="pass_mark" className="block text-sm font-medium text-slate-700 mb-1">
-                                            Pass Mark (%) *
-                                        </label>
-                                        <Input
-                                            id="pass_mark"
-                                            type="number"
-                                            min="0"
-                                            max="100"
-                                            value={data.pass_mark}
-                                            onChange={(e) => setData('pass_mark', parseInt(e.target.value) || 0)}
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label htmlFor="time_limit" className="block text-sm font-medium text-slate-700 mb-1">
-                                            Time Limit (minutes, optional)
-                                        </label>
-                                        <Input
-                                            id="time_limit"
-                                            type="number"
-                                            min="1"
-                                            max="600"
-                                            value={data.time_limit}
-                                            onChange={(e) => setData('time_limit', e.target.value ? parseInt(e.target.value) : '')}
-                                            placeholder="e.g., 30"
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent value="questions" className="mt-4">
-                        <div className="flex items-center justify-between mb-4">
-                            <CardTitle className="text-lg">Questions</CardTitle>
-                            <Button variant="outline" onClick={addQuestion}>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add Question
-                            </Button>
+                {tab === 'details' && (
+                    <LmsCard className="p-5 sm:p-6">
+                        <h2 className={`text-lg font-extrabold ${inkCls}`}>အခြေခံ အချက်အလက်</h2>
+                        <div className="mt-4 space-y-4">
+                            <Input label="Quiz ခေါင်းစဉ် *" value={data.title} onChange={(e) => setData('title', e.target.value)} required />
+                            <div>
+                                <label className={labelCls}>ဖော်ပြချက်</label>
+                                <Textarea value={data.description} onChange={(e) => setData('description', e.target.value)} rows={3} />
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <Input label="အောင်မှတ် (%) *" type="number" min={0} max={100} value={data.pass_mark} onChange={(e) => setData('pass_mark', parseInt(e.target.value) || 0)} required />
+                                <Input
+                                    label="အချိန်ကန့်သတ်ချက် (မိနစ်, optional)"
+                                    type="number"
+                                    min={1}
+                                    max={600}
+                                    value={data.time_limit}
+                                    onChange={(e) => setData('time_limit', e.target.value ? parseInt(e.target.value) : '')}
+                                />
+                            </div>
                         </div>
+                    </LmsCard>
+                )}
 
+                {tab === 'questions' && (
+                    <div>
+                        <div className="mb-4 flex items-center justify-between">
+                            <h2 className={`text-lg font-extrabold ${inkCls}`}>မေးခွန်းများ</h2>
+                            <button type="button" className={btnGhostCls} onClick={addQuestion}>
+                                <Plus className="size-4" /> မေးခွန်း ထည့်ရန်
+                            </button>
+                        </div>
                         {data.questions.length === 0 ? (
-                            <Card>
-                                <CardContent className="py-12 text-center">
-                                    <p className="text-slate-500">No questions yet. Click "Add Question" to create your first question.</p>
-                                </CardContent>
-                            </Card>
+                            <LmsCard className="p-12 text-center">
+                                <p className={mutedCls}>မေးခွန်း မရှိသေးပါ — "မေးခွန်း ထည့်ရန်" နဲ့ ပထမဆုံး မေးခွန်း ဖန်တီးပါ။</p>
+                            </LmsCard>
                         ) : (
                             <div className="space-y-4">
-                                {data.questions.map((question: any, qIndex: number) => (
-                                    <Card key={question.id} className="overflow-hidden">
-                                        <CardHeader className="pb-2">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <GripVertical className="h-5 w-5 text-slate-400 cursor-grab" />
-                                                    <span className="font-medium text-slate-900">Question {qIndex + 1}</span>
-                                                    <Badge variant="secondary">{question.type.replace('_', ' ')}</Badge>
-                                                    <Badge variant="outline">{question.points} pts</Badge>
-                                                </div>
-                                                <Button variant="ghost" size="icon" onClick={() => removeQuestion(question.id)}>
-                                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                                </Button>
+                                {data.questions.map((question, qIndex) => (
+                                    <LmsCard key={question.id} className="overflow-hidden p-5">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex flex-wrap items-center gap-3">
+                                                <GripVertical className="size-5 text-slate-400" />
+                                                <span className={`font-medium ${inkCls}`}>မေးခွန်း {qIndex + 1}</span>
+                                                <Pill tone="slate">{question.type.replace('_', ' ')}</Pill>
+                                                <Pill tone="blue">{question.points} မှတ်</Pill>
                                             </div>
-                                        </CardHeader>
-                                        <CardContent className="space-y-4 pt-0">
-                                            <div className="grid gap-4 sm:grid-cols-2">
+                                            <button type="button" className="rounded-lg p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40" onClick={() => removeQuestion(question.id)}>
+                                                <Trash2 className="size-4" />
+                                            </button>
+                                        </div>
+                                        <div className="mt-4 space-y-4">
+                                            <div>
+                                                <label className={labelCls}>မေးခွန်း *</label>
+                                                <Textarea value={question.question} onChange={(e) => updateQuestion(qIndex, 'question', e.target.value)} rows={2} required />
+                                            </div>
+                                            <div className="grid gap-4 sm:grid-cols-3">
                                                 <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                                                        Question Text *
-                                                    </label>
-                                                    <Textarea
-                                                        value={question.question}
-                                                        onChange={(e) => updateQuestion(qIndex, 'question', e.target.value)}
-                                                        placeholder="Enter your question"
-                                                        rows={2}
-                                                        required
-                                                    />
+                                                    <label className={labelCls}>အမျိုးအစား</label>
+                                                    <select className={inputCls} value={question.type} onChange={(e) => updateQuestion(qIndex, 'type', e.target.value)}>
+                                                        {questionTypes.map((t) => (
+                                                            <option key={t.value} value={t.value}>
+                                                                {t.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
                                                 </div>
-                                                <div className="sm:grid-cols-3 sm:col-span-2">
-                                                    <Select value={question.type} onValueChange={(v) => updateQuestion(qIndex, 'type', v)}>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Question type" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {questionTypes.map((t) => (
-                                                                <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-slate-700 mb-1">
-                                                            Points
-                                                        </label>
-                                                        <Input
-                                                            type="number"
-                                                            min="1"
-                                                            max="100"
-                                                            value={question.points}
-                                                            onChange={(e) => updateQuestion(qIndex, 'points', parseInt(e.target.value) || 1)}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-slate-700 mb-1">
-                                                            Explanation (shown after submission)
-                                                        </label>
-                                                        <Textarea
-                                                            value={question.explanation}
-                                                            onChange={(e) => updateQuestion(qIndex, 'explanation', e.target.value)}
-                                                            placeholder="Optional explanation"
-                                                            rows={2}
-                                                        />
-                                                    </div>
+                                                <Input label="အမှတ်" type="number" min={1} max={100} value={question.points} onChange={(e) => updateQuestion(qIndex, 'points', parseInt(e.target.value) || 1)} />
+                                                <div>
+                                                    <label className={labelCls}>ရှင်းလင်းချက် (တင်သွင်းပြီးနောက် ပြရန်)</label>
+                                                    <Textarea value={question.explanation} onChange={(e) => updateQuestion(qIndex, 'explanation', e.target.value)} rows={2} />
                                                 </div>
                                             </div>
-
-                                            <div className="pt-4 border-t border-slate-200">
-                                                <h5 className="font-medium text-slate-700 mb-3">Options</h5>
+                                            <div className="border-t border-slate-100 pt-4 dark:border-[#18264a]">
+                                                <h5 className={`mb-3 font-medium ${inkCls}`}>ရွေးချယ်စရာများ</h5>
                                                 <div className="space-y-2">
-                                                    {question.options.map((option: any, oIndex: number) => (
+                                                    {question.options.map((option, oIndex) => (
                                                         <div key={option.id} className="flex items-center gap-2">
                                                             <Input
-                                                                placeholder="Option text"
+                                                                placeholder="ရွေးချယ်မှု စာသား"
                                                                 value={option.text}
                                                                 onChange={(e) => updateOption(qIndex, oIndex, 'text', e.target.value)}
                                                                 className="flex-1"
                                                                 required
                                                             />
-                                                            {(question.type === 'single_choice' || question.type === 'true_false') ? (
-                                                                <label className="flex items-center gap-2 cursor-pointer">
-                                                                    <input
-                                                                        type="radio"
-                                                                        name={`correct_${question.id}`}
-                                                                        checked={option.is_correct}
-                                                                        onChange={() => {
-                                                                            const newQuestions = [...data.questions];
-                                                                            newQuestions[qIndex].options.forEach((_, i: number) => {
-                                                                                newQuestions[qIndex].options[i].is_correct = i === oIndex;
-                                                                            });
-                                                                            setData('questions', newQuestions);
-                                                                        }}
-                                                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                                                                    />
-                                                                    <span className="text-sm text-slate-700">Correct</span>
+                                                            {question.type === 'single_choice' || question.type === 'true_false' ? (
+                                                                <label className={cn('flex cursor-pointer items-center gap-2 text-sm', mutedCls)}>
+                                                                    <input type="radio" name={`correct_${question.id}`} checked={option.is_correct} onChange={() => markSingleCorrect(qIndex, oIndex)} className="size-4 accent-teal-700" />
+                                                                    အဖြေမှန်
                                                                 </label>
                                                             ) : (
-                                                                <label className="flex items-center gap-2 cursor-pointer">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={option.is_correct}
-                                                                        onChange={(e) => updateOption(qIndex, oIndex, 'is_correct', e.target.checked)}
-                                                                        className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
-                                                                    />
-                                                                    <span className="text-sm text-slate-700">Correct</span>
+                                                                <label className={cn('flex cursor-pointer items-center gap-2 text-sm', mutedCls)}>
+                                                                    <input type="checkbox" checked={option.is_correct} onChange={(e) => updateOption(qIndex, oIndex, 'is_correct', e.target.checked)} className="size-4 accent-teal-700" />
+                                                                    အဖြေမှန်
                                                                 </label>
                                                             )}
-                                                            <Button variant="ghost" size="icon" onClick={() => removeOption(qIndex, option.id)} disabled={question.options.length <= 1}>
-                                                                <Trash2 className="h-4 w-4 text-red-500" />
-                                                            </Button>
+                                                            <button
+                                                                type="button"
+                                                                className="rounded-lg p-2 text-rose-500 hover:bg-rose-50 disabled:opacity-40 dark:hover:bg-rose-950/40"
+                                                                onClick={() => removeOption(qIndex, option.id)}
+                                                                disabled={question.options.length <= 1}
+                                                            >
+                                                                <Trash2 className="size-4" />
+                                                            </button>
                                                         </div>
                                                     ))}
-                                                    <Button variant="outline" size="sm" onClick={() => addOption(qIndex)}>
-                                                        <Plus className="mr-2 h-4 w-4" />
-                                                        Add Option
-                                                    </Button>
+                                                    <button type="button" className={btnGhostCls} onClick={() => addOption(qIndex)}>
+                                                        <Plus className="size-4" /> ရွေးချယ်မှု ထည့်ရန်
+                                                    </button>
                                                 </div>
                                             </div>
-                                        </CardContent>
-                                    </Card>
+                                        </div>
+                                    </LmsCard>
                                 ))}
                             </div>
                         )}
-                    </TabsContent>
+                    </div>
+                )}
 
-                    <TabsContent value="settings" className="mt-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Quiz Settings</CardTitle>
-                                <CardDescription>Configure how the quiz behaves for students.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4 pt-0">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="font-medium text-slate-900">Shuffle Questions</p>
-                                        <p className="text-sm text-slate-500">Randomize question order for each attempt.</p>
-                                    </div>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={data.shuffle_questions}
-                                                        onChange={(e) => setData('shuffle_questions', e.target.checked)}
-                                                        className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-                                                    />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="font-medium text-slate-900">Show Correct Answers</p>
-                                        <p className="text-sm text-slate-500">Allow students to see correct answers after submission.</p>
-                                    </div>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={data.show_correct_answers}
-                                                        onChange={(e) => setData('show_correct_answers', e.target.checked)}
-                                                        className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-                                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
+                {tab === 'settings' && (
+                    <div className="space-y-6">
+                        <LmsCard className="p-5 sm:p-6">
+                            <h2 className={`text-lg font-extrabold ${inkCls}`}>Quiz ချိန်ညှိမှုများ</h2>
+                            <div className="mt-4 space-y-4">
+                                <label className="flex cursor-pointer items-center justify-between gap-4">
+                                    <span>
+                                        <span className={cn('block font-medium', inkCls)}>မေးခွန်း အစီအစဉ် ကျပန်းလုပ်ရန်</span>
+                                        <span className={cn('text-sm', mutedCls)}>ဖြေဆိုမှု တစ်ကြိမ်ချင်းမှာ မေးခွန်း အစီအစဉ် ပြောင်းလဲပေးပါမယ်။</span>
+                                    </span>
+                                    <input type="checkbox" checked={data.shuffle_questions} onChange={(e) => setData('shuffle_questions', e.target.checked)} className="size-5 accent-teal-700" />
+                                </label>
+                                <label className="flex cursor-pointer items-center justify-between gap-4">
+                                    <span>
+                                        <span className={cn('block font-medium', inkCls)}>အဖြေမှန် ပြရန်</span>
+                                        <span className={cn('text-sm', mutedCls)}>တင်သွင်းပြီးနောက် ကျောင်းသားတွေ အဖြေမှန်ကို ကြည့်နိုင်ပါမယ်။</span>
+                                    </span>
+                                    <input type="checkbox" checked={data.show_correct_answers} onChange={(e) => setData('show_correct_answers', e.target.checked)} className="size-5 accent-teal-700" />
+                                </label>
+                            </div>
+                        </LmsCard>
 
-                        <Card className="border-red-200">
-                            <CardHeader>
-                                <CardTitle className="text-red-600">Danger Zone</CardTitle>
-                            </CardHeader>
-                            <CardContent className="pt-0">
-                                <Button variant="danger" onClick={handleDelete}>
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete Quiz
-                                </Button>
-                                <p className="mt-2 text-sm text-slate-500">This will permanently delete the quiz and all its questions, options, and student attempts.</p>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                </Tabs>
+                        <LmsCard className="border-rose-200 p-5 sm:p-6 dark:border-rose-900/50">
+                            <h2 className="text-lg font-extrabold text-rose-600">အန္တရာယ် ဇုန်</h2>
+                            <p className={`mt-1 text-sm ${mutedCls}`}>Quiz ကို ဖျက်ရင် မေးခွန်း၊ ရွေးချယ်မှုနဲ့ ကျောင်းသား ဖြေဆိုမှုတွေပါ အပြီးတိုင် ပျက်သွားပါမယ်။</p>
+                            <button type="button" className={`${btnDangerCls} mt-4`} onClick={handleDelete}>
+                                <Trash2 className="size-4" /> Quiz ဖျက်ရန်
+                            </button>
+                        </LmsCard>
+                    </div>
+                )}
             </form>
-        </AppShell>
+        </LmsShell>
     );
 }
