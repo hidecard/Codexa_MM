@@ -1,37 +1,53 @@
 import { useState } from 'react';
-import { Head } from '@inertiajs/react';
-import { Check, EyeOff, Flag, Star, Trash2 } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { Check, Eye, EyeOff, Flag, Send, Star, Trash2 } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { StatCard } from '@/components/lms/stat-card';
+import { formatNumber } from '@/lib/format';
 import { Avatar, Chip, EmptyBox, LmsCard, PageIntro, Pill, Stars, btnGhostCls, inkCls, mutedCls } from '@/pages/Admin/Academy/_shared';
-import { SAMPLE_ADMIN_REVIEWS, type SampleReview } from '@/pages/Admin/Academy/_sample';
 
-type ReviewRow = SampleReview & { reportReason?: string };
+type ReviewRow = {
+    id: number;
+    name: string;
+    init: string;
+    col: string;
+    course: string;
+    stars: number;
+    text: string;
+    date: string;
+    status: 'pending' | 'approved' | 'hidden';
+    reply: string | null;
+};
 
 function statusPill(status: string) {
     if (status === 'pending') return <Pill tone="amber">စစ်ဆေးရန်</Pill>;
-    if (status === 'reported') return <Pill tone="rose">REPORT လုပ်ထား</Pill>;
     if (status === 'hidden') return <Pill tone="slate">ဖျောက်ထား</Pill>;
     return <Pill tone="teal">အတည်ပြုပြီး</Pill>;
 }
 
-export default function Index({ reviews }: { reviews?: ReviewRow[] }) {
-    // SAMPLE DATA fallback (prototype): used until Admin/Academy/ReviewController is wired.
-    const [items, setItems] = useState<ReviewRow[]>(reviews ?? SAMPLE_ADMIN_REVIEWS);
+export default function Index({ reviews = [], stats = { average: 0, total: 0 } }: { reviews?: ReviewRow[]; stats?: { average: number; total: number } }) {
     const [tab, setTab] = useState<'all' | 'pending' | 'reported' | 'approved'>('all');
+    const [reply, setReply] = useState<Record<number, string>>({});
     const [notice, setNotice] = useState('');
 
-    const pendingCount = items.filter((r) => r.status === 'pending' || r.status === 'reported').length;
-    const reportedCount = items.filter((r) => r.status === 'reported').length;
-    const list = items.filter((r) => tab === 'all' || r.status === tab);
+    const pendingCount = reviews.filter((r) => r.status === 'pending').length;
+    const list = reviews.filter((r) => tab === 'all' || r.status === tab);
 
-    const setStatus = (id: number, status: SampleReview['status']) => {
-        setItems(items.map((r) => (r.id === id ? { ...r, status } : r)));
-        setNotice('အခြေအနေ ပြောင်းပြီးပါပြီ (ဤ page မှာသာ — backend endpoint မရှိသေးပါ)');
+    const act = (id: number, action: 'approve' | 'hide' | 'unhide', done: string) => {
+        router.post(`/admin/academy/reviews/${id}/${action}`, {}, { preserveScroll: true, onSuccess: () => setNotice(done) });
     };
     const remove = (id: number) => {
-        setItems(items.filter((r) => r.id !== id));
-        setNotice('Review ကို ဖျက်ပြီးပါပြီ (ဤ page မှာသာ)');
+        if (confirm('ဒီ review ကို ဖျက်မှာ သေချာပါသလား?')) {
+            router.delete(`/admin/academy/reviews/${id}`, { preserveScroll: true, onSuccess: () => setNotice('Review ကို ဖျက်ပြီးပါပြီ') });
+        }
+    };
+    const sendReply = (id: number) => {
+        if (!(reply[id] ?? '').trim()) return;
+        router.post(
+            `/admin/academy/reviews/${id}/reply`,
+            { reply: reply[id].trim() },
+            { preserveScroll: true, onSuccess: () => { setReply({ ...reply, [id]: '' }); setNotice('အကြောင်းပြန်ချက် သိမ်းပြီးပါပြီ'); } },
+        );
     };
 
     return (
@@ -50,10 +66,10 @@ export default function Index({ reviews }: { reviews?: ReviewRow[] }) {
             )}
 
             <div className="mt-6 grid grid-cols-2 gap-3.5 sm:gap-4 xl:grid-cols-4">
-                <StatCard label="ပျမ်းမျှ Rating" value="4.8 / 5" icon={Star} tone="amber" />
-                <StatCard label="Review စုစုပေါင်း" value="3,910" icon={Star} tone="blue" />
+                <StatCard label="ပျမ်းမျှ Rating" value={`${stats.average.toFixed(1)} / 5`} icon={Star} tone="amber" />
+                <StatCard label="Review စုစုပေါင်း" value={formatNumber(stats.total)} icon={Star} tone="blue" />
                 <StatCard label="စစ်ဆေးရန် ကျန်ရှိ" value={String(pendingCount)} icon={Flag} tone="rose" />
-                <StatCard label="Report လုပ်ထားသော" value={String(reportedCount)} icon={Flag} tone="purple" />
+                <StatCard label="ဖျောက်ထားသော" value={String(reviews.filter((r) => r.status === 'hidden').length)} icon={EyeOff} tone="purple" />
             </div>
 
             <div className="mt-6 flex flex-wrap gap-2">
@@ -72,7 +88,7 @@ export default function Index({ reviews }: { reviews?: ReviewRow[] }) {
             </div>
 
             <p className={`mt-4 text-sm font-semibold ${mutedCls}`}>
-                စစ်ဆေးရန် ကျန်ရှိ {pendingCount} ခု · ပြသနေသော review {items.filter((r) => r.status === 'approved').length} ခု
+                စစ်ဆေးရန် ကျန်ရှိ {pendingCount} ခု · ပြသနေသော review {reviews.filter((r) => r.status === 'approved').length} ခု
             </p>
 
             {list.length === 0 ? (
@@ -95,17 +111,32 @@ export default function Index({ reviews }: { reviews?: ReviewRow[] }) {
                                         {r.course} · {r.date}
                                     </p>
                                     <p className={`mt-1.5 text-[.88rem] leading-relaxed ${mutedCls}`}>{r.text}</p>
-                                    {r.reportReason && <p className="mt-1.5 text-[.8rem] font-bold text-rose-600">Report အကြောင်းရင်း — {r.reportReason}</p>}
+                                    {r.reply && <p className="mt-1.5 text-[.8rem] font-bold text-teal-700 dark:text-teal-300">Admin အကြောင်းပြန်ချက် — {r.reply}</p>}
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        <input
+                                            className="h-10 min-w-[200px] flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm dark:border-[#1e2c52] dark:bg-[#070d1f] dark:text-[#e9eefb]"
+                                            placeholder="အကြောင်းပြန်ရန်…"
+                                            value={reply[r.id] ?? ''}
+                                            onChange={(e) => setReply({ ...reply, [r.id]: e.target.value })}
+                                        />
+                                        <button type="button" className={btnGhostCls} onClick={() => sendReply(r.id)}>
+                                            <Send className="size-4" /> {r.reply ? 'အကြောင်းပြန်ချက် ပြင်ရန်' : 'အကြောင်းပြန်ရန်'}
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="flex flex-none flex-wrap gap-2">
                                     {r.status !== 'approved' && (
-                                        <button type="button" className={btnGhostCls} onClick={() => setStatus(r.id, 'approved')}>
+                                        <button type="button" className={btnGhostCls} onClick={() => act(r.id, 'approve', 'Review ကို အတည်ပြုပြီးပါပြီ')}>
                                             <Check className="size-4" /> အတည်ပြုရန်
                                         </button>
                                     )}
-                                    {r.status !== 'hidden' && (
-                                        <button type="button" className={btnGhostCls} onClick={() => setStatus(r.id, 'hidden')}>
+                                    {r.status !== 'hidden' ? (
+                                        <button type="button" className={btnGhostCls} onClick={() => act(r.id, 'hide', 'Review ကို ဖျောက်ထားပြီးပါပြီ')}>
                                             <EyeOff className="size-4" /> ဖျောက်ရန်
+                                        </button>
+                                    ) : (
+                                        <button type="button" className={btnGhostCls} onClick={() => act(r.id, 'unhide', 'Review ကို ပြန်ပြပြီးပါပြီ')}>
+                                            <Eye className="size-4" /> ပြန်ပြရန်
                                         </button>
                                     )}
                                     <button type="button" className={btnGhostCls} onClick={() => remove(r.id)}>

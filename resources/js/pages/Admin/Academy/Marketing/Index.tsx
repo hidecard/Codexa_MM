@@ -1,55 +1,110 @@
 import { useState, type FormEvent } from 'react';
-import { Head } from '@inertiajs/react';
-import { Mail, Plus, Send } from 'lucide-react';
+import { Head, router, useForm } from '@inertiajs/react';
+import { CalendarClock, Mail, Pencil, Plus, Send, Trash2 } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { formatNumber } from '@/lib/format';
 import { EmptyBox, LmsCard, PageIntro, Pill, btnAccentCls, btnGhostCls, inkCls, inputCls, labelCls, mutedCls } from '@/pages/Admin/Academy/_shared';
 
-type Campaign = { id: number; subject: string; audience: string; status: 'sent' | 'draft'; sent: number; opened: number; clicked: number; when: string };
+type Campaign = {
+    id: number;
+    name: string;
+    subject: string;
+    body: string;
+    audience: string;
+    audience_label: string;
+    status: 'draft' | 'scheduled' | 'sent';
+    scheduled_at: string | null;
+    sent_at: string | null;
+    sent: number;
+    when: string;
+};
 
-// SAMPLE DATA fallback (prototype): no campaign backend yet.
-const SAMPLE_CAMPAIGNS: Campaign[] = [
-    { id: 1, subject: 'နိုဝင်ဘာ လျှော့ဈေး — သင်တန်း အားလုံး 50% OFF', audience: 'ကျောင်းသား အားလုံး', status: 'sent', sent: 4820, opened: 2892, clicked: 964, when: 'နိုဝင်ဘာ 15' },
-    { id: 2, subject: 'React သင်တန်း အသစ် ရောက်ပါပြီ', audience: 'အခမဲ့ အသင်းဝင်များ', status: 'sent', sent: 1960, opened: 1020, clicked: 388, when: 'နိုဝင်ဘာ 08' },
-    { id: 3, subject: 'ဒီဇင်ဘာ Hackathon ဖိတ်ခေါ်စာ', audience: 'Pro အသင်းဝင်များ', status: 'draft', sent: 0, opened: 0, clicked: 0, when: 'မူကြမ်း' },
-];
+type Props = {
+    campaigns?: Campaign[];
+    audiences?: Record<string, string>;
+    mailConfigured?: boolean;
+};
 
-const REACH: Record<string, number> = { 'ကျောင်းသား အားလုံး': 4820, 'Pro အသင်းဝင်များ': 1240, 'အခမဲ့ အသင်းဝင်များ': 3580, 'သင်တန်း မဝယ်ရသေးသူများ': 1960 };
-
-export default function Index({ campaigns }: { campaigns?: Campaign[] }) {
-    const [items, setItems] = useState<Campaign[]>(campaigns ?? SAMPLE_CAMPAIGNS);
-    const [subject, setSubject] = useState('');
-    const [audience, setAudience] = useState('ကျောင်းသား အားလုံး');
-    const [body, setBody] = useState('');
+export default function Index({ campaigns = [], audiences = {}, mailConfigured = false }: Props) {
     const [notice, setNotice] = useState('');
+    const [error, setError] = useState('');
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [scheduleFor, setScheduleFor] = useState<number | null>(null);
+    const [scheduleAt, setScheduleAt] = useState('');
 
-    const totalSent = items.filter((c) => c.status === 'sent').reduce((s, c) => s + c.sent, 0);
+    const form = useForm({ name: '', subject: '', audience: 'all', body: '' });
 
-    const add = (draft: boolean) => {
-        if (!subject.trim()) return;
-        const reach = REACH[audience] ?? 1000;
-        setItems([{ id: Date.now(), subject: subject.trim(), audience, status: draft ? 'draft' : 'sent', sent: draft ? 0 : reach, opened: 0, clicked: 0, when: draft ? 'မူကြမ်း' : 'ယနေ့' }, ...items]);
-        setSubject('');
-        setBody('');
-        setNotice(draft ? 'Campaign မူကြမ်း သိမ်းပြီးပါပြီ (ဤ page မှာသာ)' : `Campaign ပို့ပြီးပါပြီ — လက်ခံသူ ${formatNumber(reach)} ဦး (ဤ page မှာသာ)`);
+    const totalSent = campaigns.filter((c) => c.status === 'sent').reduce((s, c) => s + c.sent, 0);
+
+    const startEdit = (c: Campaign) => {
+        setEditingId(c.id);
+        form.setData({ name: c.name, subject: c.subject, audience: c.audience, body: c.body });
+        setNotice('');
+        setError('');
     };
 
-    const sendNow = (id: number) => {
-        setItems(
-            items.map((c) => {
-                if (c.id !== id) return c;
-                const reach = REACH[c.audience] ?? 1000;
-                return { ...c, status: 'sent' as const, sent: reach, when: 'ယနေ့' };
-            }),
-        );
-        setNotice('Campaign ပို့ပြီးပါပြီ (ဤ page မှာသာ)');
+    const cancelEdit = () => {
+        setEditingId(null);
+        form.reset();
     };
 
     const submit = (e: FormEvent) => {
         e.preventDefault();
-        add(false);
+        setError('');
+        const opts = {
+            preserveScroll: true,
+            onSuccess: () => {
+                setNotice(editingId ? 'Campaign ပြင်ဆင်ပြီးပါပြီ' : 'Campaign မူကြမ်း သိမ်းပြီးပါပြီ');
+                setEditingId(null);
+                form.reset();
+            },
+            onError: () => setError('သိမ်းဆည်းခြင်း မအောင်မြင်ပါ — အချက်အလက်များ စစ်ဆေးပါ'),
+        };
+        if (editingId) {
+            form.put(`/admin/academy/marketing/campaigns/${editingId}`, opts);
+        } else {
+            form.post('/admin/academy/marketing/campaigns', opts);
+        }
+    };
+
+    const sendNow = (c: Campaign) => {
+        setError('');
+        router.post(
+            `/admin/academy/marketing/campaigns/${c.id}/send`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => setNotice(`Campaign "${c.subject}" ပို့ပြီးပါပြီ`),
+                onError: (errs) => setError((errs.send as string) ?? 'Campaign ပို့ခြင်း မအောင်မြင်ပါ'),
+            },
+        );
+    };
+
+    const schedule = (c: Campaign) => {
+        if (!scheduleAt) return;
+        setError('');
+        router.post(
+            `/admin/academy/marketing/campaigns/${c.id}/schedule`,
+            { scheduled_at: scheduleAt },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setNotice(`Campaign "${c.subject}" ပို့ရန် အချိန်သတ်မှတ်ပြီးပါပြီ`);
+                    setScheduleFor(null);
+                    setScheduleAt('');
+                },
+                onError: (errs) => setError((errs.scheduled_at as string) ?? 'အချိန်သတ်မှတ်ခြင်း မအောင်မြင်ပါ'),
+            },
+        );
+    };
+
+    const remove = (c: Campaign) => {
+        router.delete(`/admin/academy/marketing/campaigns/${c.id}`, {
+            preserveScroll: true,
+            onSuccess: () => setNotice(`Campaign "${c.subject}" ဖျက်ပြီးပါပြီ`),
+        });
     };
 
     return (
@@ -58,87 +113,131 @@ export default function Index({ campaigns }: { campaigns?: Campaign[] }) {
             <PageIntro
                 eyebrow="ADMIN"
                 title="Email Campaign စီမံရန်"
-                description={`ကျောင်းသားတွေထံ အီးမေးလ် campaign များ ပို့ပြီး ရလဒ်ကို တိုင်းတာပါ — Campaign ${items.length} ခု · ပို့ပြီး email ${formatNumber(totalSent)} စောင်`}
+                description={`ကျောင်းသားတွေထံ အီးမေးလ် campaign များ ပို့ပြီး ရလဒ်ကို တိုင်းတာပါ — Campaign ${campaigns.length} ခု · ပို့ပြီး email ${formatNumber(totalSent)} စောင်`}
             />
+
+            {!mailConfigured && (
+                <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                    Email ပို့ရန် mail server မပြင်ဆင်ထားသေးပါ (MAIL_MAILER ကို SMTP / SES / Mailgun အဖြစ် ပြင်ဆင်ရန် လိုပါတယ်)။ Campaign များကို မူကြမ်းအဖြစ် သိမ်းနိုင်ပြီး အချိန်သတ်မှတ်နိုင်ပါတယ် — mail ပြင်ဆင်ပြီးမှ ပို့နိုင်ပါမယ်။
+                </div>
+            )}
 
             {notice && (
                 <div className="mt-6 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-medium text-teal-800 dark:border-teal-900 dark:bg-teal-950/30 dark:text-teal-200">
                     {notice}
                 </div>
             )}
+            {error && (
+                <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
+                    {error}
+                </div>
+            )}
 
             <LmsCard className="mt-6 p-5 sm:p-6">
                 <h2 className={`flex items-center gap-2 text-[1.05rem] font-extrabold ${inkCls}`}>
-                    <Plus className="size-5" /> Campaign အသစ်
+                    <Plus className="size-5" /> {editingId ? 'Campaign ပြင်ဆင်ရန်' : 'Campaign အသစ်'}
                 </h2>
                 <form onSubmit={submit} className="mt-4 grid gap-3">
                     <div className="grid gap-3 sm:grid-cols-2">
-                        <Input label="ခေါင်းစဉ် (Subject)" value={subject} onChange={(e) => setSubject(e.target.value)} required />
-                        <div>
-                            <label className={labelCls}>လက်ခံမည့်သူများ</label>
-                            <select className={inputCls} value={audience} onChange={(e) => setAudience(e.target.value)}>
-                                <option>ကျောင်းသား အားလုံး</option>
-                                <option>Pro အသင်းဝင်များ</option>
-                                <option>အခမဲ့ အသင်းဝင်များ</option>
-                                <option>သင်တန်း မဝယ်ရသေးသူများ</option>
-                            </select>
-                        </div>
+                        <Input label="Campaign အမည် (မဖြည့်ပါက ခေါင်းစဉ်ကို သုံးပါမယ်)" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} />
+                        <Input label="ခေါင်းစဉ် (Subject)" value={form.data.subject} onChange={(e) => form.setData('subject', e.target.value)} required />
+                    </div>
+                    {form.errors.subject && <p className="-mt-1 text-xs font-semibold text-rose-600">{form.errors.subject}</p>}
+                    <div>
+                        <label className={labelCls}>လက်ခံမည့်သူများ</label>
+                        <select className={inputCls} value={form.data.audience} onChange={(e) => form.setData('audience', e.target.value)}>
+                            {Object.entries(audiences).map(([key, label]) => (
+                                <option key={key} value={key}>
+                                    {label}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                     <div>
                         <label className={labelCls}>အီးမေးလ် အကြောင်းအရာ</label>
-                        <Textarea rows={4} value={body} onChange={(e) => setBody(e.target.value)} />
+                        <Textarea rows={4} value={form.data.body} onChange={(e) => form.setData('body', e.target.value)} />
                     </div>
                     <div className="flex flex-wrap gap-2.5">
-                        <button type="button" className={btnGhostCls} onClick={() => add(true)}>
-                            မူကြမ်း သိမ်းရန်
+                        <button type="submit" className={btnAccentCls} disabled={form.processing}>
+                            {editingId ? 'ပြင်ဆင်မှု သိမ်းရန်' : 'မူကြမ်း သိမ်းရန်'}
                         </button>
-                        <button type="submit" className={btnAccentCls}>
-                            <Send className="size-4" /> ချက်ချင်း ပို့ရန်
-                        </button>
+                        {editingId && (
+                            <button type="button" className={btnGhostCls} onClick={cancelEdit}>
+                                ပြင်ဆင်မှု ပယ်ဖျက်ရန်
+                            </button>
+                        )}
                     </div>
                 </form>
             </LmsCard>
 
-            {items.length === 0 ? (
+            {campaigns.length === 0 ? (
                 <div className="mt-6">
                     <EmptyBox title="Campaign မရှိသေးပါ" description="အပေါ်က form မှာ ပထမဆုံး campaign ဖန်တီးနိုင်ပါတယ်" />
                 </div>
             ) : (
                 <div className="mt-6 space-y-3.5">
-                    {items.map((c) => {
-                        const openRate = c.sent ? Math.round((c.opened / c.sent) * 100) : 0;
-                        const clickRate = c.sent ? Math.round((c.clicked / c.sent) * 100) : 0;
-                        return (
-                            <LmsCard key={c.id} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
-                                <span className="grid size-11 flex-none place-items-center rounded-xl bg-teal-600/10 text-teal-700 dark:text-teal-300">
-                                    <Mail className="size-5" />
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                    <p className={`text-[.95rem] font-extrabold leading-snug ${inkCls}`}>{c.subject}</p>
-                                    <p className={`mt-0.5 text-[.8rem] ${mutedCls}`}>
-                                        {c.audience} · {c.when}
-                                    </p>
-                                    {c.status === 'sent' ? (
-                                        <p className={`mt-1 text-[.8rem] font-semibold ${inkCls}`}>
-                                            ပို့ပြီး {formatNumber(c.sent)} · ဖွင့်ကြည့် {openRate}% · နှိပ်ကြည့် {clickRate}%
-                                        </p>
-                                    ) : (
-                                        <p className={`mt-1 text-[.8rem] font-semibold ${mutedCls}`}>မပို့ရသေးပါ</p>
-                                    )}
-                                </div>
+                    {campaigns.map((c) => (
+                        <LmsCard key={c.id} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+                            <span className="grid size-11 flex-none place-items-center rounded-xl bg-teal-600/10 text-teal-700 dark:text-teal-300">
+                                <Mail className="size-5" />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                                <p className={`text-[.95rem] font-extrabold leading-snug ${inkCls}`}>{c.subject}</p>
+                                <p className={`mt-0.5 text-[.8rem] ${mutedCls}`}>
+                                    {c.audience_label} · {c.when}
+                                    {c.name !== c.subject ? ` · ${c.name}` : ''}
+                                </p>
                                 {c.status === 'sent' ? (
-                                    <Pill tone="teal">ပို့ပြီး</Pill>
+                                    <p className={`mt-1 text-[.8rem] font-semibold ${inkCls}`}>ပို့ပြီး {formatNumber(c.sent)} ဦး</p>
+                                ) : c.status === 'scheduled' ? (
+                                    <p className={`mt-1 text-[.8rem] font-semibold ${mutedCls}`}>ပို့ရန် အချိန်သတ်မှတ်ထားပါတယ်</p>
                                 ) : (
-                                    <div className="flex flex-none items-center gap-2">
-                                        <Pill tone="slate">မူကြမ်း</Pill>
-                                        <button type="button" className={btnAccentCls} onClick={() => sendNow(c.id)}>
-                                            အခု ပို့ရန်
+                                    <p className={`mt-1 text-[.8rem] font-semibold ${mutedCls}`}>မပို့ရသေးပါ</p>
+                                )}
+                                {scheduleFor === c.id && (
+                                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                                        <input className={inputCls} type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} />
+                                        <button type="button" className={btnAccentCls} onClick={() => schedule(c)}>
+                                            အချိန်သတ်မှတ်ရန်
+                                        </button>
+                                        <button type="button" className={btnGhostCls} onClick={() => setScheduleFor(null)}>
+                                            ပယ်ဖျက်ရန်
                                         </button>
                                     </div>
                                 )}
-                            </LmsCard>
-                        );
-                    })}
+                            </div>
+                            <div className="flex flex-none flex-wrap items-center gap-2">
+                                {c.status === 'sent' ? (
+                                    <Pill tone="teal">ပို့ပြီး</Pill>
+                                ) : c.status === 'scheduled' ? (
+                                    <>
+                                        <Pill tone="amber">စီစဉ်ထား</Pill>
+                                        <button type="button" className={btnAccentCls} onClick={() => sendNow(c)}>
+                                            <Send className="size-4" /> အခု ပို့ရန်
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Pill tone="slate">မူကြမ်း</Pill>
+                                        <button type="button" className={btnGhostCls} onClick={() => setScheduleFor(c.id)}>
+                                            <CalendarClock className="size-4" /> အချိန်သတ်ရန်
+                                        </button>
+                                        <button type="button" className={btnAccentCls} onClick={() => sendNow(c)}>
+                                            <Send className="size-4" /> အခု ပို့ရန်
+                                        </button>
+                                    </>
+                                )}
+                                {c.status !== 'sent' && (
+                                    <button type="button" className={btnGhostCls} onClick={() => startEdit(c)}>
+                                        <Pencil className="size-4" /> ပြင်ရန်
+                                    </button>
+                                )}
+                                <button type="button" className="rounded-lg p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40" onClick={() => remove(c)} title="ဖျက်ရန်">
+                                    <Trash2 className="size-4" />
+                                </button>
+                            </div>
+                        </LmsCard>
+                    ))}
                 </div>
             )}
         </LmsShell>

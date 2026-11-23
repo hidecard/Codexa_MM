@@ -5,27 +5,15 @@ import { LmsShell } from '@/components/shared/lms-shell';
 import { formatNumber } from '@/lib/format';
 import { Chip, EmptyBox, LmsCard, PageIntro, Pill, inkCls, inputCls, mutedCls } from '@/pages/Admin/Academy/_shared';
 
-// SAMPLE DATA fallback (prototype style): used until Admin/Academy/LessonController is wired.
-const SAMPLE_LESSONS = [
-    { id: 1, title: 'HTML ဆိုတာ ဘာလဲ?', course: 'HTML & CSS Foundations', module: 'HTML Basics & Semantic Tags', type: 'video', duration: 12, is_free: true },
-    { id: 2, title: 'Semantic Tags အသုံးပြုနည်း', course: 'HTML & CSS Foundations', module: 'HTML Basics & Semantic Tags', type: 'video', duration: 18, is_free: false },
-    { id: 3, title: 'CSS Selectors', course: 'HTML & CSS Foundations', module: 'CSS Styling & Box Model', type: 'video', duration: 15, is_free: false },
-    { id: 4, title: 'Box Model နားလည်ခြင်း', course: 'HTML & CSS Foundations', module: 'CSS Styling & Box Model', type: 'text', duration: 10, is_free: false },
-    { id: 11, title: 'Component ဆိုတာ ဘာလဲ?', course: 'React.js Complete Course', module: 'Components & JSX', type: 'video', duration: 16, is_free: true },
-    { id: 12, title: 'useState အသုံးပြုနည်း', course: 'React.js Complete Course', module: 'Hooks in Depth — useEffect', type: 'video', duration: 20, is_free: false },
-    { id: 13, title: 'useEffect & Dependency Array', course: 'React.js Complete Course', module: 'Hooks in Depth — useEffect', type: 'video', duration: 24, is_free: false },
-    { id: 14, title: 'Hooks Quiz — အသိစမ်းခြင်း', course: 'React.js Complete Course', module: 'Hooks in Depth — useEffect', type: 'quiz', duration: 10, is_free: false },
-];
-
-type LessonRow = (typeof SAMPLE_LESSONS)[number];
+type LessonRow = { id: number; title: string; course: string; module: string; type: string; duration: number; is_free: boolean };
 
 function typeIcon(type: string) {
     if (type === 'video') return <Play className="size-5" />;
     return <FileText className="size-5" />;
 }
 
-export default function Index({ lessons }: { lessons?: LessonRow[] }) {
-    const list = lessons ?? SAMPLE_LESSONS;
+export default function Index({ lessons = [] }: { lessons?: LessonRow[] }) {
+    const list = lessons;
     const [query, setQuery] = useState('');
     const [type, setType] = useState<'all' | 'video' | 'text' | 'quiz' | 'assignment'>('all');
 

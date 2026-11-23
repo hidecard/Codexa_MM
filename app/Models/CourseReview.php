@@ -7,14 +7,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['student_id', 'course_id', 'rating', 'comment', 'is_approved'])]
+#[Fillable(['student_id', 'course_id', 'rating', 'comment', 'is_approved', 'reply', 'is_hidden'])]
 class CourseReview extends Model
 {
     use HasFactory;
 
     protected function casts(): array
     {
-        return ['rating' => 'integer', 'is_approved' => 'boolean'];
+        return ['rating' => 'integer', 'is_approved' => 'boolean', 'is_hidden' => 'boolean'];
     }
 
     public function course(): BelongsTo

@@ -1,48 +1,71 @@
 import { useState, type FormEvent } from 'react';
-import { Head } from '@inertiajs/react';
-import { FileUp, Upload } from 'lucide-react';
+import { Head, router, useForm } from '@inertiajs/react';
+import { Download, FileUp, Upload } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { SectionCard } from '@/components/lms/section-card';
-import { LmsCard, PageIntro, Pill, btnAccentCls, btnGhostCls, inkCls, inputCls, labelCls, mutedCls } from '@/pages/Admin/Academy/_shared';
+import { LmsCard, PageIntro, Pill, btnAccentCls, btnGhostCls, inkCls, labelCls, mutedCls } from '@/pages/Admin/Academy/_shared';
 
-type ImportLog = { id: number; type: string; ok: number; skipped: number; date: string; errors: string[] };
+type PreviewRow = { line: number; title: string; category: string; price: number; level: string };
 
-const SAMPLE_LOGS: ImportLog[] = [
-    { id: 1, type: 'ကျောင်းသားများ', ok: 48, skipped: 2, date: 'နိုဝင်ဘာ 20', errors: ['လိုင်း 12: email မပါပါ', 'လိုင်း 31: အမည် ထပ်နေပါတယ်'] },
-    { id: 2, type: 'သင်တန်းများ', ok: 5, skipped: 0, date: 'နိုဝင်ဘာ 15', errors: [] },
-];
+type Preview = {
+    token: string;
+    filename: string;
+    total_rows: number;
+    valid_rows: number;
+    errors: string[];
+    sample: PreviewRow[];
+};
 
-export default function Index() {
-    const [type, setType] = useState('သင်တန်းများ');
-    const [csv, setCsv] = useState('');
-    const [logs, setLogs] = useState<ImportLog[]>(SAMPLE_LOGS);
+type ImportResult = { created: number; skipped: number; errors: string[]; date: string };
+
+type Props = { preview?: Preview | null; result?: ImportResult | null };
+
+const SAMPLE_CSV = 'title,category,price,level\nReact Hooks Masterclass,Web Development,95000,intermediate\nPython Data Analysis,Programming,110000,beginner\nFigma for Beginners,Design,40000,beginner\n';
+
+export default function Index({ preview = null, result = null }: Props) {
     const [notice, setNotice] = useState('');
+    const [error, setError] = useState('');
+    const [dismissedPreview, setDismissedPreview] = useState(false);
+    const form = useForm({ file: null as File | null });
 
-    const sample = () => {
-        if (type === 'သင်တန်းများ') {
-            setCsv('React Hooks Masterclass, Web Development, 95000\nPython Data Analysis, Programming, 110000\nFigma for Beginners, Design, 40000');
-        } else {
-            setCsv('Aye Chan Moe, Yangon, pro\nMay Myat Noe, Mandalay, free\nThura Kyaw, Yangon, free');
-        }
-    };
+    const showPreview = preview && !dismissedPreview;
 
     const submit = (e: FormEvent) => {
         e.preventDefault();
-        const lines = csv.split('\n').map((l) => l.trim()).filter(Boolean);
-        if (lines.length === 0) return;
-        const errors: string[] = [];
-        let ok = 0;
-        lines.forEach((l, i) => {
-            const parts = l.split(',').map((p) => p.trim());
-            if (parts.length < 3 || !parts[0]) {
-                errors.push(`လိုင်း ${i + 1}: ပုံစံ မှားနေပါတယ် — "${l}"`);
-            } else {
-                ok += 1;
-            }
+        if (!form.data.file) return;
+        setError('');
+        setDismissedPreview(false);
+        form.post('/admin/academy/import/preview', {
+            preserveScroll: true,
+            forceFormData: true,
+            onSuccess: () => setNotice('CSV ဖတ်ပြီးပါပြီ — အောက်မှာ အစမ်းကြည့်ပြီး အတည်ပြုနိုင်ပါတယ်'),
+            onError: (errs) => setError((errs.file as string) ?? 'ဖိုင် တင်ခြင်း မအောင်မြင်ပါ'),
         });
-        setLogs([{ id: Date.now(), type, ok, skipped: errors.length, date: 'ယနေ့', errors }, ...logs]);
-        setNotice(`${ok} မှတ်တမ်း သွင်းပြီးပါပြီ${errors.length ? ` · ${errors.length} ကြောင်း ကျော်သွားပါတယ်` : ''} (ဤ page မှာသာ — backend import မရှိသေးပါ)`);
-        setCsv('');
+    };
+
+    const confirm = () => {
+        if (!preview) return;
+        router.post(
+            '/admin/academy/import/confirm',
+            { token: preview.token },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setNotice('သွင်းပြီးပါပြီ — သင်တန်းများ page မှာ စစ်ဆေးနိုင်ပါတယ်');
+                    setDismissedPreview(true);
+                },
+                onError: (errs) => setError((errs.file as string) ?? 'သွင်းခြင်း မအောင်မြင်ပါ'),
+            },
+        );
+    };
+
+    const downloadSample = () => {
+        const url = URL.createObjectURL(new Blob([SAMPLE_CSV], { type: 'text/csv' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'courses-sample.csv';
+        a.click();
+        URL.revokeObjectURL(url);
     };
 
     return (
@@ -51,7 +74,7 @@ export default function Index() {
             <PageIntro
                 eyebrow="ADMIN"
                 title="Bulk Import"
-                description="CSV စာသား ကူးထည့်ပြီး သင်တန်း/ကျောင်းသား အစုလိုက် သွင်းပါ — သွင်းပြီးရင် သက်ဆိုင်ရာ page တွေမှာ ချက်ချင်း ပေါ်ပါတယ်"
+                description="CSV ဖိုင် တင်ပြီး သင်တန်းများ အစုလိုက် သွင်းပါ — အစမ်းကြည့်ပြီးမှ အတည်ပြုရပါတယ်"
             />
 
             {notice && (
@@ -59,67 +82,117 @@ export default function Index() {
                     {notice}
                 </div>
             )}
+            {error && (
+                <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
+                    {error}
+                </div>
+            )}
 
             <div className="mt-6 grid items-start gap-5 xl:grid-cols-2">
                 <LmsCard className="p-5 sm:p-6">
                     <h2 className={`flex items-center gap-2 text-[1.05rem] font-extrabold ${inkCls}`}>
-                        <FileUp className="size-5" /> ဒေတာ သွင်းရန်
+                        <FileUp className="size-5" /> သင်တန်းများ သွင်းရန်
                     </h2>
                     <form onSubmit={submit} className="mt-4 grid gap-4">
                         <div>
-                            <label className={labelCls}>အမျိုးအစား</label>
-                            <select className={inputCls} value={type} onChange={(e) => setType(e.target.value)}>
-                                <option>သင်တန်းများ — title, category, price</option>
-                                <option>ကျောင်းသားများ — name, city, plan</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className={labelCls}>CSV စာသား (တစ်ကြောင်း = မှတ်တမ်း တစ်ခု)</label>
-                            <textarea
-                                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 dark:border-[#1e2c52] dark:bg-[#070d1f] dark:text-[#e9eefb]"
-                                rows={8}
-                                value={csv}
-                                onChange={(e) => setCsv(e.target.value)}
-                                placeholder={type.startsWith('သင်တန်း') ? 'React Hooks Masterclass, Web Development, 95000' : 'Aye Chan Moe, Yangon, pro'}
+                            <label className={labelCls}>CSV ဖိုင် (အများဆုံး 2MB)</label>
+                            <input
+                                type="file"
+                                accept=".csv,.txt"
+                                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-teal-600 file:px-3 file:py-1.5 file:text-sm file:font-bold file:text-white dark:border-[#1e2c52] dark:bg-[#070d1f] dark:text-[#e9eefb]"
+                                onChange={(e) => form.setData('file', e.target.files?.[0] ?? null)}
+                                required
                             />
+                            {form.errors.file && <p className="mt-1 text-xs font-semibold text-rose-600">{form.errors.file}</p>}
                         </div>
                         <div className="flex flex-wrap gap-2.5">
-                            <button type="submit" className={btnAccentCls}>
-                                <Upload className="size-4" /> သွင်းရန်
+                            <button type="submit" className={btnAccentCls} disabled={form.processing || !form.data.file}>
+                                <Upload className="size-4" /> တင်ပြီး အစမ်းကြည့်ရန်
                             </button>
-                            <button type="button" className={btnGhostCls} onClick={sample}>
-                                နမူနာ ထည့်ရန်
+                            <button type="button" className={btnGhostCls} onClick={downloadSample}>
+                                <Download className="size-4" /> နမူနာ CSV ဒေါင်းလုဒ်
                             </button>
                         </div>
-                        <p className={`text-[.8rem] ${mutedCls}`}>ပုံစံ မှားတဲ့ ကြောင်းတွေကို ကျော်ပြီး အမှား အကြောင်းရင်းနဲ့အတူ ရလဒ်မှာ ပြပေးပါတယ်။</p>
+                        <p className={`text-[.8rem] leading-relaxed ${mutedCls}`}>
+                            ကော်လံ — title, category, price, level (header ပါလည်း ရသည်၊ မပါလည်း ရသည်)။ Category အသစ်ဆိုရင် အလိုအလျောက် ဖန်တီးပေးပါတယ်။ ခေါင်းစဉ် မပါတဲ့ ကြောင်းတွေကို ကျော်ပါတယ်။ သွင်းထားသော
+                            သင်တန်းများသည် မူကြမ်း (draft) အဖြစ် သိမ်းပါမယ်။
+                        </p>
                     </form>
+
+                    {showPreview && (
+                        <div className="mt-5 rounded-xl border border-slate-100 p-4 dark:border-[#18264a]">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <p className={`text-[.92rem] font-extrabold ${inkCls}`}>အစမ်းကြည့်မှု — {preview.filename}</p>
+                                <Pill tone="teal">{preview.valid_rows} ကြောင်း အဆင်ပြေ</Pill>
+                                <Pill tone="slate">စုစုပေါင်း {preview.total_rows} ကြောင်း</Pill>
+                                {preview.errors.length > 0 && <Pill tone="amber">{preview.errors.length} အမှား</Pill>}
+                            </div>
+                            {preview.sample.length > 0 && (
+                                <div className="mt-3 overflow-x-auto">
+                                    <table className="w-full text-left text-[.8rem]">
+                                        <thead>
+                                            <tr className={mutedCls}>
+                                                <th className="py-1 pr-3 font-bold">ခေါင်းစဉ်</th>
+                                                <th className="py-1 pr-3 font-bold">Category</th>
+                                                <th className="py-1 pr-3 font-bold">ဈေး</th>
+                                                <th className="py-1 font-bold">Level</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {preview.sample.map((r) => (
+                                                <tr key={r.line} className={inkCls}>
+                                                    <td className="py-1 pr-3 font-semibold">{r.title || '(ခေါင်းစဉ် မပါ)'}</td>
+                                                    <td className="py-1 pr-3">{r.category || 'General'}</td>
+                                                    <td className="py-1 pr-3">{r.price.toLocaleString()}</td>
+                                                    <td className="py-1">{r.level}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                            {preview.errors.length > 0 && (
+                                <ul className="mt-2 space-y-1">
+                                    {preview.errors.map((err, i) => (
+                                        <li key={i} className="text-[.8rem] text-rose-600">
+                                            {err}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            <div className="mt-4 flex flex-wrap gap-2.5">
+                                <button type="button" className={btnAccentCls} onClick={confirm} disabled={preview.valid_rows === 0}>
+                                    <Upload className="size-4" /> {preview.valid_rows} သင်တန်း သွင်းရန် အတည်ပြုမည်
+                                </button>
+                                <button type="button" className={btnGhostCls} onClick={() => setDismissedPreview(true)}>
+                                    ပယ်ဖျက်ရန်
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </LmsCard>
 
-                <SectionCard title="သွင်းမှု မှတ်တမ်း">
-                    {logs.length === 0 ? (
-                        <p className={`text-sm ${mutedCls}`}>သွင်းမှု မှတ်တမ်း မရှိသေးပါ။</p>
-                    ) : (
-                        <div className="space-y-3.5">
-                            {logs.map((l) => (
-                                <div key={l.id} className="rounded-xl border border-slate-100 p-4 dark:border-[#18264a]">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <p className={`text-[.92rem] font-extrabold ${inkCls}`}>{l.type}</p>
-                                        <Pill tone="teal">{l.ok} အောင်မြင်</Pill>
-                                        {l.skipped > 0 && <Pill tone="amber">{l.skipped} ကျော်သွား</Pill>}
-                                        <span className={`ml-auto text-[.76rem] font-semibold ${mutedCls}`}>{l.date}</span>
-                                    </div>
-                                    {l.errors.length > 0 && (
-                                        <ul className="mt-2 space-y-1">
-                                            {l.errors.map((err, i) => (
-                                                <li key={i} className="text-[.8rem] text-rose-600">
-                                                    {err}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </div>
-                            ))}
+                <SectionCard title="သွင်းမှု ရလဒ်">
+                    {result ? (
+                        <div className="rounded-xl border border-slate-100 p-4 dark:border-[#18264a]">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <p className={`text-[.92rem] font-extrabold ${inkCls}`}>သင်တန်းများ</p>
+                                <Pill tone="teal">{result.created} အောင်မြင်</Pill>
+                                {result.skipped > 0 && <Pill tone="amber">{result.skipped} ကျော်သွား</Pill>}
+                                <span className={`ml-auto text-[.76rem] font-semibold ${mutedCls}`}>{result.date}</span>
+                            </div>
+                            {result.errors.length > 0 && (
+                                <ul className="mt-2 space-y-1">
+                                    {result.errors.map((err, i) => (
+                                        <li key={i} className="text-[.8rem] text-rose-600">
+                                            {err}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
+                    ) : (
+                        <p className={`text-sm ${mutedCls}`}>သွင်းမှု ရလဒ် မရှိသေးပါ — CSV တင်ပြီး အတည်ပြုရင် ဒီမှာ ရလဒ် ပေါ်လာပါမယ်။ သွင်းမှု မှတ်တမ်း အဟောင်းများကို သိမ်းမထားပါ။</p>
                     )}
                 </SectionCard>
             </div>

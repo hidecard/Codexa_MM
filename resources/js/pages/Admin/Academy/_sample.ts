@@ -131,15 +131,6 @@ export const SAMPLE_INS_REVIEWS: SampleReview[] = [
     { id: 3, name: 'Phyo Min Khant', init: 'PM', col: '#eab308', course: 'React.js Complete Course', stars: 4, text: 'Routing အခန်းမှာ လေ့ကျင့်ခန်း နည်းနည်း ပိုထည့်ရင် ပိုကောင်းပါမယ်။ ကျန်တာတော့ အရမ်း စနစ်ကျပါတယ်။', date: 'နိုဝင်ဘာ 17', status: 'approved' },
 ];
 
-export const SAMPLE_ADMIN_REVIEWS: SampleReview[] = [
-    { id: 1, name: 'Thiri Nanda', init: 'TN', col: '#6366f1', course: 'React.js Complete Course', stars: 5, text: 'Hooks အပိုင်းကို ဥပမာများများနဲ့ ရှင်းပြထားတာ အရမ်း ကောင်းပါတယ်။ Live session တွေကလည်း အထောက်အကူ အများကြီး ဖြစ်ပါတယ်။', date: 'နိုဝင်ဘာ 21', status: 'pending' },
-    { id: 2, name: 'Zaw Lin Htet', init: 'ZL', col: '#f59e0b', course: 'Python for Beginners', stars: 5, text: 'စတင်သူတွေ အတွက် အရမ်း သင့်တော်ပါတယ်။ တစ်ဆင့်ချင်း ရှင်းပြထားလို့ programming ကို ပထမဆုံး စသူတောင် လိုက်နိုင်ပါတယ်။', date: 'နိုဝင်ဘာ 20', status: 'pending' },
-    { id: 3, name: 'Hein Htet Aung', init: 'HH', col: '#8b5cf6', course: 'JavaScript Deep Dive', stars: 4, text: 'အကြောင်းအရာ ကောင်းပေမယ့် Async အခန်းမှာ လေ့ကျင့်ခန်း နည်းနည်း ပိုထည့်ပေးရင် ပိုကောင်းပါမယ်။', date: 'နိုဝင်ဘာ 19', status: 'pending' },
-    { id: 4, name: 'Ei Mon Kyaw', init: 'EM', col: '#f43f5e', course: 'UI/UX Design with Figma', stars: 5, text: 'ဒီသင်တန်း အရမ်း ကောင်းတယ်၊ အားလုံး ဝယ်ကြပါ၊ အပြင် link တွေ နှိပ်ကြည့်ပါ ဆိုတဲ့ ကြော်ငြာဆန်ဆန် စာသားများ ပါဝင်နေပါတယ်။', date: 'နိုဝင်ဘာ 18', status: 'reported', reportReason: 'Spam / ကြော်ငြာ ပါဝင်သည်ဟု ကျောင်းသားတစ်ဦးက report လုပ်ထားပါတယ်' },
-    { id: 5, name: 'Su Myat Noe', init: 'SM', col: '#22c55e', course: 'HTML & CSS Foundations', stars: 5, text: 'Portfolio project လုပ်ရင်း အလုပ်လျှောက်ဖို့ အဆင်သင့် ဖြစ်သွားပါတယ်။ ဆရာ့ feedback တွေကလည်း အသေးစိတ် ကျပါတယ်။', date: 'နိုဝင်ဘာ 15', status: 'approved' },
-    { id: 6, name: 'Phyo Min Khant', init: 'PM', col: '#eab308', course: 'Git, GitHub & Team Workflow', stars: 4, text: 'Team workflow အပိုင်းက လက်တွေ့ အလုပ်မှာ တိုက်ရိုက် အသုံးချနိုင်ပါတယ်။ အချိန်တိုပေမယ့် အနှစ်သာရ ပြည့်ဝပါတယ်။', date: 'နိုဝင်ဘာ 12', status: 'approved' },
-];
-
 export type SampleQA = {
     id: number;
     student: string;
@@ -205,13 +196,6 @@ export const SAMPLE_PAYOUTS: SamplePayout[] = [
 
 export type SampleCoupon = { code: string; pct: number; used: number; limit: number; expiry: string; active: boolean };
 
-export const SAMPLE_COUPONS: SampleCoupon[] = [
-    { code: 'CODEXA10', pct: 10, used: 486, limit: 1000, expiry: '2026 ဒီဇင်ဘာ 31', active: true },
-    { code: 'STUDENT20', pct: 20, used: 132, limit: 300, expiry: '2026 နိုဝင်ဘာ 30', active: true },
-    { code: 'WELCOME15', pct: 15, used: 58, limit: 200, expiry: '2027 ဇန်နဝါရီ 31', active: true },
-    { code: 'FLASH50', pct: 50, used: 200, limit: 200, expiry: '2026 နိုဝင်ဘာ 15', active: false },
-];
-
 export type SampleInstructor = {
     name: string;
     init: string;
@@ -233,11 +217,6 @@ export const SAMPLE_INSTRUCTORS: SampleInstructor[] = [
     { name: 'Nilar Win', init: 'NW', col: '#8b5cf6', field: 'UI/UX · Figma', courses: 1, students: 1540, rating: 4.9, share: 1580000, payout: 'paid' },
 ];
 
-export const SAMPLE_INST_APPS = [
-    { name: 'Aye Chan Moe', init: 'AC', col: '#f59e0b', field: 'Data Science & Python', exp: 'အတွေ့အကြုံ 5 နှစ်', note: 'Python နဲ့ data analysis အတွေ့အကြုံ ၅ နှစ် ရှိပြီး Kaggle project များစွာ လုပ်ဖူးပါတယ်။ Data Science with Python သင်တန်းကို သင်ကြားချင်ပါတယ်။', when: 'လွန်ခဲ့သော 1 ရက်' },
-    { name: 'May Myat Noe', init: 'MM', col: '#38bdf8', field: 'TypeScript & React', exp: 'အတွေ့အကြုံ 4 နှစ်', note: 'Singapore startup တစ်ခုမှာ frontend engineer အဖြစ် ၄ နှစ် လုပ်ကိုင်ခဲ့ပါတယ်။ Advanced React Patterns သင်တန်း အတွက် လျှောက်ထားပါတယ်။', when: 'လွန်ခဲ့သော 3 ရက်' },
-];
-
 export const SAMPLE_CATEGORIES = [
     { name: 'Web Development', courses: 4, students: 5965 },
     { name: 'Programming', courses: 2, students: 3120 },
@@ -247,4 +226,3 @@ export const SAMPLE_CATEGORIES = [
     { name: 'Tools', courses: 1, students: 1240 },
 ];
 
-export const fmtNum = (n: number) => n.toLocaleString('en-US');

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CourseReview;
 use App\Models\Enrollment;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -48,6 +49,7 @@ class InstructorController extends Controller
             $initials = collect(explode(' ', trim($u->name)))->map(fn ($w) => Str::upper(Str::substr($w, 0, 1)))->take(2)->implode('');
 
             return [
+                'id' => $u->id,
                 'name' => $u->name,
                 'init' => $initials ?: '?',
                 'col' => self::COLORS[$u->id % count(self::COLORS)],
@@ -57,6 +59,7 @@ class InstructorController extends Controller
                 'rating' => $ratingN ? round($ratingSum / $ratingN, 1) : 0,
                 'share' => (int) round($revenue * 0.5),
                 'payout' => 'pending', // No payout model yet.
+                'status' => $u->status,
             ];
         })->values();
 
@@ -64,5 +67,21 @@ class InstructorController extends Controller
             'instructors' => $rows,
             'applications' => [], // No instructor application model yet.
         ]);
+    }
+
+    public function activate(User $instructor): RedirectResponse
+    {
+        abort_unless($instructor->hasRole('instructor'), 404);
+        $instructor->update(['status' => 'active']);
+
+        return back()->with('success', 'Instructor activated.');
+    }
+
+    public function suspend(User $instructor): RedirectResponse
+    {
+        abort_unless($instructor->hasRole('instructor'), 404);
+        $instructor->update(['status' => 'suspended']);
+
+        return back()->with('success', 'Instructor suspended.');
     }
 }

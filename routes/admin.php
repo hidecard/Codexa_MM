@@ -57,20 +57,11 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         Route::get('/refunds', [AcademyRefundController::class, 'index'])->name('refunds.index');
         Route::get('/tickets', [AcademyTicketController::class, 'index'])->name('tickets.index');
 
-        Route::get('/payments', fn () => Inertia::render('Admin/Academy/Payments/Index'))->name('payments.index');
-        Route::get('/live-classes', fn () => Inertia::render('Admin/Academy/Live/Index'))->name('live-classes.index');
-        Route::get('/coupons', fn () => Inertia::render('Admin/Academy/Coupons/Index'))->name('coupons.index');
-        Route::get('/payouts', fn () => Inertia::render('Admin/Academy/Payouts/Index'))->name('payouts.index');
-        Route::get('/moderation', fn () => Inertia::render('Admin/Academy/Moderation/Index'))->name('moderation.index');
-        Route::get('/cms', fn () => Inertia::render('Admin/Academy/Cms/Index'))->name('cms.index');
-        Route::get('/gamification', fn () => Inertia::render('Admin/Academy/Gamification/Index'))->name('gamification.index');
-        Route::get('/marketing', fn () => Inertia::render('Admin/Academy/Marketing/Index'))->name('marketing.index');
-        Route::get('/system', fn () => Inertia::render('Admin/Academy/System/Index'))->name('system.index');
-        Route::get('/import', fn () => Inertia::render('Admin/Academy/Import/Index'))->name('import.index');
-        Route::get('/integrations', fn () => Inertia::render('Admin/Academy/Integrations/Index'))->name('integrations.index');
-        Route::get('/cert-templates', fn () => Inertia::render('Admin/Academy/CertTemplate/Index'))->name('cert-templates.index');
-        Route::get('/curriculum', fn () => Inertia::render('Admin/Academy/Curriculum/Index'))->name('curriculum.index');
-        Route::get('/staff', fn () => Inertia::render('Admin/Academy/Staff/Index'))->name('staff.index');
+        // Payments, live-classes, coupons, payouts, moderation, cms,
+        // gamification, marketing, system, import, integrations,
+        // cert-templates, curriculum and staff are served by controller
+        // routes in routes/admin_commerce.php, admin_content.php,
+        // admin_platform.php and admin_ops.php (loaded before this file).
     });
 
     Route::prefix('solutions')->name('solutions.')->group(function () {
@@ -149,7 +140,6 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         return Inertia::render('Admin/ActivityLogs/Index');
     })->name('activity-logs.index');
 
-    Route::get('/settings', function () {
-        return Inertia::render('Admin/Settings/Index');
-    })->name('settings.index');
+    // Admin settings are served by SettingController in
+    // routes/admin_platform.php (loaded before this file).
 });

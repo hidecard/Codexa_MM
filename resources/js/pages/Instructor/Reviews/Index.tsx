@@ -1,21 +1,62 @@
 import { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Reply, Star } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { StatCard } from '@/components/lms/stat-card';
 import { Avatar, Chip, EmptyBox, LmsCard, PageIntro, Stars, btnGhostCls, inkCls, mutedCls } from '@/pages/Admin/Academy/_shared';
-import { SAMPLE_INS_REVIEWS, type SampleReview } from '@/pages/Admin/Academy/_sample';
+import { formatDate } from '@/lib/format';
 
-export default function Index({ reviews }: { reviews?: SampleReview[] }) {
-    // SAMPLE DATA fallback (prototype): route is a closure with no props yet.
-    const list = reviews ?? SAMPLE_INS_REVIEWS;
+type Review = {
+    id: number;
+    name: string;
+    course: string;
+    stars: number;
+    text: string;
+    date?: string | null;
+    status: 'pending' | 'approved';
+    reply?: string | null;
+};
+
+type Props = {
+    reviews?: Review[];
+    flash?: { success?: string | null };
+};
+
+const AVATAR_COLORS = ['#f59e0b', '#f43f5e', '#14b8a6', '#ec4899', '#8b5cf6', '#3b82f6', '#10b981', '#f97316'];
+
+function initials(name: string) {
+    return name
+        .split(' ')
+        .filter(Boolean)
+        .map((w) => w[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase();
+}
+
+export default function Index({ reviews = [] }: Props) {
+    const { flash } = usePage<Props>().props;
     const [filter, setFilter] = useState<number | 'all'>('all');
-    const [replied, setReplied] = useState<Record<number, string>>({});
     const [draft, setDraft] = useState<Record<number, string>>({});
+    const [replying, setReplying] = useState<number | null>(null);
 
-    const avg = list.length ? list.reduce((s, r) => s + r.stars, 0) / list.length : 0;
-    const shown = list.filter((r) => filter === 'all' || r.stars === filter);
-    const dist = [5, 4, 3, 2, 1].map((s) => ({ stars: s, count: list.filter((r) => r.stars === s).length }));
+    const avg = reviews.length ? reviews.reduce((s, r) => s + r.stars, 0) / reviews.length : 0;
+    const shown = reviews.filter((r) => filter === 'all' || r.stars === filter);
+    const dist = [5, 4, 3, 2, 1].map((s) => ({ stars: s, count: reviews.filter((r) => r.stars === s).length }));
+
+    const reply = (id: number) => {
+        const text = (draft[id] ?? '').trim();
+        if (!text || replying !== null) return;
+        setReplying(id);
+        router.post(
+            `/instructor/reviews/${id}/reply`,
+            { reply: text },
+            {
+                onFinish: () => setReplying(null),
+                onSuccess: () => setDraft({ ...draft, [id]: '' }),
+            },
+        );
+    };
 
     return (
         <LmsShell title="ကျွန်ုပ်၏ Review များ" nav="instructor">
@@ -31,10 +72,16 @@ export default function Index({ reviews }: { reviews?: SampleReview[] }) {
                 }
             />
 
+            {flash?.success && (
+                <div className="mt-6 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-medium text-teal-800 dark:border-teal-900 dark:bg-teal-950/30 dark:text-teal-200">
+                    {flash.success}
+                </div>
+            )}
+
             <div className="mt-6 grid gap-3.5 sm:grid-cols-3">
-                <StatCard label="ပျမ်းမျှ Rating" value={avg.toFixed(1)} sub={`Review ${list.length} ခု`} icon={Star} tone="amber" />
-                <StatCard label="5 ကြယ် Review" value={String(list.filter((r) => r.stars === 5).length)} sub="အကောင်းဆုံး အဆင့်သတ်မှတ်ချက်" icon={Star} tone="teal" />
-                <StatCard label="4 ကြယ်အောက် Review" value={String(list.filter((r) => r.stars < 4).length)} sub="ပြန်ကြားဖို့ စဉ်းစားပါ" icon={Star} tone="rose" />
+                <StatCard label="ပျမ်းမျှ Rating" value={avg.toFixed(1)} sub={`Review ${reviews.length} ခု`} icon={Star} tone="amber" />
+                <StatCard label="5 ကြယ် Review" value={String(reviews.filter((r) => r.stars === 5).length)} sub="အကောင်းဆုံး အဆင့်သတ်မှတ်ချက်" icon={Star} tone="teal" />
+                <StatCard label="4 ကြယ်အောက် Review" value={String(reviews.filter((r) => r.stars < 4).length)} sub="ပြန်ကြားဖို့ စဉ်းစားပါ" icon={Star} tone="rose" />
             </div>
 
             <LmsCard className="mt-6 p-5">
@@ -44,7 +91,7 @@ export default function Index({ reviews }: { reviews?: SampleReview[] }) {
                         <div key={d.stars} className="flex items-center gap-3 text-sm">
                             <span className={`w-10 flex-none font-bold ${inkCls}`}>{d.stars} ကြယ်</span>
                             <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-[#12234a]">
-                                <div className="h-full rounded-full bg-amber-400" style={{ width: `${list.length ? Math.round((d.count / list.length) * 100) : 0}%` }} />
+                                <div className="h-full rounded-full bg-amber-400" style={{ width: `${reviews.length ? Math.round((d.count / reviews.length) * 100) : 0}%` }} />
                             </div>
                             <span className={`w-8 flex-none text-right font-semibold ${mutedCls}`}>{d.count}</span>
                         </div>
@@ -72,19 +119,19 @@ export default function Index({ reviews }: { reviews?: SampleReview[] }) {
                     {shown.map((r) => (
                         <LmsCard key={r.id} className="p-5">
                             <div className="flex gap-3.5">
-                                <Avatar init={r.init} color={r.col} />
+                                <Avatar init={initials(r.name)} color={AVATAR_COLORS[r.id % AVATAR_COLORS.length]} />
                                 <div className="min-w-0 flex-1">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <p className={`text-[.88rem] font-bold ${inkCls}`}>{r.name}</p>
                                         <Stars value={r.stars} />
-                                        <span className={`text-[.74rem] font-semibold ${mutedCls}`}>{r.date}</span>
+                                        <span className={`text-[.74rem] font-semibold ${mutedCls}`}>{formatDate(r.date)}</span>
                                     </div>
                                     <p className={`mt-0.5 text-[.76rem] font-semibold ${mutedCls}`}>{r.course}</p>
                                     <p className={`mt-1.5 text-[.88rem] leading-relaxed ${mutedCls}`}>{r.text}</p>
-                                    {replied[r.id] ? (
+                                    {r.reply ? (
                                         <div className="mt-3 rounded-xl bg-teal-50 p-3.5 dark:bg-teal-950/30">
                                             <p className="text-[.76rem] font-bold text-teal-700 dark:text-teal-300">သင့် အကြောင်းပြန်ချက်</p>
-                                            <p className={`mt-1 text-[.86rem] leading-relaxed ${inkCls}`}>{replied[r.id]}</p>
+                                            <p className={`mt-1 text-[.86rem] leading-relaxed ${inkCls}`}>{r.reply}</p>
                                         </div>
                                     ) : (
                                         <div className="mt-3 flex flex-wrap gap-2">
@@ -93,14 +140,11 @@ export default function Index({ reviews }: { reviews?: SampleReview[] }) {
                                                 placeholder="ကျောင်းသားထံ ပြန်ကြားရန်…"
                                                 value={draft[r.id] ?? ''}
                                                 onChange={(e) => setDraft({ ...draft, [r.id]: e.target.value })}
-                                            />
-                                            <button
-                                                type="button"
-                                                className={btnGhostCls}
-                                                onClick={() => {
-                                                    if ((draft[r.id] ?? '').trim()) setReplied({ ...replied, [r.id]: draft[r.id].trim() });
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') reply(r.id);
                                                 }}
-                                            >
+                                            />
+                                            <button type="button" className={btnGhostCls} onClick={() => reply(r.id)} disabled={replying === r.id}>
                                                 <Reply className="size-4" /> ပြန်ကြားရန်
                                             </button>
                                         </div>

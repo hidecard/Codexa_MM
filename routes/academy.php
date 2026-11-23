@@ -94,25 +94,21 @@ Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->name
 
     Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
 
-    Route::get('/live-classes', fn () => Inertia::render('Student/LiveClasses/Index'))->name('live-classes.index');
-    Route::get('/live-classes/{id}', fn ($id) => Inertia::render('Student/LiveClasses/Show'))->name('live-classes.show');
+    // Live classes, notes, cart, checkout, orders and refunds are served by
+    // controller routes in routes/admin_ops.php and routes/academy_writes.php
+    // (loaded before this file).
     Route::get('/community', fn () => Inertia::render('Student/Community/Index'))->name('community.index');
     Route::get('/community/{id}', fn ($id) => Inertia::render('Student/Community/Show'))->name('community.show');
     Route::get('/leaderboard', fn () => Inertia::render('Student/Leaderboard'))->name('leaderboard.index');
     Route::get('/paths', fn () => Inertia::render('Student/Paths/Index'))->name('paths.index');
     Route::get('/paths/{id}', fn ($id) => Inertia::render('Student/Paths/Show'))->name('paths.show');
-    Route::get('/notes', fn () => Inertia::render('Student/Notes/Index'))->name('notes.index');
     Route::get('/resources', fn () => Inertia::render('Student/Resources/Index'))->name('resources.index');
     Route::get('/achievements', fn () => Inertia::render('Student/Achievements/Index'))->name('achievements.index');
-    Route::get('/cart', fn () => Inertia::render('Student/Cart/Index'))->name('cart.index');
-    Route::get('/checkout', fn () => Inertia::render('Student/Checkout/Index'))->name('checkout.index');
-    Route::get('/orders', fn () => Inertia::render('Student/Orders/Index'))->name('orders.index');
     Route::get('/messages', fn () => Inertia::render('Student/Messages/Index'))->name('messages.index');
     Route::get('/schedule', fn () => Inertia::render('Student/Schedule/Index'))->name('schedule.index');
     Route::get('/progress', fn () => Inertia::render('Student/Progress/Index'))->name('progress.index');
     Route::get('/help', fn () => Inertia::render('Student/Help/Index'))->name('help.index');
     Route::get('/payment-methods', fn () => Inertia::render('Student/PaymentMethods/Index'))->name('payment-methods.index');
-    Route::get('/refunds', fn () => Inertia::render('Student/Refunds/Index'))->name('refunds.index');
     Route::get('/membership', fn () => Inertia::render('Student/Membership/Index'))->name('membership.index');
     Route::get('/security', fn () => Inertia::render('Student/Security/Index'))->name('security.index');
     Route::get('/challenges', fn () => Inertia::render('Student/Challenges/Index'))->name('challenges.index');
@@ -170,31 +166,11 @@ Route::middleware(['auth', 'verified', 'role:instructor'])->prefix('instructor')
     Route::get('/submissions', fn () => redirect()->route('instructor.assignments.index'))->name('submissions.index');
     Route::get('/grading', fn () => redirect()->route('instructor.assignments.index'))->name('grading.index');
 
-    Route::get('/announcements', function () {
-        return Inertia::render('Instructor/Announcements/Index');
-    })->name('announcements.index');
-
-    Route::get('/reviews', function () {
-        return Inertia::render('Instructor/Reviews/Index');
-    })->name('reviews.index');
-
-    Route::get('/profile', function () {
-        return Inertia::render('Instructor/Profile');
-    })->name('profile');
-
-    Route::get('/earnings', function () {
-        return Inertia::render('Instructor/Earnings/Index');
-    })->name('earnings.index');
+    // Announcements, reviews, profile, earnings, Q&A and live-host are
+    // served by controller routes in routes/academy_writes.php and
+    // routes/admin_ops.php (loaded before this file).
 
     Route::get('/earnings/{id}', function ($id) {
         return Inertia::render('Instructor/Earnings/Show', ['courseId' => (int) $id]);
     })->name('earnings.show');
-
-    Route::get('/qa', function () {
-        return Inertia::render('Instructor/QA/Index');
-    })->name('qa.index');
-
-    Route::get('/live-host', function () {
-        return Inertia::render('Instructor/LiveHost/Index');
-    })->name('live-host.index');
 });

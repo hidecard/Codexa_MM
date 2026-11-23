@@ -1,17 +1,13 @@
 import { useState } from 'react';
-import { Head } from '@inertiajs/react';
-import { Check, EyeOff, Flag, Trash2 } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { Check, Eye, EyeOff, Flag, Trash2 } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { Avatar, Chip, EmptyBox, LmsCard, PageIntro, Pill, btnGhostCls, inkCls, mutedCls } from '@/pages/Admin/Academy/_shared';
 
-type ReportRow = { id: number; author: string; init: string; col: string; post: string; reason: string; reporter: string; date: string; status: 'pending' | 'hidden' | 'kept' | 'removed' };
-
-// SAMPLE DATA fallback (prototype): no community report model exists yet.
-const SAMPLE_REPORTS: ReportRow[] = [
-    { id: 1, author: 'Anonymous User', init: 'AU', col: '#64748b', post: 'အပြင် link တွေ နှိပ်ကြည့်ပါ — အခမဲ့ သင်တန်း ရယူရန် ဒီ link ကို နှိပ်ပါ…', reason: 'Spam / ကြော်ငြာ link ပါဝင်သည်', reporter: 'May Thandar', date: 'နိုဝင်ဘာ 21', status: 'pending' },
-    { id: 2, author: 'Zaw Min', init: 'ZM', col: '#f59e0b', post: 'ဒီ သင်တန်းက အလကား မဟုတ်ဘူး၊ ငွေ အလကား ဖြုန်းတာပဲ ဆိုတဲ့ မဟုတ်မမှန် စွပ်စွဲချက်များ…', reason: 'မဟုတ်မမှန် စွပ်စွဲချက်', reporter: 'Kaung Htet', date: 'နိုဝင်ဘာ 20', status: 'pending' },
-    { id: 3, author: 'Thinzar', init: 'TH', col: '#ec4899', post: 'React သင်တန်းမှာ Hooks အခန်း အရမ်း ကောင်းပါတယ် — ဒါပေမယ့် comment မှာ ရန်ဖြစ်စကား ပါဝင်နေပါတယ်…', reason: 'မလျော်ကန်သော စကားလုံး', reporter: 'Thiri Nanda', date: 'နိုဝင်ဘာ 19', status: 'hidden' },
-];
+// Moderation covers course reviews only: reviews that are hidden or awaiting
+// approval. There is no community-post model yet, so community-post
+// moderation is out of scope.
+type ReportRow = { id: number; author: string; init: string; col: string; post: string; course: string; reason: string; reporter: string; date: string; status: 'pending' | 'hidden' | 'kept' | 'removed' };
 
 function statusPill(status: string) {
     if (status === 'pending') return <Pill tone="amber">စစ်ဆေးရန်</Pill>;
@@ -20,17 +16,23 @@ function statusPill(status: string) {
     return <Pill tone="rose">ဖျက်ပြီး</Pill>;
 }
 
-export default function Index({ reports }: { reports?: ReportRow[] }) {
-    const [items, setItems] = useState<ReportRow[]>(reports ?? SAMPLE_REPORTS);
+export default function Index({ reports = [] }: { reports?: ReportRow[] }) {
     const [tab, setTab] = useState<'all' | 'pending' | 'hidden' | 'kept'>('all');
     const [notice, setNotice] = useState('');
 
-    const pending = items.filter((r) => r.status === 'pending').length;
-    const list = items.filter((r) => tab === 'all' || r.status === tab);
+    const pending = reports.filter((r) => r.status === 'pending').length;
+    const list = reports.filter((r) => tab === 'all' || r.status === tab);
 
-    const setStatus = (id: number, status: ReportRow['status']) => {
-        setItems(items.map((r) => (r.id === id ? { ...r, status } : r)));
-        setNotice('အခြေအနေ ပြောင်းပြီးပါပြီ (ဤ page မှာသာ — backend endpoint မရှိသေးပါ)');
+    const approve = (id: number) => {
+        router.post(`/admin/academy/moderation/${id}/approve`, {}, { preserveScroll: true, onSuccess: () => setNotice('Review ကို အတည်ပြုပြီး ထားရှိပါပြီ') });
+    };
+    const hide = (id: number) => {
+        router.post(`/admin/academy/moderation/${id}/hide`, {}, { preserveScroll: true, onSuccess: () => setNotice('Review ကို ဖျောက်ထားပြီးပါပြီ') });
+    };
+    const remove = (id: number) => {
+        if (confirm('ဒီ review ကို ဖျက်မှာ သေချာပါသလား?')) {
+            router.delete(`/admin/academy/moderation/${id}`, { preserveScroll: true, onSuccess: () => setNotice('Review ကို ဖျက်ပြီးပါပြီ') });
+        }
     };
 
     return (
@@ -39,7 +41,7 @@ export default function Index({ reports }: { reports?: ReportRow[] }) {
             <PageIntro
                 eyebrow="ADMIN"
                 title="Community Moderation"
-                description={`Report တင်ထားတဲ့ post တွေကို စစ်ဆေးပါ — ဖျောက်ရင် Community ကနေ ချက်ချင်း ပျောက်သွားပါတယ် · စစ်ဆေးရန် ကျန်ရှိ ${pending} ခု`}
+                description={`စစ်ဆေးရန် လိုတဲ့ review တွေကို ကြည့်ပါ — ဖျောက်ရင် သင်တန်းမှာ ချက်ချင်း ပျောက်သွားပါတယ် · စစ်ဆေးရန် ကျန်ရှိ ${pending} ခု`}
             />
 
             {notice && (
@@ -78,7 +80,7 @@ export default function Index({ reports }: { reports?: ReportRow[] }) {
                                         <p className={`text-[.93rem] font-extrabold ${inkCls}`}>{r.author}</p>
                                         {statusPill(r.status)}
                                         <span className={`flex items-center gap-1 text-[.74rem] font-semibold ${mutedCls}`}>
-                                            <Flag className="size-3" /> {r.reporter} က report လုပ်ထား · {r.date}
+                                            <Flag className="size-3" /> {r.course} · {r.date}
                                         </span>
                                     </div>
                                     <p className={`mt-1.5 text-[.88rem] leading-relaxed ${mutedCls}`}>{r.post}</p>
@@ -87,16 +89,21 @@ export default function Index({ reports }: { reports?: ReportRow[] }) {
                                 <div className="flex flex-none flex-wrap gap-2">
                                     {r.status === 'pending' && (
                                         <>
-                                            <button type="button" className={btnGhostCls} onClick={() => setStatus(r.id, 'kept')}>
+                                            <button type="button" className={btnGhostCls} onClick={() => approve(r.id)}>
                                                 <Check className="size-4" /> ပြဿနာ မရှိ
                                             </button>
-                                            <button type="button" className={btnGhostCls} onClick={() => setStatus(r.id, 'hidden')}>
+                                            <button type="button" className={btnGhostCls} onClick={() => hide(r.id)}>
                                                 <EyeOff className="size-4" /> ဖျောက်ရန်
                                             </button>
                                         </>
                                     )}
+                                    {r.status === 'hidden' && (
+                                        <button type="button" className={btnGhostCls} onClick={() => approve(r.id)}>
+                                            <Eye className="size-4" /> ပြန်ပြရန်
+                                        </button>
+                                    )}
                                     {r.status !== 'removed' && (
-                                        <button type="button" className={btnGhostCls} onClick={() => setStatus(r.id, 'removed')}>
+                                        <button type="button" className={btnGhostCls} onClick={() => remove(r.id)}>
                                             <Trash2 className="size-4" /> ဖျက်ရန်
                                         </button>
                                     )}

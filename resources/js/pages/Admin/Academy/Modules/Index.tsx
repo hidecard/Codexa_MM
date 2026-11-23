@@ -5,20 +5,10 @@ import { LmsShell } from '@/components/shared/lms-shell';
 import { formatNumber } from '@/lib/format';
 import { EmptyBox, LmsCard, PageIntro, Pill, inkCls, inputCls, mutedCls } from '@/pages/Admin/Academy/_shared';
 
-// SAMPLE DATA fallback (prototype style): used until Admin/Academy/ModuleController is wired.
-const SAMPLE_MODULES = [
-    { id: 1, title: 'HTML Basics & Semantic Tags', course: 'HTML & CSS Foundations', position: 1, lessons_count: 8, description: 'HTML ရဲ့ အခြေခံနဲ့ semantic tag တွေ' },
-    { id: 2, title: 'CSS Styling & Box Model', course: 'HTML & CSS Foundations', position: 2, lessons_count: 10, description: 'CSS selector, box model နဲ့ styling' },
-    { id: 3, title: 'Flexbox & Grid Layout', course: 'HTML & CSS Foundations', position: 3, lessons_count: 9, description: 'Modern layout နည်းလမ်းများ' },
-    { id: 11, title: 'Components & JSX', course: 'React.js Complete Course', position: 1, lessons_count: 12, description: 'React component နဲ့ JSX အခြေခံ' },
-    { id: 12, title: 'Hooks in Depth — useEffect', course: 'React.js Complete Course', position: 2, lessons_count: 14, description: 'useState, useEffect နဲ့ custom hooks' },
-    { id: 21, title: 'Python Setup & Syntax', course: 'Python for Beginners', position: 1, lessons_count: 11, description: 'Python စတင်တပ်ဆင်ခြင်းနဲ့ syntax' },
-];
+type ModuleRow = { id: number; title: string; course: string; position: number; lessons_count: number; description: string | null };
 
-type ModuleRow = (typeof SAMPLE_MODULES)[number];
-
-export default function Index({ modules }: { modules?: ModuleRow[] }) {
-    const list = modules ?? SAMPLE_MODULES;
+export default function Index({ modules = [] }: { modules?: ModuleRow[] }) {
+    const list = modules;
     const [query, setQuery] = useState('');
     const [course, setCourse] = useState('all');
 

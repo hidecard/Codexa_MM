@@ -1,19 +1,14 @@
 import { useState, type FormEvent } from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { MailPlus, ShieldCheck } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { SectionCard } from '@/components/lms/section-card';
 import { Input } from '@/components/ui/input';
-import { Avatar, LmsCard, PageIntro, Pill, btnAccentCls, inkCls, inputCls, labelCls, mutedCls } from '@/pages/Admin/Academy/_shared';
+import { Avatar, LmsCard, PageIntro, Pill, btnAccentCls, btnGhostCls, inkCls, inputCls, labelCls, mutedCls } from '@/pages/Admin/Academy/_shared';
+import { cn } from '@/lib/utils';
 
-type StaffRow = { id: number; name: string; init: string; col: string; email: string; role: 'Super Admin' | 'Admin' | 'Support' | 'Finance' };
-
-const SAMPLE_STAFF: StaffRow[] = [
-    { id: 1, name: 'Thura Aung', init: 'TA', col: '#0ea892', email: 'thura@codexamm.com', role: 'Super Admin' },
-    { id: 2, name: 'May Thazin', init: 'MT', col: '#ec4899', email: 'may@codexamm.com', role: 'Admin' },
-    { id: 3, name: 'Aung Khant', init: 'AK', col: '#38bdf8', email: 'aung@codexamm.com', role: 'Finance' },
-    { id: 4, name: 'Su Myat Noe', init: 'SM', col: '#22c55e', email: 'sumyat@codexamm.com', role: 'Support' },
-];
+type StaffRole = 'Super Admin' | 'Admin' | 'Support' | 'Finance' | 'Instructor';
+type StaffRow = { id: number; name: string; init: string; col: string; email: string; role: StaffRole; status: 'active' | 'inactive' };
 
 const PERMISSIONS: { action: string; roles: Record<string, string> }[] = [
     { action: 'သင်တန်း စီမံရန်', roles: { 'Super Admin': '✓', Admin: '✓', Support: '—', Finance: '—' } },
@@ -27,42 +22,77 @@ const PERMISSIONS: { action: string; roles: Record<string, string> }[] = [
 ];
 
 const ROLES = ['Super Admin', 'Admin', 'Support', 'Finance'] as const;
+const ROLE_OPTIONS: StaffRole[] = [...ROLES, 'Instructor'];
 
 function rolePill(role: string) {
     if (role === 'Super Admin') return <Pill tone="violet">Super Admin</Pill>;
     if (role === 'Admin') return <Pill tone="blue">Admin</Pill>;
     if (role === 'Finance') return <Pill tone="teal">Finance</Pill>;
+    if (role === 'Instructor') return <Pill tone="green">Instructor</Pill>;
     return <Pill tone="amber">Support</Pill>;
 }
 
-export default function Index({ staff }: { staff?: StaffRow[] }) {
-    // SAMPLE DATA fallback (prototype): roles/permissions are managed by
-    // Spatie roles; no staff invite endpoint exists yet.
-    const [items, setItems] = useState<StaffRow[]>(staff ?? SAMPLE_STAFF);
+export default function Index({ staff = [] }: { staff?: StaffRow[] }) {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [role, setRole] = useState<(typeof ROLES)[number]>('Support');
     const [notice, setNotice] = useState('');
+    const [noticeError, setNoticeError] = useState(false);
+
+    const showError = (errors: Record<string, string>) => {
+        setNoticeError(true);
+        setNotice(Object.values(errors)[0] ?? 'အမှား ဖြစ်သွားပါတယ် — ပြန်စမ်းကြည့်ပါ');
+    };
 
     const invite = (e: FormEvent) => {
         e.preventDefault();
         if (!name.trim() || !email.trim()) return;
-        const init = name
-            .trim()
-            .split(' ')
-            .map((w) => w[0])
-            .slice(0, 2)
-            .join('')
-            .toUpperCase();
-        setItems([...items, { id: Date.now(), name: name.trim(), init, col: '#6366f1', email: email.trim(), role }]);
-        setName('');
-        setEmail('');
-        setNotice(`${name.trim()} ထံ ဖိတ်ခေါ်စာ ပို့ပြီးပါပြီ (ဤ page မှာသာ — invite endpoint မရှိသေးပါ)`);
+        router.post(
+            '/admin/academy/staff/invite',
+            { name: name.trim(), email: email.trim(), role },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setNoticeError(false);
+                    setNotice(`${name.trim()} အတွက် အကောင့် ဖွင့်ပြီးပါပြီ — ဖိတ်ခေါ်စာ အီးမေးလ် မပို့ပါ၊ password reset နဲ့ ဝင်ရပါမယ်`);
+                    setName('');
+                    setEmail('');
+                },
+                onError: showError,
+            },
+        );
     };
 
-    const changeRole = (id: number, newRole: (typeof ROLES)[number]) => {
-        setItems(items.map((s) => (s.id === id ? { ...s, role: newRole } : s)));
-        setNotice('Role ပြောင်းပြီးပါပြီ (ဤ page မှာသာ)');
+    const changeRole = (id: number, newRole: StaffRole) => {
+        router.put(
+            `/admin/academy/staff/${id}/role`,
+            { role: newRole },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setNoticeError(false);
+                    setNotice('Role ပြောင်းပြီးပါပြီ');
+                },
+                onError: showError,
+            },
+        );
+    };
+
+    const toggleStatus = (s: StaffRow) => {
+        const next = s.status === 'active' ? 'inactive' : 'active';
+        if (next === 'inactive' && !confirm(`${s.name} ရဲ့ အကောင့်ကို ပိတ်မှာ သေချာပါသလား?`)) return;
+        router.put(
+            `/admin/academy/staff/${s.id}/status`,
+            { status: next },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setNoticeError(false);
+                    setNotice(next === 'active' ? 'အကောင့် ပြန်ဖွင့်ပြီးပါပြီ' : 'အကောင့် ပိတ်ပြီးပါပြီ');
+                },
+                onError: showError,
+            },
+        );
     };
 
     return (
@@ -75,7 +105,14 @@ export default function Index({ staff }: { staff?: StaffRow[] }) {
             />
 
             {notice && (
-                <div className="mt-6 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-medium text-teal-800 dark:border-teal-900 dark:bg-teal-950/30 dark:text-teal-200">
+                <div
+                    className={cn(
+                        'mt-6 rounded-xl border px-4 py-3 text-sm font-medium',
+                        noticeError
+                            ? 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200'
+                            : 'border-teal-200 bg-teal-50 text-teal-800 dark:border-teal-900 dark:bg-teal-950/30 dark:text-teal-200',
+                    )}
+                >
                     {notice}
                 </div>
             )}
@@ -101,31 +138,33 @@ export default function Index({ staff }: { staff?: StaffRow[] }) {
                         </button>
                     </div>
                 </form>
+                <p className={`mt-3 text-[.8rem] ${mutedCls}`}>ဖိတ်ခေါ်စာ အီးမေးလ် မပို့သေးပါ — အကောင့် ဖွင့်ပြီး active ဖြစ်သွားပါမယ်၊ အဖွဲ့ဝင်က password reset နဲ့ ဝင်ရပါမယ်။</p>
             </LmsCard>
 
             <SectionCard title="အဖွဲ့ဝင်များ">
                 <div className="space-y-3">
-                    {items.map((s) => (
+                    {staff.map((s) => (
                         <div key={s.id} className="flex flex-wrap items-center gap-3.5 rounded-xl border border-slate-100 p-4 dark:border-[#18264a]">
                             <Avatar init={s.init} color={s.col} />
                             <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
                                     <p className={`text-[.92rem] font-extrabold ${inkCls}`}>{s.name}</p>
                                     {rolePill(s.role)}
+                                    {s.status === 'active' ? <Pill tone="teal">ဖွင့်ထား</Pill> : <Pill tone="slate">ပိတ်ထား</Pill>}
                                 </div>
                                 <p className={`mt-0.5 text-[.8rem] ${mutedCls}`}>{s.email}</p>
                             </div>
-                            <select
-                                className={`${inputCls} w-40`}
-                                value={s.role}
-                                onChange={(e) => changeRole(s.id, e.target.value as (typeof ROLES)[number])}
-                            >
-                                {ROLES.map((r) => (
+                            <select className={`${inputCls} w-40`} value={s.role} onChange={(e) => changeRole(s.id, e.target.value as StaffRole)}>
+                                {ROLE_OPTIONS.map((r) => (
                                     <option key={r}>{r}</option>
                                 ))}
                             </select>
+                            <button type="button" className={btnGhostCls} onClick={() => toggleStatus(s)}>
+                                {s.status === 'active' ? 'ပိတ်ရန်' : 'ဖွင့်ရန်'}
+                            </button>
                         </div>
                     ))}
+                    {staff.length === 0 && <p className={`py-4 text-center text-sm ${mutedCls}`}>အဖွဲ့ဝင် မရှိသေးပါ</p>}
                 </div>
             </SectionCard>
 

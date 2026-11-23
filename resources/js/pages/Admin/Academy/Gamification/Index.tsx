@@ -1,48 +1,72 @@
 import { useState, type FormEvent } from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Award, Plus, Save } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { SectionCard } from '@/components/lms/section-card';
 import { Input } from '@/components/ui/input';
 import { LmsCard, PageIntro, Pill, btnAccentCls, btnGhostCls, inkCls, inputCls, mutedCls } from '@/pages/Admin/Academy/_shared';
+import { cn } from '@/lib/utils';
 
-// SAMPLE DATA fallback (prototype achievements + XP rules): no gamification backend yet.
-const SAMPLE_BADGES = [
-    { name: 'First Steps', desc: 'ပထမဆုံး သင်ခန်းစာ ပြီးဆုံးခြင်း', xp: 20, icon: '🎯' },
-    { name: 'Quiz Master', desc: 'Quiz 10 ခု အောင်မြင်ခြင်း', xp: 100, icon: '🧠' },
-    { name: 'Streak 7', desc: '၇ ရက် ဆက်တိုက် သင်ယူခြင်း', xp: 70, icon: '🔥' },
-    { name: 'Project Builder', desc: 'Assignment 5 ခု တင်သွင်းခြင်း', xp: 150, icon: '🛠️' },
-    { name: 'Live Learner', desc: 'Live class 5 ခု တက်ရောက်ခြင်း', xp: 80, icon: '📺' },
-    { name: 'Course Completer', desc: 'သင်တန်း ၁ ခု အပြီးသတ်ခြင်း', xp: 200, icon: '🎓' },
-];
+type Badge = { name: string; desc: string; xp: number; icon: string; active: boolean };
+type XpRule = { key: string; label: string; xp: number };
 
-const SAMPLE_XP_RULES = [
-    { label: 'သင်ခန်းစာ ၁ ခု ပြီးဆုံးခြင်း', xp: 20 },
-    { label: 'Quiz အောင်မြင်ခြင်း', xp: 50 },
-    { label: 'Assignment တင်သွင်းခြင်း', xp: 80 },
-    { label: 'Live class တက်ရောက်ခြင်း', xp: 40 },
-    { label: 'Code Challenge အောင်မြင်ခြင်း', xp: 30 },
-    { label: 'နေ့စဉ် streak bonus', xp: 10 },
-];
-
-export default function Index() {
-    const [badges, setBadges] = useState(SAMPLE_BADGES.map((b) => ({ ...b, active: true })));
-    const [rules, setRules] = useState(SAMPLE_XP_RULES);
+export default function Index({ badges = [], xpRules = [] }: { badges?: Badge[]; xpRules?: XpRule[] }) {
+    const [rules, setRules] = useState<XpRule[]>(xpRules);
     const [newName, setNewName] = useState('');
     const [newXp, setNewXp] = useState(50);
     const [notice, setNotice] = useState('');
+    const [noticeError, setNoticeError] = useState(false);
 
-    const toggle = (name: string) => setBadges(badges.map((b) => (b.name === name ? { ...b, active: !b.active } : b)));
+    const showError = (errors: Record<string, string>) => {
+        setNoticeError(true);
+        setNotice(Object.values(errors)[0] ?? 'အမှား ဖြစ်သွားပါတယ် — ပြန်စမ်းကြည့်ပါ');
+    };
+
+    const saveBadges = (next: Badge[], message: string) => {
+        router.put(
+            '/admin/academy/gamification',
+            { badges: next },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setNoticeError(false);
+                    setNotice(message);
+                },
+                onError: showError,
+            },
+        );
+    };
+
+    const toggle = (name: string) => {
+        const badge = badges.find((b) => b.name === name);
+        if (!badge) return;
+        saveBadges(
+            badges.map((b) => (b.name === name ? { ...b, active: !b.active } : b)),
+            badge.active ? 'Badge ပိတ်ပြီးပါပြီ' : 'Badge ဖွင့်ပြီးပါပြီ',
+        );
+    };
 
     const addBadge = (e: FormEvent) => {
         e.preventDefault();
         if (!newName.trim()) return;
-        setBadges([...badges, { name: newName.trim(), desc: 'Badge အသစ်', xp: newXp, icon: '🏅', active: true }]);
+        saveBadges([...badges, { name: newName.trim(), desc: 'Badge အသစ်', xp: newXp, icon: '🏅', active: true }], 'Badge ထည့်ပြီးပါပြီ');
         setNewName('');
-        setNotice('Badge ထည့်ပြီးပါပြီ (ဤ page မှာသာ — backend endpoint မရှိသေးပါ)');
     };
 
-    const saveRules = () => setNotice('XP စံနှုန်းများ သိမ်းပြီးပါပြီ (ဤ page မှာသာ)');
+    const saveRules = () => {
+        const payload: Record<string, number> = {};
+        rules.forEach((r) => {
+            payload[r.key] = r.xp;
+        });
+        router.put('/admin/academy/gamification', payload, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setNoticeError(false);
+                setNotice('XP စံနှုန်းများ သိမ်းပြီးပါပြီ');
+            },
+            onError: showError,
+        });
+    };
 
     return (
         <LmsShell title="ဆုတံဆိပ် & XP စီမံရန်" nav="admin">
@@ -54,7 +78,14 @@ export default function Index() {
             />
 
             {notice && (
-                <div className="mt-6 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-medium text-teal-800 dark:border-teal-900 dark:bg-teal-950/30 dark:text-teal-200">
+                <div
+                    className={cn(
+                        'mt-6 rounded-xl border px-4 py-3 text-sm font-medium',
+                        noticeError
+                            ? 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200'
+                            : 'border-teal-200 bg-teal-50 text-teal-800 dark:border-teal-900 dark:bg-teal-950/30 dark:text-teal-200',
+                    )}
+                >
                     {notice}
                 </div>
             )}
@@ -79,6 +110,7 @@ export default function Index() {
                                 </button>
                             </div>
                         ))}
+                        {badges.length === 0 && <p className={`py-4 text-center text-sm ${mutedCls}`}>Badge မရှိသေးပါ</p>}
                     </div>
                     <form onSubmit={addBadge} className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4 dark:border-[#18264a]">
                         <input className={`${inputCls} min-w-[160px] flex-1`} placeholder="Badge အသစ် အမည်" value={newName} onChange={(e) => setNewName(e.target.value)} required />
@@ -93,7 +125,7 @@ export default function Index() {
                     <SectionCard title="XP စံနှုန်းများ">
                         <div className="space-y-3">
                             {rules.map((r, i) => (
-                                <div key={r.label} className="flex items-center gap-3">
+                                <div key={r.key} className="flex items-center gap-3">
                                     <span className={`min-w-0 flex-1 text-sm font-medium ${inkCls}`}>{r.label}</span>
                                     <Input
                                         type="number"

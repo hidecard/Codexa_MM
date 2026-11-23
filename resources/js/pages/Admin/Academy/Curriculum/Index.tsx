@@ -1,45 +1,68 @@
 import { useState, type FormEvent } from 'react';
-import { Head } from '@inertiajs/react';
-import { ChevronDown, Play, Plus } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { ChevronDown, Play, Plus, Trash2 } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { EmptyBox, LmsCard, PageIntro, Pill, btnAccentCls, btnGhostCls, inkCls, inputCls, labelCls, mutedCls } from '@/pages/Admin/Academy/_shared';
-import { SAMPLE_COURSES } from '@/pages/Admin/Academy/_sample';
 import { cn } from '@/lib/utils';
 
-// SAMPLE DATA fallback (prototype): curriculum is stored in CourseModule/Lesson
-// models, but no admin curriculum controller exists yet.
-type LessonRow = { id: number; title: string; type: string; duration: number; video?: string };
-type ModuleRow = { id: number; title: string; lessons: LessonRow[] };
+type LessonRow = { id: number; title: string; type: string; duration: number; video?: string | null };
+type ModuleRow = { id: number; title: string; description: string | null; position: number; lessons: LessonRow[] };
+type CourseOption = { id: number; title: string };
 
-const SAMPLE_MODULES: Record<number, ModuleRow[]> = {
-    1: [
-        { id: 1, title: 'HTML Basics & Semantic Tags', lessons: [{ id: 1, title: 'HTML ဆိုတာ ဘာလဲ?', type: 'video', duration: 12, video: 'https://youtu.be/example1' }, { id: 2, title: 'Semantic Tags အသုံးပြုနည်း', type: 'video', duration: 18 }] },
-        { id: 2, title: 'CSS Styling & Box Model', lessons: [{ id: 3, title: 'CSS Selectors', type: 'video', duration: 15 }, { id: 4, title: 'Box Model နားလည်ခြင်း', type: 'text', duration: 10 }] },
-        { id: 3, title: 'Flexbox & Grid Layout', lessons: [{ id: 5, title: 'Flexbox အခြေခံ', type: 'video', duration: 22 }, { id: 6, title: 'Grid Layout လက်တွေ့', type: 'video', duration: 25 }] },
-    ],
-    4: [
-        { id: 11, title: 'Components & JSX', lessons: [{ id: 11, title: 'Component ဆိုတာ ဘာလဲ?', type: 'video', duration: 16 }, { id: 12, title: 'JSX Syntax', type: 'video', duration: 14 }] },
-        { id: 12, title: 'Hooks in Depth — useEffect', lessons: [{ id: 13, title: 'useState အသုံးပြုနည်း', type: 'video', duration: 20 }, { id: 14, title: 'useEffect & Dependency Array', type: 'video', duration: 24 }] },
-    ],
-};
-
-export default function Index() {
-    const [courseId, setCourseId] = useState(1);
-    const [modules, setModules] = useState<Record<number, ModuleRow[]>>(SAMPLE_MODULES);
-    const [open, setOpen] = useState<Record<number, boolean>>({ 1: true, 2: true, 11: true, 12: true });
+export default function Index({ courses = [], courseId = 0, modules = [] }: { courses?: CourseOption[]; courseId?: number; modules?: ModuleRow[] }) {
+    const [open, setOpen] = useState<Record<number, boolean>>({});
     const [newModule, setNewModule] = useState('');
+    const [lessonForm, setLessonForm] = useState<number | null>(null);
+    const [lessonTitle, setLessonTitle] = useState('');
+    const [lessonType, setLessonType] = useState('video');
+    const [lessonDuration, setLessonDuration] = useState('');
+    const [lessonVideo, setLessonVideo] = useState('');
+    const [lessonFree, setLessonFree] = useState(false);
     const [notice, setNotice] = useState('');
 
-    const list = modules[courseId] ?? [];
-    const course = SAMPLE_COURSES.find((c) => c.id === courseId);
+    const course = courses.find((c) => c.id === courseId);
+
+    const pickCourse = (id: number) => {
+        router.get('/admin/academy/curriculum', { course: id }, { preserveScroll: true });
+    };
 
     const addModule = (e: FormEvent) => {
         e.preventDefault();
-        if (!newModule.trim()) return;
-        const mod: ModuleRow = { id: Date.now(), title: newModule.trim(), lessons: [] };
-        setModules({ ...modules, [courseId]: [...list, mod] });
-        setNewModule('');
-        setNotice('အခန်း ထည့်ပြီးပါပြီ (ဤ page မှာသာ — backend endpoint မရှိသေးပါ)');
+        if (!newModule.trim() || !courseId) return;
+        router.post('/admin/academy/modules', { course_id: courseId, title: newModule.trim() }, { preserveScroll: true, onSuccess: () => { setNewModule(''); setNotice('အခန်း ထည့်ပြီးပါပြီ'); } });
+    };
+
+    const removeModule = (id: number) => {
+        if (confirm('ဒီ အခန်းနဲ့ သင်ခန်းစာတွေကို ဖျက်မှာ သေချာပါသလား?')) {
+            router.delete(`/admin/academy/modules/${id}`, { preserveScroll: true, onSuccess: () => setNotice('အခန်း ဖျက်ပြီးပါပြီ') });
+        }
+    };
+
+    const addLesson = (e: FormEvent, moduleId: number) => {
+        e.preventDefault();
+        if (!lessonTitle.trim()) return;
+        router.post(
+            '/admin/academy/lessons',
+            { module_id: moduleId, title: lessonTitle.trim(), type: lessonType, duration: lessonDuration ? Number(lessonDuration) : 0, video_url: lessonVideo.trim() || null, is_free: lessonFree },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setLessonTitle('');
+                    setLessonType('video');
+                    setLessonDuration('');
+                    setLessonVideo('');
+                    setLessonFree(false);
+                    setLessonForm(null);
+                    setNotice('သင်ခန်းစာ ထည့်ပြီးပါပြီ');
+                },
+            },
+        );
+    };
+
+    const removeLesson = (id: number) => {
+        if (confirm('ဒီ သင်ခန်းစာကို ဖျက်မှာ သေချာပါသလား?')) {
+            router.delete(`/admin/academy/lessons/${id}`, { preserveScroll: true, onSuccess: () => setNotice('သင်ခန်းစာ ဖျက်ပြီးပါပြီ') });
+        }
     };
 
     return (
@@ -60,8 +83,9 @@ export default function Index() {
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 <div>
                     <label className={labelCls}>သင်တန်း ရွေးရန်</label>
-                    <select className={inputCls} value={courseId} onChange={(e) => setCourseId(Number(e.target.value))}>
-                        {SAMPLE_COURSES.map((c) => (
+                    <select className={inputCls} value={courseId} onChange={(e) => pickCourse(Number(e.target.value))}>
+                        {courses.length === 0 && <option value={0}>သင်တန်း မရှိသေးပါ</option>}
+                        {courses.map((c) => (
                             <option key={c.id} value={c.id}>
                                 {c.title}
                             </option>
@@ -80,42 +104,79 @@ export default function Index() {
             </div>
 
             <p className={`mt-4 text-sm font-semibold ${mutedCls}`}>
-                {course?.title} · အခန်း {list.length} ခု · သင်ခန်းစာ {list.reduce((s, m) => s + m.lessons.length, 0)} ခု
+                {course?.title} · အခန်း {modules.length} ခု · သင်ခန်းစာ {modules.reduce((s, m) => s + m.lessons.length, 0)} ခု
             </p>
 
-            {list.length === 0 ? (
+            {modules.length === 0 ? (
                 <div className="mt-6">
                     <EmptyBox title="အခန်း မရှိသေးပါ" description="အပေါ်မှာ အခန်း အမည် ရိုက်ပြီး ပထမဆုံး အခန်း ထည့်ပါ" />
                 </div>
             ) : (
                 <div className="mt-4 space-y-4">
-                    {list.map((m) => (
+                    {modules.map((m) => (
                         <LmsCard key={m.id} className="p-5">
-                            <button type="button" onClick={() => setOpen({ ...open, [m.id]: !open[m.id] })} className="flex w-full items-center gap-2 text-left">
-                                <ChevronDown className={cn('size-4 transition', mutedCls, !open[m.id] && '-rotate-90')} />
-                                <span className={`text-[1.02rem] font-extrabold ${inkCls}`}>{m.title}</span>
-                                <span className={`ml-auto text-[.8rem] font-semibold ${mutedCls}`}>{m.lessons.length} သင်ခန်းစာ</span>
-                            </button>
-                            {open[m.id] && (
-                                <ul className="mt-3 space-y-2">
-                                    {m.lessons.length === 0 ? (
-                                        <li className={`text-sm ${mutedCls}`}>သင်ခန်းစာ မရှိသေးပါ။</li>
+                            <div className="flex w-full items-center gap-2">
+                                <button type="button" onClick={() => setOpen({ ...open, [m.id]: !(open[m.id] ?? true) })} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                                    <ChevronDown className={cn('size-4 flex-none transition', mutedCls, !(open[m.id] ?? true) && '-rotate-90')} />
+                                    <span className={`truncate text-[1.02rem] font-extrabold ${inkCls}`}>{m.title}</span>
+                                    <span className={`ml-auto flex-none text-[.8rem] font-semibold ${mutedCls}`}>{m.lessons.length} သင်ခန်းစာ</span>
+                                </button>
+                                <button type="button" className="rounded-lg p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40" onClick={() => removeModule(m.id)}>
+                                    <Trash2 className="size-4" />
+                                </button>
+                            </div>
+                            {(open[m.id] ?? true) && (
+                                <>
+                                    <ul className="mt-3 space-y-2">
+                                        {m.lessons.length === 0 ? (
+                                            <li className={`text-sm ${mutedCls}`}>သင်ခန်းစာ မရှိသေးပါ။</li>
+                                        ) : (
+                                            m.lessons.map((l) => (
+                                                <li key={l.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-[#1e2c52] dark:bg-[#070d1f]">
+                                                    <Play className="size-4 text-teal-700 dark:text-teal-300" />
+                                                    <span className={`flex-1 font-semibold ${inkCls}`}>{l.title}</span>
+                                                    <Pill tone="slate">{l.type}</Pill>
+                                                    <span className={mutedCls}>{l.duration} မိနစ်</span>
+                                                    {l.video && (
+                                                        <a href={l.video} target="_blank" rel="noreferrer" className={btnGhostCls}>
+                                                            YouTube
+                                                        </a>
+                                                    )}
+                                                    <button type="button" className="rounded-lg p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40" onClick={() => removeLesson(l.id)}>
+                                                        <Trash2 className="size-4" />
+                                                    </button>
+                                                </li>
+                                            ))
+                                        )}
+                                    </ul>
+                                    {lessonForm === m.id ? (
+                                        <form onSubmit={(e) => addLesson(e, m.id)} className="mt-3 flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-[#1e2c52] dark:bg-[#0d1730]">
+                                            <input className={`${inputCls} min-w-[180px] flex-1`} placeholder="သင်ခန်းစာ အမည်" value={lessonTitle} onChange={(e) => setLessonTitle(e.target.value)} required />
+                                            <select className={`${inputCls} w-32`} value={lessonType} onChange={(e) => setLessonType(e.target.value)}>
+                                                <option value="video">Video</option>
+                                                <option value="text">Text</option>
+                                                <option value="quiz">Quiz</option>
+                                                <option value="assignment">Assignment</option>
+                                            </select>
+                                            <input className={`${inputCls} w-28`} placeholder="မိနစ်" type="number" min={0} value={lessonDuration} onChange={(e) => setLessonDuration(e.target.value)} />
+                                            <input className={`${inputCls} min-w-[200px] flex-1`} placeholder="YouTube link (မထည့်လည်း ရပါတယ်)" value={lessonVideo} onChange={(e) => setLessonVideo(e.target.value)} />
+                                            <label className={cn('flex items-center gap-2 text-sm font-medium', mutedCls)}>
+                                                <input type="checkbox" checked={lessonFree} onChange={(e) => setLessonFree(e.target.checked)} className="size-4 accent-teal-700" />
+                                                အခမဲ့
+                                            </label>
+                                            <button type="submit" className={btnAccentCls}>
+                                                <Plus className="size-4" /> ထည့်ရန်
+                                            </button>
+                                            <button type="button" className={btnGhostCls} onClick={() => setLessonForm(null)}>
+                                                ပယ်ဖျက်ရန်
+                                            </button>
+                                        </form>
                                     ) : (
-                                        m.lessons.map((l) => (
-                                            <li key={l.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-[#1e2c52] dark:bg-[#070d1f]">
-                                                <Play className="size-4 text-teal-700 dark:text-teal-300" />
-                                                <span className={`flex-1 font-semibold ${inkCls}`}>{l.title}</span>
-                                                <Pill tone="slate">{l.type}</Pill>
-                                                <span className={mutedCls}>{l.duration} မိနစ်</span>
-                                                {l.video && (
-                                                    <a href={l.video} target="_blank" rel="noreferrer" className={btnGhostCls}>
-                                                        YouTube
-                                                    </a>
-                                                )}
-                                            </li>
-                                        ))
+                                        <button type="button" className={`${btnGhostCls} mt-3`} onClick={() => setLessonForm(m.id)}>
+                                            <Plus className="size-4" /> သင်ခန်းစာ ထည့်ရန်
+                                        </button>
                                     )}
-                                </ul>
+                                </>
                             )}
                         </LmsCard>
                     ))}

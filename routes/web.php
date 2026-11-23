@@ -90,6 +90,14 @@ Route::get('/robots.txt', function () {
 
 require __DIR__.'/health.php';
 require __DIR__.'/auth.php';
+// Backend-completion write routes. The duplicate closure sample-data
+// routes in academy.php/admin.php were removed at integration, so these
+// controller routes are the only registration for their URIs.
+require __DIR__.'/admin_commerce.php';
+require __DIR__.'/admin_content.php';
+require __DIR__.'/admin_platform.php';
+require __DIR__.'/admin_ops.php';
+require __DIR__.'/academy_writes.php';
 require __DIR__.'/academy.php';
 require __DIR__.'/solutions.php';
 require __DIR__.'/admin.php';

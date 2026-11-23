@@ -27,6 +27,7 @@ class SupportTicket extends Model
 
     public function messages(): HasMany
     {
-        return $this->hasMany(SupportTicketMessage::class)->orderBy('created_at');
+        // ticket_messages uses ticket_id, not the guessed support_ticket_id.
+        return $this->hasMany(SupportTicketMessage::class, 'ticket_id')->orderBy('created_at');
     }
 }

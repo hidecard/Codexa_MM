@@ -21,23 +21,9 @@ type Recorded = { title: string; instructor: string; date: string; dur: string; 
 
 type Props = { upcoming?: LiveClass[]; recorded?: Recorded[] };
 
-/* SAMPLE DATA — fallback only; no LiveClass model exists yet (from prototype). */
-const SAMPLE_UPCOMING: LiveClass[] = [
-    { id: 1, day: '22', mon: 'နိုဝင်ဘာ', when: 'ယနေ့', title: 'React Hooks Deep Dive — Live Session', instructor: 'Thura Aung', time: 'ညနေ 7:00 – 8:30', courseTitle: 'React.js Complete Course', desc: 'useState, useEffect နဲ့ custom hooks တွေကို live coding နဲ့တကွ ရှင်းပြပါမယ်။', liveNow: true, joined: 84 },
-    { id: 2, day: '23', mon: 'နိုဝင်ဘာ', when: 'မနက်ဖြန်', title: 'JavaScript Async Patterns — Q&A Live', instructor: 'May Thazin', time: 'ညနေ 7:00 – 8:00', courseTitle: 'JavaScript Deep Dive', desc: 'Promise, async/await နဲ့ ပတ်သက်တဲ့ မေးခွန်းတွေကို တိုက်ရိုက် ဖြေကြားပေးပါမယ်။', liveNow: false, joined: 56 },
-    { id: 3, day: '28', mon: 'နိုဝင်ဘာ', when: 'စနေ', title: 'Python OOP Workshop — Live Coding', instructor: 'Kaung Htet Oo', time: 'မနက် 10:00 – 11:30', courseTitle: 'Python for Beginners', desc: 'Class နဲ့ object တွေကို လက်တွေ့ mini project တစ်ခု ဆောက်ရင်း သင်ယူပါမယ်။', liveNow: false, joined: 112 },
-    { id: 4, day: '29', mon: 'နိုဝင်ဘာ', when: 'တနင်္ဂနွေ', title: 'Figma Auto Layout Masterclass', instructor: 'Nilar Win', time: 'နေ့လယ် 2:00 – 3:30', courseTitle: 'UI/UX Design with Figma', desc: 'Responsive UI တွေအတွက် Auto Layout ကို အဆင့်မြင့် နည်းလမ်းတွေနဲ့ သုံးပြပါမယ်။', liveNow: false, joined: 73 },
-    { id: 5, day: '30', mon: 'နိုဝင်ဘာ', when: 'တနင်္လာ', title: 'Laravel REST API — Live Q&A', instructor: 'Aung Khant', time: 'ညနေ 7:30 – 8:30', courseTitle: 'PHP & Laravel Framework', desc: 'API project လုပ်နေသူတွေအတွက် error ဖြေရှင်းနည်းနဲ့ best practice များ ဆွေးနွေးပါမယ်။', liveNow: false, joined: 41 },
-];
-const SAMPLE_RECORDED: Recorded[] = [
-    { title: 'CSS Grid & Flexbox Masterclass — Live မှတ်တမ်း', instructor: 'Thura Aung', date: 'နိုဝင်ဘာ 15', dur: '1:24:00', views: 1240, course: 1 },
-    { title: 'Python Functions Deep Dive — Live မှတ်တမ်း', instructor: 'Kaung Htet Oo', date: 'နိုဝင်ဘာ 12', dur: '58:20', views: 986, course: 3 },
-    { title: 'Git Team Workflow — Live မှတ်တမ်း', instructor: 'Kaung Htet Oo', date: 'နိုဝင်ဘာ 08', dur: '1:05:40', views: 754, course: 10 },
-];
-
-export default function Index({ upcoming, recorded }: Props) {
-    const list = upcoming && upcoming.length > 0 ? upcoming : SAMPLE_UPCOMING;
-    const recs = recorded && recorded.length > 0 ? recorded : SAMPLE_RECORDED;
+export default function Index({ upcoming = [], recorded = [] }: Props) {
+    const list = upcoming;
+    const recs = recorded;
     const [tab, setTab] = useState<'all' | 'upcoming' | 'recorded'>('all');
     const [reminded, setReminded] = useState<number[]>([]);
     const toggleRemind = (id: number) => setReminded((r) => (r.includes(id) ? r.filter((x) => x !== id) : [...r, id]));
@@ -69,6 +55,9 @@ export default function Index({ upcoming, recorded }: Props) {
             {tab !== 'recorded' && (
                 <section className="mt-6">
                     <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">လာမည့် အတန်းများ</h2>
+                    {list.length === 0 ? (
+                        <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">လာမည့် live class မရှိသေးပါ — session အသစ် စီစဉ်ရင် ဒီမှာ ပေါ်လာပါမယ်။</p>
+                    ) : (
                     <div className="mt-4 flex flex-col gap-4">
                         {list.map((s) => (
                             <article key={s.id} className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center dark:border-slate-800 dark:bg-slate-900">
@@ -100,12 +89,16 @@ export default function Index({ upcoming, recorded }: Props) {
                             </article>
                         ))}
                     </div>
+                    )}
                 </section>
             )}
 
             {tab !== 'upcoming' && (
                 <section className="mt-8">
                     <h2 className="flex items-center gap-2 text-lg font-extrabold text-slate-900 dark:text-white"><PlayCircle className="size-5 text-teal-600" /> Live မှတ်တမ်းများ</h2>
+                    {recs.length === 0 ? (
+                        <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">မှတ်တမ်း မရှိသေးပါ — live class ပြီးဆုံးရင် မှတ်တမ်းတွေ ဒီမှာ ပေါ်လာပါမယ်။</p>
+                    ) : (
                     <div className="mt-4 grid gap-4 md:grid-cols-3">
                         {recs.map((r) => (
                             <article key={r.title} className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
@@ -116,10 +109,13 @@ export default function Index({ upcoming, recorded }: Props) {
                                     <span className="inline-flex items-center gap-1"><CalendarDays className="size-3.5" /> {r.dur}</span>
                                     <span className="inline-flex items-center gap-1"><Eye className="size-3.5" /> {r.views.toLocaleString()} ကြည့်ရှုမှု</span>
                                 </p>
-                                <Link href={`/student/courses/${r.course}/learn`} className="mt-3 inline-block text-sm font-bold text-teal-600 hover:text-teal-700">သင်တန်း ဖွင့်ရန် →</Link>
+                                {r.course > 0 && (
+                                    <Link href={`/student/courses/${r.course}/learn`} className="mt-3 inline-block text-sm font-bold text-teal-600 hover:text-teal-700">သင်တန်း ဖွင့်ရန် →</Link>
+                                )}
                             </article>
                         ))}
                     </div>
+                    )}
                 </section>
             )}
         </LmsShell>

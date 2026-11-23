@@ -1,38 +1,118 @@
 import { useState, type FormEvent } from 'react';
-import { Head } from '@inertiajs/react';
-import { Award, Download, Save } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { Award, Download, Plus, Save, Trash2 } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { Input } from '@/components/ui/input';
-import { LmsCard, PageIntro, btnAccentCls, btnGhostCls, inkCls, labelCls, mutedCls } from '@/pages/Admin/Academy/_shared';
+import { LmsCard, PageIntro, btnAccentCls, btnGhostCls, inkCls, inputCls, labelCls, mutedCls } from '@/pages/Admin/Academy/_shared';
 import { cn } from '@/lib/utils';
 
-const TEMPLATES = [
-    { id: 'classic', name: 'Classic Navy', color: '#0d1730', accent: '#0ea892' },
-    { id: 'teal', name: 'Teal Modern', color: '#078575', accent: '#2dd4bf' },
-    { id: 'gold', name: 'Gold Premium', color: '#451a03', accent: '#f59e0b' },
-];
+type DesignConfig = { title: string; subtitle: string; signer: string; signer_role: string; color: string; accent: string };
+type CertTemplate = { id: number; name: string; is_default: boolean; design_config: DesignConfig };
 
-export default function Index() {
-    const [active, setActive] = useState('classic');
-    const [title, setTitle] = useState('Certificate of Completion');
-    const [subtitle, setSubtitle] = useState('ဤ လက်မှတ်ကို အောက်ပါ ကျောင်းသားအား ပေးအပ်ပါသည်');
-    const [signer, setSigner] = useState('Thura Aung');
-    const [signerRole, setSignerRole] = useState('Founder & Lead Instructor, Codexa MM');
-    const [color, setColor] = useState('#0d1730');
+const DEFAULT_DESIGN: DesignConfig = {
+    title: 'Certificate of Completion',
+    subtitle: 'ဤ လက်မှတ်ကို အောက်ပါ ကျောင်းသားအား ပေးအပ်ပါသည်',
+    signer: 'Thura Aung',
+    signer_role: 'Founder & Lead Instructor, Codexa MM',
+    color: '#0d1730',
+    accent: '#0ea892',
+};
+
+export default function Index({ templates = [] }: { templates?: CertTemplate[] }) {
+    const defaultTpl = templates.find((t) => t.is_default) ?? templates[0];
+    const [activeId, setActiveId] = useState(defaultTpl?.id);
+    const [title, setTitle] = useState(defaultTpl?.design_config.title ?? DEFAULT_DESIGN.title);
+    const [subtitle, setSubtitle] = useState(defaultTpl?.design_config.subtitle ?? DEFAULT_DESIGN.subtitle);
+    const [signer, setSigner] = useState(defaultTpl?.design_config.signer ?? DEFAULT_DESIGN.signer);
+    const [signerRole, setSignerRole] = useState(defaultTpl?.design_config.signer_role ?? DEFAULT_DESIGN.signer_role);
+    const [color, setColor] = useState(defaultTpl?.design_config.color ?? DEFAULT_DESIGN.color);
+    const [newName, setNewName] = useState('');
     const [notice, setNotice] = useState('');
+    const [noticeError, setNoticeError] = useState(false);
 
-    const tpl = TEMPLATES.find((t) => t.id === active) ?? TEMPLATES[0];
+    const active = templates.find((t) => t.id === activeId) ?? defaultTpl;
+    const design = active?.design_config ?? DEFAULT_DESIGN;
 
-    const pick = (id: string) => {
-        setActive(id);
-        const t = TEMPLATES.find((x) => x.id === id);
-        if (t) setColor(t.color);
+    const showError = (errors: Record<string, string>) => {
+        setNoticeError(true);
+        setNotice(Object.values(errors)[0] ?? 'အမှား ဖြစ်သွားပါတယ် — ပြန်စမ်းကြည့်ပါ');
     };
+
+    const pick = (tpl: CertTemplate) => {
+        setActiveId(tpl.id);
+        setTitle(tpl.design_config.title);
+        setSubtitle(tpl.design_config.subtitle);
+        setSigner(tpl.design_config.signer);
+        setSignerRole(tpl.design_config.signer_role);
+        setColor(tpl.design_config.color);
+        setNotice('');
+    };
+
+    const designConfig = (): DesignConfig => ({ title, subtitle, signer, signer_role: signerRole, color, accent: design.accent });
 
     const save = (e: FormEvent) => {
         e.preventDefault();
-        // CertificateTemplate model exists but no admin template controller yet.
-        setNotice('Template သိမ်းပြီး အသုံးပြုနေပါပြီ (ဤ page မှာသာ — backend endpoint မရှိသေးပါ)');
+        if (!active) return;
+        router.put(
+            `/admin/academy/cert-templates/${active.id}`,
+            { design_config: designConfig(), is_default: true },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setNoticeError(false);
+                    setNotice('Template သိမ်းပြီး အသုံးပြုနေပါပြီ');
+                },
+                onError: showError,
+            },
+        );
+    };
+
+    const setDefault = () => {
+        if (!active) return;
+        router.post(
+            `/admin/academy/cert-templates/${active.id}/set-default`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setNoticeError(false);
+                    setNotice(`${active.name} ကို အသုံးပြုနေပါပြီ`);
+                },
+                onError: showError,
+            },
+        );
+    };
+
+    const addTemplate = (e: FormEvent) => {
+        e.preventDefault();
+        if (!newName.trim()) return;
+        router.post(
+            '/admin/academy/cert-templates',
+            { name: newName.trim(), design_config: designConfig(), is_default: false },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setNoticeError(false);
+                    setNotice(`Template ${newName.trim()} ထည့်ပြီးပါပြီ`);
+                    setNewName('');
+                },
+                onError: showError,
+            },
+        );
+    };
+
+    const remove = (tpl: CertTemplate) => {
+        if (tpl.is_default) return;
+        if (confirm(`"${tpl.name}" ပုံစံကို ဖျက်မှာ သေချာပါသလား?`)) {
+            router.delete(`/admin/academy/cert-templates/${tpl.id}`, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setNoticeError(false);
+                    setNotice('Template ဖျက်ပြီးပါပြီ');
+                },
+                onError: showError,
+            });
+        }
     };
 
     return (
@@ -45,7 +125,14 @@ export default function Index() {
             />
 
             {notice && (
-                <div className="mt-6 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-medium text-teal-800 dark:border-teal-900 dark:bg-teal-950/30 dark:text-teal-200">
+                <div
+                    className={cn(
+                        'mt-6 rounded-xl border px-4 py-3 text-sm font-medium',
+                        noticeError
+                            ? 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200'
+                            : 'border-teal-200 bg-teal-50 text-teal-800 dark:border-teal-900 dark:bg-teal-950/30 dark:text-teal-200',
+                    )}
+                >
                     {notice}
                 </div>
             )}
@@ -53,31 +140,43 @@ export default function Index() {
             <div className="mt-6">
                 <h2 className={`text-[1.05rem] font-extrabold ${inkCls}`}>ပုံစံများ</h2>
                 <div className="mt-3 flex flex-wrap gap-3">
-                    {TEMPLATES.map((t) => (
-                        <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => pick(t.id)}
-                            className={cn(
-                                'flex items-center gap-3 rounded-2xl border p-4 text-left transition',
-                                active === t.id ? 'border-teal-600 bg-teal-50 dark:border-teal-400 dark:bg-teal-950/30' : 'border-slate-200 bg-white dark:border-[#1e2c52] dark:bg-[#0d1730]',
+                    {templates.map((t) => (
+                        <div key={t.id} className="relative">
+                            <button
+                                type="button"
+                                onClick={() => pick(t)}
+                                className={cn(
+                                    'flex items-center gap-3 rounded-2xl border p-4 text-left transition',
+                                    active?.id === t.id ? 'border-teal-600 bg-teal-50 dark:border-teal-400 dark:bg-teal-950/30' : 'border-slate-200 bg-white dark:border-[#1e2c52] dark:bg-[#0d1730]',
+                                )}
+                            >
+                                <span className="grid size-11 place-items-center rounded-xl text-white" style={{ background: t.design_config.color }}>
+                                    <Award className="size-5" />
+                                </span>
+                                <span>
+                                    <span className={cn('block font-extrabold', inkCls)}>{t.name}</span>
+                                    <span className={cn('text-[.78rem]', mutedCls)}>{t.is_default ? 'အသုံးပြုနေပါတယ်' : active?.id === t.id ? 'ပြင်ဆင်နေပါတယ်' : 'ရွေးရန် နှိပ်ပါ'}</span>
+                                </span>
+                            </button>
+                            {!t.is_default && (
+                                <button type="button" onClick={() => remove(t)} title="ဖျက်ရန်" className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-white text-rose-600 shadow ring-1 ring-slate-200 hover:bg-rose-50 dark:bg-[#16224a] dark:ring-[#1e2c52]">
+                                    <Trash2 className="size-3.5" />
+                                </button>
                             )}
-                        >
-                            <span className="grid size-11 place-items-center rounded-xl text-white" style={{ background: t.color }}>
-                                <Award className="size-5" />
-                            </span>
-                            <span>
-                                <span className={cn('block font-extrabold', inkCls)}>{t.name}</span>
-                                <span className={cn('text-[.78rem]', mutedCls)}>{active === t.id ? 'အသုံးပြုနေပါတယ်' : 'ရွေးရန် နှိပ်ပါ'}</span>
-                            </span>
-                        </button>
+                        </div>
                     ))}
                 </div>
+                <form onSubmit={addTemplate} className="mt-3 flex flex-wrap gap-2">
+                    <input className={`${inputCls} min-w-[200px] flex-1 sm:max-w-xs`} placeholder="ပုံစံ အသစ် အမည်" value={newName} onChange={(e) => setNewName(e.target.value)} required />
+                    <button type="submit" className={btnGhostCls}>
+                        <Plus className="size-4" /> ပုံစံ အသစ် ထည့်ရန်
+                    </button>
+                </form>
             </div>
 
             <div className="mt-6 grid items-start gap-5 xl:grid-cols-2">
                 <LmsCard className="p-5 sm:p-6">
-                    <h2 className={`text-[1.05rem] font-extrabold ${inkCls}`}>ပုံစံ ပြင်ဆင်ရန်</h2>
+                    <h2 className={`text-[1.05rem] font-extrabold ${inkCls}`}>ပုံစံ ပြင်ဆင်ရန်{active ? ` — ${active.name}` : ''}</h2>
                     <form onSubmit={save} className="mt-4 grid gap-4">
                         <Input label="လက်မှတ် ခေါင်းစဉ်" value={title} onChange={(e) => setTitle(e.target.value)} />
                         <Input label="ခေါင်းစဉ်ခွဲ" value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
@@ -96,6 +195,11 @@ export default function Index() {
                             <button type="submit" className={btnAccentCls}>
                                 <Save className="size-4" /> သိမ်းပြီး အသုံးပြုရန်
                             </button>
+                            {active && !active.is_default && (
+                                <button type="button" className={btnGhostCls} onClick={setDefault}>
+                                    ဒီပုံစံကို အသုံးပြုရန်
+                                </button>
+                            )}
                             <button type="button" className={btnGhostCls}>
                                 <Download className="size-4" /> နမူနာ လက်မှတ် ဒေါင်းလုဒ်ရန်
                             </button>
@@ -105,8 +209,8 @@ export default function Index() {
 
                 <div>
                     <h2 className={`text-[1.05rem] font-extrabold ${inkCls}`}>အစမ်းကြည့် (Preview)</h2>
-                    <div className="mt-3 rounded-2xl border-4 bg-white p-8 text-center shadow-sm" style={{ borderColor: tpl.accent }}>
-                        <p className="text-[.72rem] font-extrabold tracking-[0.25em]" style={{ color: tpl.accent }}>
+                    <div className="mt-3 rounded-2xl border-4 bg-white p-8 text-center shadow-sm" style={{ borderColor: design.accent }}>
+                        <p className="text-[.72rem] font-extrabold tracking-[0.25em]" style={{ color: design.accent }}>
                             CODEXA MM
                         </p>
                         <h3 className="mt-3 text-2xl font-extrabold" style={{ color }}>

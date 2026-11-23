@@ -1,33 +1,52 @@
 import { useState, type FormEvent } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Eye, RotateCcw, Save } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { LmsCard, PageIntro, btnAccentCls, btnGhostCls, inkCls, labelCls, mutedCls } from '@/pages/Admin/Academy/_shared';
+import { cn } from '@/lib/utils';
 
-const DEFAULTS = {
+type CmsContent = { promo: string; heroTitle: string; heroIntro: string };
+
+const DEFAULTS: CmsContent = {
     promo: '🎉 50% OFF — သင်တန်း အားလုံး · CODEXA10 code သုံးပါ',
     heroTitle: 'မြန်မာဘာသာနဲ့ Programming ကို သုညကနေ သင်ယူပါ',
     heroIntro: 'Codexa MM မှာ Web Development, Python, React, Mobile App တွေကို မြန်မာဘာသာနဲ့ လွယ်ကူရှင်းလင်းစွာ သင်ယူနိုင်ပါတယ်။ Live class, Assignment နဲ့ Certificate တွေ အပြည့်အစုံ ပါဝင်ပါတယ်။',
 };
 
-export default function Index() {
-    const [promo, setPromo] = useState(DEFAULTS.promo);
-    const [heroTitle, setHeroTitle] = useState(DEFAULTS.heroTitle);
-    const [heroIntro, setHeroIntro] = useState(DEFAULTS.heroIntro);
+export default function Index({ content }: { content?: CmsContent }) {
+    const c = content ?? DEFAULTS;
+    const [promo, setPromo] = useState(c.promo);
+    const [heroTitle, setHeroTitle] = useState(c.heroTitle);
+    const [heroIntro, setHeroIntro] = useState(c.heroIntro);
     const [notice, setNotice] = useState('');
+    const [noticeError, setNoticeError] = useState(false);
 
     const save = (e: FormEvent) => {
         e.preventDefault();
-        // No CMS backend yet — local only.
-        setNotice('သိမ်းပြီးပါပြီ (ဤ page မှာသာ — CMS backend မရှိသေးပါ)');
+        router.put(
+            '/admin/academy/cms',
+            { promo, heroTitle, heroIntro },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setNoticeError(false);
+                    setNotice('သိမ်းပြီးပါပြီ');
+                },
+                onError: (errors) => {
+                    setNoticeError(true);
+                    setNotice(Object.values(errors)[0] ?? 'သိမ်းရာတွင် အမှား ဖြစ်သွားပါတယ် — ပြန်စမ်းကြည့်ပါ');
+                },
+            },
+        );
     };
 
     const reset = () => {
         setPromo(DEFAULTS.promo);
         setHeroTitle(DEFAULTS.heroTitle);
         setHeroIntro(DEFAULTS.heroIntro);
+        setNoticeError(false);
         setNotice('မူရင်း စာသားသို့ ပြန်ထားပြီးပါပြီ');
     };
 
@@ -46,7 +65,14 @@ export default function Index() {
             />
 
             {notice && (
-                <div className="mt-6 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-medium text-teal-800 dark:border-teal-900 dark:bg-teal-950/30 dark:text-teal-200">
+                <div
+                    className={cn(
+                        'mt-6 rounded-xl border px-4 py-3 text-sm font-medium',
+                        noticeError
+                            ? 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200'
+                            : 'border-teal-200 bg-teal-50 text-teal-800 dark:border-teal-900 dark:bg-teal-950/30 dark:text-teal-200',
+                    )}
+                >
                     {notice}
                 </div>
             )}

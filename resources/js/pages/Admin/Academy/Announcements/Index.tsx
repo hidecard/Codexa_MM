@@ -1,39 +1,57 @@
 import { useState, type FormEvent } from 'react';
-import { Head } from '@inertiajs/react';
-import { Megaphone, Pin, Plus } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { Megaphone, Pencil, Pin, Plus, Trash2 } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyBox, LmsCard, PageIntro, Pill, btnAccentCls, btnGhostCls, inkCls, inputCls, labelCls, mutedCls } from '@/pages/Admin/Academy/_shared';
-import { cn } from '@/lib/utils';
 
-type AnnouncementRow = { id: number; title: string; content: string; type: string; audience: string; pinned: boolean; date: string; draft?: boolean };
+type AnnouncementRow = { id: number; title: string; content: string; course_id: number; type: string; audience: string; pinned: boolean; date: string; draft?: boolean };
+type CourseOption = { id: number; title: string };
 
-// SAMPLE DATA fallback (prototype): CourseAnnouncement model exists (per-course),
-// but platform-wide announcements have no admin controller yet.
-const SAMPLE_ANNOUNCEMENTS: AnnouncementRow[] = [
-    { id: 1, title: 'နိုဝင်ဘာ လျှော့ဈေး — သင်တန်း အားလုံး 50% OFF', content: 'CODEXA10 code နဲ့ သင်တန်း အားလုံးကို 50% လျှော့ဈေးနဲ့ ဝယ်နိုင်ပါပြီ။ ဒီဇင်ဘာ 31 အထိ အကျုံးဝင်ပါတယ်။', type: 'ပရိုမိုးရှင်း', audience: 'ကျောင်းသား အားလုံး', pinned: true, date: 'နိုဝင်ဘာ 22' },
-    { id: 2, title: 'React Hooks Deep Dive — Live Session ယနေ့ ညနေ 7:00', content: 'ဆရာ Thura Aung နဲ့ live coding session — useState, useEffect နဲ့ custom hooks တွေ ရှင်းပြပါမယ်။', type: 'Live', audience: 'ကျောင်းသား အားလုံး', pinned: false, date: 'နိုဝင်ဘာ 22' },
-    { id: 3, title: 'ဒီဇင်ဘာ Hackathon — စာရင်းပေးလို့ ရပါပြီ', content: 'Team ၃ ယောက်နဲ့ 48 နာရီ hackathon — ဆုကြေး 1,000,000 ကျပ်။ Pro အသင်းဝင်တွေ အရင် စာရင်းပေးနိုင်ပါတယ်။', type: 'သင်တန်း', audience: 'Pro Plan သာ', pinned: false, date: 'နိုဝင်ဘာ 18' },
-];
-
-export default function Index({ announcements }: { announcements?: AnnouncementRow[] }) {
-    const [items, setItems] = useState<AnnouncementRow[]>(announcements ?? SAMPLE_ANNOUNCEMENTS);
+export default function Index({ announcements = [], courses = [] }: { announcements?: AnnouncementRow[]; courses?: CourseOption[] }) {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [type, setType] = useState('သင်တန်း');
-    const [audience, setAudience] = useState('ကျောင်းသား အားလုံး');
-    const [pinned, setPinned] = useState(false);
+    const [courseId, setCourseId] = useState<number | ''>('');
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [notice, setNotice] = useState('');
+
+    const resetForm = () => {
+        setTitle('');
+        setContent('');
+        setCourseId('');
+        setEditingId(null);
+    };
+
+    const startEdit = (a: AnnouncementRow) => {
+        setTitle(a.title);
+        setContent(a.content);
+        setCourseId(a.course_id);
+        setEditingId(a.id);
+        setNotice('');
+    };
 
     const submit = (e: FormEvent | React.MouseEvent, draft: boolean) => {
         e.preventDefault();
-        if (!title.trim()) return;
-        setItems([{ id: Date.now(), title: title.trim(), content: content.trim(), type, audience, pinned, date: 'ယနေ့', draft }, ...items]);
-        setTitle('');
-        setContent('');
-        setPinned(false);
-        setNotice(draft ? 'Draft အဖြစ် သိမ်းပြီးပါပြီ (ဤ page မှာသာ)' : 'ကြေညာချက် ထုတ်ပြန်ပြီးပါပြီ (ဤ page မှာသာ — backend endpoint မရှိသေးပါ)');
+        if (!title.trim() || !courseId) return;
+        const data = editingId
+            ? { title: title.trim(), content: content.trim(), course_id: courseId }
+            : { title: title.trim(), content: content.trim(), course_id: courseId, publish: !draft };
+        const done = () => {
+            resetForm();
+            setNotice(editingId ? 'ကြေညာချက် ပြင်ဆင်ပြီးပါပြီ' : draft ? 'Draft အဖြစ် သိမ်းပြီးပါပြီ' : 'ကြေညာချက် ထုတ်ပြန်ပြီးပါပြီ');
+        };
+        if (editingId) {
+            router.put(`/admin/academy/announcements/${editingId}`, data, { preserveScroll: true, onSuccess: done });
+        } else {
+            router.post('/admin/academy/announcements', data, { preserveScroll: true, onSuccess: done });
+        }
+    };
+
+    const remove = (id: number) => {
+        if (confirm('ဒီ ကြေညာချက်ကို ဖျက်မှာ သေချာပါသလား?')) {
+            router.delete(`/admin/academy/announcements/${id}`, { preserveScroll: true, onSuccess: () => setNotice('ကြေညာချက် ဖျက်ပြီးပါပြီ') });
+        }
     };
 
     return (
@@ -53,10 +71,10 @@ export default function Index({ announcements }: { announcements?: AnnouncementR
 
             <div className="mt-6 grid items-start gap-6 lg:grid-cols-[1fr_380px]">
                 <div className="space-y-3.5">
-                    {items.length === 0 ? (
+                    {announcements.length === 0 ? (
                         <EmptyBox title="ကြေညာချက် မရှိတော့ပါ" description="အပေါ်က form မှာ ကြေညာချက် အသစ် ရေးနိုင်ပါတယ်" />
                     ) : (
-                        items.map((a) => (
+                        announcements.map((a) => (
                             <LmsCard key={a.id} className="p-5">
                                 <div className="flex flex-wrap items-center gap-2">
                                     <Megaphone className="size-4 text-teal-700 dark:text-teal-300" />
@@ -73,6 +91,31 @@ export default function Index({ announcements }: { announcements?: AnnouncementR
                                     {a.audience} · {a.date}
                                 </p>
                                 <p className={`mt-2 text-[.88rem] leading-relaxed ${mutedCls}`}>{a.content}</p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {a.draft ? (
+                                        <button
+                                            type="button"
+                                            className={btnGhostCls}
+                                            onClick={() => router.post(`/admin/academy/announcements/${a.id}/publish`, {}, { preserveScroll: true, onSuccess: () => setNotice('ကြေညာချက် ထုတ်ပြန်ပြီးပါပြီ') })}
+                                        >
+                                            ထုတ်ပြန်ရန်
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            className={btnGhostCls}
+                                            onClick={() => router.post(`/admin/academy/announcements/${a.id}/unpublish`, {}, { preserveScroll: true, onSuccess: () => setNotice('ကြေညာချက် ပြန်ဖြုတ်ပြီးပါပြီ') })}
+                                        >
+                                            ပြန်ဖြုတ်ရန်
+                                        </button>
+                                    )}
+                                    <button type="button" className={btnGhostCls} onClick={() => startEdit(a)}>
+                                        <Pencil className="size-4" /> ပြင်ရန်
+                                    </button>
+                                    <button type="button" className={btnGhostCls} onClick={() => remove(a.id)}>
+                                        <Trash2 className="size-4" /> ဖျက်ရန်
+                                    </button>
+                                </div>
                             </LmsCard>
                         ))
                     )}
@@ -80,7 +123,7 @@ export default function Index({ announcements }: { announcements?: AnnouncementR
 
                 <LmsCard className="h-fit p-5">
                     <h2 className={`flex items-center gap-2 text-lg font-extrabold ${inkCls}`}>
-                        <Plus className="size-5" /> ကြေညာချက် အသစ် ရေးရန်
+                        <Plus className="size-5" /> {editingId ? 'ကြေညာချက် ပြင်ဆင်ရန်' : 'ကြေညာချက် အသစ် ရေးရန်'}
                     </h2>
                     <form className="mt-4 space-y-3" onSubmit={(e) => submit(e, false)}>
                         <Input label="ခေါင်းစဉ်" value={title} onChange={(e) => setTitle(e.target.value)} required />
@@ -89,32 +132,29 @@ export default function Index({ announcements }: { announcements?: AnnouncementR
                             <Textarea rows={4} value={content} onChange={(e) => setContent(e.target.value)} />
                         </div>
                         <div>
-                            <label className={labelCls}>အမျိုးအစား</label>
-                            <select className={inputCls} value={type} onChange={(e) => setType(e.target.value)}>
-                                <option>သင်တန်း</option>
-                                <option>Live</option>
-                                <option>ပရိုမိုးရှင်း</option>
-                                <option>စနစ်</option>
+                            <label className={labelCls}>သင်တန်း (ကြေညာချက်က သင်တန်း တစ်ခုချင်းစီအတွက်ပါ)</label>
+                            <select className={inputCls} value={courseId} onChange={(e) => setCourseId(e.target.value ? Number(e.target.value) : '')} required>
+                                <option value="">သင်တန်း ရွေးပါ</option>
+                                {courses.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.title}
+                                    </option>
+                                ))}
                             </select>
                         </div>
-                        <div>
-                            <label className={labelCls}>လက်ခံမည့်သူများ</label>
-                            <select className={inputCls} value={audience} onChange={(e) => setAudience(e.target.value)}>
-                                <option>ကျောင်းသား အားလုံး</option>
-                                <option>Pro Plan သာ</option>
-                                <option>Free Plan သာ</option>
-                            </select>
-                        </div>
-                        <label className={cn('flex items-center gap-2 text-sm font-medium', mutedCls)}>
-                            <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="size-4 accent-teal-700" />
-                            ထိပ်ဆုံးမှာ Pin လုပ်ရန်
-                        </label>
                         <button type="submit" className={`${btnAccentCls} w-full`}>
-                            ထုတ်ပြန်ရန်
+                            {editingId ? 'သိမ်းဆည်းရန်' : 'ထုတ်ပြန်ရန်'}
                         </button>
-                        <button type="button" className={`${btnGhostCls} w-full`} onClick={(e) => submit(e, true)}>
-                            Draft အဖြစ် သိမ်းရန်
-                        </button>
+                        {!editingId && (
+                            <button type="button" className={`${btnGhostCls} w-full`} onClick={(e) => submit(e, true)}>
+                                Draft အဖြစ် သိမ်းရန်
+                            </button>
+                        )}
+                        {editingId && (
+                            <button type="button" className={`${btnGhostCls} w-full`} onClick={resetForm}>
+                                ပြင်ဆင်မှု ပယ်ဖျက်ရန်
+                            </button>
+                        )}
                     </form>
                 </LmsCard>
             </div>

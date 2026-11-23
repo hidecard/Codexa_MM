@@ -1,30 +1,43 @@
 import { useState } from 'react';
-import { Head } from '@inertiajs/react';
-import { Check, Download, RotateCcw, Wallet } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { Check, Download, RotateCcw, Wallet, X } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { StatCard } from '@/components/lms/stat-card';
 import { SectionCard } from '@/components/lms/section-card';
 import { formatKyat } from '@/lib/format';
 import { Chip, EmptyBox, LmsCard, PageIntro, Pill, btnGhostCls, inkCls, mutedCls } from '@/pages/Admin/Academy/_shared';
-import { SAMPLE_PAY_MIX, SAMPLE_TXNS, type SampleTxn } from '@/pages/Admin/Academy/_sample';
+import { type SampleTxn } from '@/pages/Admin/Academy/_sample';
 
-export default function Index({ payments }: { payments?: SampleTxn[] }) {
-    // SAMPLE DATA fallback (prototype): the Payment model is invoice-linked
-    // (Solutions), not LMS course payments — no Academy payment controller yet.
-    const [items, setItems] = useState<SampleTxn[]>(payments ?? SAMPLE_TXNS);
+type PaymentRow = Omit<SampleTxn, 'status'> & { pid: number; status: 'success' | 'pending' | 'refunded' | 'rejected' };
+type PaymentStats = { todayRevenue: number; todayCount: number; weekRevenue: number; monthRevenue: number; monthCount: number; pendingCount: number };
+type PayMixRow = { name: string; pct: number; amount: string; col: string };
+
+export default function Index({ payments, stats, payMix }: { payments: PaymentRow[]; stats: PaymentStats; payMix: PayMixRow[] }) {
     const [tab, setTab] = useState<'all' | 'success' | 'pending' | 'refunded'>('all');
     const [notice, setNotice] = useState('');
 
-    const pending = items.filter((t) => t.status === 'pending').length;
-    const list = items.filter((t) => tab === 'all' || t.status === tab);
+    const list = payments.filter((t) => tab === 'all' || t.status === tab);
 
-    const approve = (id: string) => {
-        setItems(items.map((t) => (t.id === id ? { ...t, status: 'success' } : t)));
-        setNotice(`${id} ကို အတည်ပြုပြီးပါပြီ (ဤ page မှာသာ — backend endpoint မရှိသေးပါ)`);
+    const approve = (t: PaymentRow) => {
+        router.post(
+            `/admin/academy/payments/${t.pid}/approve`,
+            {},
+            { preserveScroll: true, onSuccess: () => setNotice(`${t.id} ကို အတည်ပြုပြီးပါပြီ`) },
+        );
     };
-    const refund = (id: string) => {
-        setItems(items.map((t) => (t.id === id ? { ...t, status: 'refunded' } : t)));
-        setNotice(`${id} ကို ငွေပြန်အမ်းအဖြစ် မှတ်သားပြီးပါပြီ (ဤ page မှာသာ)`);
+    const reject = (t: PaymentRow) => {
+        router.post(
+            `/admin/academy/payments/${t.pid}/reject`,
+            {},
+            { preserveScroll: true, onSuccess: () => setNotice(`${t.id} ကို ပယ်ချပြီးပါပြီ`) },
+        );
+    };
+    const refund = (t: PaymentRow) => {
+        router.post(
+            `/admin/academy/payments/${t.pid}/refund`,
+            {},
+            { preserveScroll: true, onSuccess: () => setNotice(`${t.id} ကို ငွေပြန်အမ်းအဖြစ် မှတ်သားပြီးပါပြီ`) },
+        );
     };
 
     return (
@@ -48,10 +61,10 @@ export default function Index({ payments }: { payments?: SampleTxn[] }) {
             )}
 
             <div className="mt-6 grid grid-cols-2 gap-3.5 sm:gap-4 xl:grid-cols-4">
-                <StatCard label="ယနေ့ ဝင်ငွေ" value={formatKyat(485000)} sub="ပေးချေမှု 9 ခု အောင်မြင်" icon={Wallet} tone="teal" />
-                <StatCard label="ဒီအပတ် ဝင်ငွေ" value={formatKyat(3240000)} sub="ပြီးခဲ့တဲ့အပတ်ထက် 12% ပိုများ" icon={Wallet} tone="blue" />
-                <StatCard label="ဒီလ ဝင်ငွေ" value={formatKyat(12450000)} sub="ပေးချေမှု စုစုပေါင်း 214 ခု" icon={Wallet} tone="purple" />
-                <StatCard label="အတည်ပြုရန် ကျန်ရှိ" value={`${pending} ခု`} sub="Bank transfer များ — စစ်ဆေးရန် လိုအပ်" icon={Wallet} tone="amber" />
+                <StatCard label="ယနေ့ ဝင်ငွေ" value={formatKyat(stats.todayRevenue)} sub={`ပေးချေမှု ${stats.todayCount} ခု အောင်မြင်`} icon={Wallet} tone="teal" />
+                <StatCard label="ဒီအပတ် ဝင်ငွေ" value={formatKyat(stats.weekRevenue)} sub="ဒီအပတ် အောင်မြင်သော ပေးချေမှုများ" icon={Wallet} tone="blue" />
+                <StatCard label="ဒီလ ဝင်ငွေ" value={formatKyat(stats.monthRevenue)} sub={`ပေးချေမှု စုစုပေါင်း ${stats.monthCount} ခု`} icon={Wallet} tone="purple" />
+                <StatCard label="အတည်ပြုရန် ကျန်ရှိ" value={`${stats.pendingCount} ခု`} sub="Bank transfer များ — စစ်ဆေးရန် လိုအပ်" icon={Wallet} tone="amber" />
             </div>
 
             <div className="mt-6 flex flex-wrap gap-2">
@@ -80,7 +93,7 @@ export default function Index({ payments }: { payments?: SampleTxn[] }) {
                             <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
                                     <p className={`text-[.95rem] font-extrabold ${inkCls}`}>{t.n}</p>
-                                    {t.status === 'success' ? <Pill tone="teal">ပေးချေပြီး</Pill> : t.status === 'pending' ? <Pill tone="amber">စောင့်ဆိုင်းဆဲ</Pill> : <Pill tone="rose">ငွေပြန်အမ်းပြီး</Pill>}
+                                    {t.status === 'success' ? <Pill tone="teal">ပေးချေပြီး</Pill> : t.status === 'pending' ? <Pill tone="amber">စောင့်ဆိုင်းဆဲ</Pill> : t.status === 'refunded' ? <Pill tone="rose">ငွေပြန်အမ်းပြီး</Pill> : <Pill tone="rose">ပယ်ချပြီး</Pill>}
                                 </div>
                                 <p className={`mt-1 text-[.8rem] ${mutedCls}`}>
                                     {t.id} · {t.item} · {t.method} · {t.date}
@@ -89,12 +102,17 @@ export default function Index({ payments }: { payments?: SampleTxn[] }) {
                             <span className={`text-[.95rem] font-extrabold ${inkCls}`}>{formatKyat(t.amount)}</span>
                             <div className="flex flex-none flex-wrap gap-2">
                                 {t.status === 'pending' && (
-                                    <button type="button" className={btnGhostCls} onClick={() => approve(t.id)}>
-                                        <Check className="size-4" /> အတည်ပြုရန်
-                                    </button>
+                                    <>
+                                        <button type="button" className={btnGhostCls} onClick={() => approve(t)}>
+                                            <Check className="size-4" /> အတည်ပြုရန်
+                                        </button>
+                                        <button type="button" className={btnGhostCls} onClick={() => reject(t)}>
+                                            <X className="size-4" /> ပယ်ချရန်
+                                        </button>
+                                    </>
                                 )}
                                 {t.status === 'success' && (
-                                    <button type="button" className={btnGhostCls} onClick={() => refund(t.id)}>
+                                    <button type="button" className={btnGhostCls} onClick={() => refund(t)}>
                                         <RotateCcw className="size-4" /> Refund
                                     </button>
                                 )}
@@ -104,22 +122,26 @@ export default function Index({ payments }: { payments?: SampleTxn[] }) {
                 </div>
             )}
 
-            <SectionCard title="နည်းလမ်းအလိုက် အနှစ်ချုပ် · နိုဝင်ဘာ 2026">
-                <div className="space-y-3">
-                    {SAMPLE_PAY_MIX.map((m) => (
-                        <div key={m.name}>
-                            <div className="flex justify-between text-[.82rem] font-bold">
-                                <span className={inkCls}>{m.name}</span>
-                                <span className={mutedCls}>
-                                    {m.pct}% · {m.amount}
-                                </span>
+            <SectionCard title="နည်းလမ်းအလိုက် အနှစ်ချုပ် · ဒီလ">
+                {payMix.length === 0 ? (
+                    <p className={`text-sm ${mutedCls}`}>ဒီလ အတည်ပြုပြီး ပေးချေမှု မရှိသေးပါ</p>
+                ) : (
+                    <div className="space-y-3">
+                        {payMix.map((m) => (
+                            <div key={m.name}>
+                                <div className="flex justify-between text-[.82rem] font-bold">
+                                    <span className={inkCls}>{m.name}</span>
+                                    <span className={mutedCls}>
+                                        {m.pct}% · {m.amount}
+                                    </span>
+                                </div>
+                                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-[#12234a]">
+                                    <div className="h-full rounded-full" style={{ width: `${m.pct}%`, background: m.col }} />
+                                </div>
                             </div>
-                            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-[#12234a]">
-                                <div className="h-full rounded-full" style={{ width: `${m.pct}%`, background: m.col }} />
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </SectionCard>
         </LmsShell>
     );

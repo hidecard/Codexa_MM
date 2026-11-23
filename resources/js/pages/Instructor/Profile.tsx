@@ -1,40 +1,48 @@
-import { useState, type FormEvent } from 'react';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { type FormEvent } from 'react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { BadgeCheck, BookOpen, Star, Users } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { StatCard } from '@/components/lms/stat-card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, LmsCard, PageIntro, btnAccentCls, btnGhostCls, inkCls, labelCls, mutedCls } from '@/pages/Admin/Academy/_shared';
-import { ME_INSTRUCTOR, mySampleCourses } from '@/pages/Admin/Academy/_sample';
 
-type AuthUser = { id: number; name: string; email: string; roles: string[] };
+type ProfileUser = { id: number; name: string; email: string };
+type ProfileData = { bio?: string | null; phone?: string | null; address?: string | null };
+type Stats = { courses: number; students: number; avgRating: number; reviewCount: number };
+type TaughtCourse = { id: number; title: string; students: number; rating: number | null };
+
+type Props = {
+    user?: ProfileUser;
+    profile?: ProfileData;
+    stats?: Stats;
+    courses?: TaughtCourse[];
+    flash?: { success?: string | null };
+};
 
 function initials(name: string) {
     return name
         .split(' ')
+        .filter(Boolean)
         .map((w) => w[0])
         .slice(0, 2)
         .join('')
         .toUpperCase();
 }
 
-export default function Profile() {
-    const { auth } = usePage<{ auth: { user: AuthUser | null } }>().props;
-    const user = auth?.user;
-    const name = user?.name ?? ME_INSTRUCTOR;
-    const mine = mySampleCourses();
-    const students = mine.reduce((s, c) => s + c.students, 0);
-    const avg = mine.length ? mine.reduce((s, c) => s + c.rating, 0) / mine.length : 0;
-
-    const [bio, setBio] = useState('Full-stack developer နဲ့ သင်တန်းဆရာ။ React, JavaScript နဲ့ Web Development ကို မြန်မာဘာသာနဲ့ လွယ်ကူရှင်းလင်းစွာ သင်ကြားပေးနေတာ ၆ နှစ်ကျော် ရှိပါပြီ။');
-    const [title, setTitle] = useState('Senior Frontend Developer & Instructor');
-    const [saved, setSaved] = useState(false);
+export default function Profile({ user, profile, stats, courses = [] }: Props) {
+    const { flash } = usePage<Props>().props;
+    const name = user?.name ?? '';
+    const { data, setData, put, processing, errors } = useForm({
+        name: user?.name ?? '',
+        bio: profile?.bio ?? '',
+        phone: profile?.phone ?? '',
+        address: profile?.address ?? '',
+    });
 
     const submit = (e: FormEvent) => {
         e.preventDefault();
-        // No profile update endpoint exists for instructors yet — local only.
-        setSaved(true);
+        put('/instructor/profile');
     };
 
     return (
@@ -51,6 +59,12 @@ export default function Profile() {
                 }
             />
 
+            {flash?.success && (
+                <div className="mt-6 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-medium text-teal-800 dark:border-teal-900 dark:bg-teal-950/30 dark:text-teal-200">
+                    {flash.success}
+                </div>
+            )}
+
             <LmsCard className="mt-6 p-5 sm:p-6">
                 <div className="flex flex-wrap items-center gap-4">
                     <Avatar init={initials(name)} color="#0ea892" size="lg" />
@@ -59,36 +73,43 @@ export default function Profile() {
                             <h2 className={`text-xl font-extrabold ${inkCls}`}>{name}</h2>
                             <BadgeCheck className="size-5 text-teal-600" />
                         </div>
-                        <p className={`mt-0.5 text-sm ${mutedCls}`}>{title}</p>
                         <p className={`mt-0.5 text-sm ${mutedCls}`}>{user?.email ?? ''}</p>
                     </div>
                 </div>
                 <div className="mt-6 grid gap-3.5 sm:grid-cols-3">
-                    <StatCard label="သင်တန်း" value={String(mine.length)} sub="Published သင်တန်းများ" icon={BookOpen} tone="purple" />
-                    <StatCard label="ကျောင်းသား စုစုပေါင်း" value={students.toLocaleString()} sub="စာရင်းသွင်းထားသူ" icon={Users} tone="blue" />
-                    <StatCard label="ပျမ်းမျှ Rating" value={avg.toFixed(1)} sub={`Review ${mine.reduce((s, c) => s + c.reviews, 0).toLocaleString()} ခု`} icon={Star} tone="amber" />
+                    <StatCard label="သင်တန်း" value={String(stats?.courses ?? 0)} sub="Published သင်တန်းများ" icon={BookOpen} tone="purple" />
+                    <StatCard label="ကျောင်းသား စုစုပေါင်း" value={(stats?.students ?? 0).toLocaleString()} sub="စာရင်းသွင်းထားသူ" icon={Users} tone="blue" />
+                    <StatCard label="ပျမ်းမျှ Rating" value={(stats?.avgRating ?? 0).toFixed(1)} sub={`Review ${(stats?.reviewCount ?? 0).toLocaleString()} ခု`} icon={Star} tone="amber" />
                 </div>
             </LmsCard>
 
             <LmsCard className="mt-6 p-5 sm:p-6">
                 <h2 className={`text-lg font-extrabold ${inkCls}`}>Profile ပြင်ဆင်ရန်</h2>
-                {saved && (
-                    <div className="mt-3 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-medium text-teal-800 dark:border-teal-900 dark:bg-teal-950/30 dark:text-teal-200">
-                        သိမ်းပြီးပါပြီ (ဤ page မှာသာ — profile update endpoint မရှိသေးပါ)
-                    </div>
-                )}
                 <form onSubmit={submit} className="mt-4 grid gap-5">
                     <div className="grid gap-5 sm:grid-cols-2">
-                        <Input label="အမည်" value={name} readOnly />
+                        <div>
+                            <Input label="အမည်" value={data.name} onChange={(e) => setData('name', e.target.value)} required />
+                            {errors.name && <p className="mt-1 text-xs text-rose-600">{errors.name}</p>}
+                        </div>
                         <Input label="Email" value={user?.email ?? ''} readOnly />
                     </div>
-                    <Input label="ရာထူး / ခေါင်းစဉ်" value={title} onChange={(e) => setTitle(e.target.value)} />
-                    <div>
-                        <label className={labelCls}>ကိုယ်ရေးအကျဉ်း (Bio)</label>
-                        <Textarea rows={4} value={bio} onChange={(e) => setBio(e.target.value)} />
+                    <div className="grid gap-5 sm:grid-cols-2">
+                        <div>
+                            <Input label="ဖုန်းနံပါတ်" value={data.phone} onChange={(e) => setData('phone', e.target.value)} />
+                            {errors.phone && <p className="mt-1 text-xs text-rose-600">{errors.phone}</p>}
+                        </div>
+                        <div>
+                            <Input label="လိပ်စာ" value={data.address} onChange={(e) => setData('address', e.target.value)} />
+                            {errors.address && <p className="mt-1 text-xs text-rose-600">{errors.address}</p>}
+                        </div>
                     </div>
                     <div>
-                        <button type="submit" className={btnAccentCls}>
+                        <label className={labelCls}>ကိုယ်ရေးအကျဉ်း (Bio)</label>
+                        <Textarea rows={4} value={data.bio} onChange={(e) => setData('bio', e.target.value)} />
+                        {errors.bio && <p className="mt-1 text-xs text-rose-600">{errors.bio}</p>}
+                    </div>
+                    <div>
+                        <button type="submit" className={btnAccentCls} disabled={processing}>
                             Profile သိမ်းရန်
                         </button>
                     </div>
@@ -97,18 +118,22 @@ export default function Profile() {
 
             <LmsCard className="mt-6 p-5 sm:p-6">
                 <h2 className={`text-lg font-extrabold ${inkCls}`}>သင်ကြားတဲ့ သင်တန်းများ</h2>
-                <ul className="mt-3 space-y-2">
-                    {mine.map((c) => (
-                        <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                            <Link href={`/instructor/courses/${c.id}/edit`} className={`font-bold hover:underline ${inkCls}`}>
-                                {c.title}
-                            </Link>
-                            <span className={mutedCls}>
-                                ကျောင်းသား {c.students.toLocaleString()} ဦး · Rating {c.rating}
-                            </span>
-                        </li>
-                    ))}
-                </ul>
+                {courses.length === 0 ? (
+                    <p className={`mt-3 text-sm ${mutedCls}`}>သင်တန်း မရှိသေးပါ။</p>
+                ) : (
+                    <ul className="mt-3 space-y-2">
+                        {courses.map((c) => (
+                            <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                                <Link href={`/instructor/courses/${c.id}/edit`} className={`font-bold hover:underline ${inkCls}`}>
+                                    {c.title}
+                                </Link>
+                                <span className={mutedCls}>
+                                    ကျောင်းသား {c.students.toLocaleString()} ဦး{c.rating !== null ? ` · Rating ${c.rating}` : ''}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
             </LmsCard>
         </LmsShell>
     );

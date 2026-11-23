@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { Bell, CalendarDays, ChevronLeft, Clock3, Radio, User, Users } from 'lucide-react';
 
@@ -17,15 +17,6 @@ type LiveClass = {
     joined: number;
 };
 
-/* SAMPLE DATA — fallback only (from prototype). */
-const SAMPLE: LiveClass[] = [
-    { id: 1, day: '22', mon: 'နိုဝင်ဘာ', when: 'ယနေ့', title: 'React Hooks Deep Dive — Live Session', instructor: 'Thura Aung', time: 'ညနေ 7:00 – 8:30', courseTitle: 'React.js Complete Course', desc: 'useState, useEffect နဲ့ custom hooks တွေကို live coding နဲ့တကွ ရှင်းပြပါမယ်။', liveNow: true, joined: 84 },
-    { id: 2, day: '23', mon: 'နိုဝင်ဘာ', when: 'မနက်ဖြန်', title: 'JavaScript Async Patterns — Q&A Live', instructor: 'May Thazin', time: 'ညနေ 7:00 – 8:00', courseTitle: 'JavaScript Deep Dive', desc: 'Promise, async/await နဲ့ ပတ်သက်တဲ့ မေးခွန်းတွေကို တိုက်ရိုက် ဖြေကြားပေးပါမယ်။', liveNow: false, joined: 56 },
-    { id: 3, day: '28', mon: 'နိုဝင်ဘာ', when: 'စနေ', title: 'Python OOP Workshop — Live Coding', instructor: 'Kaung Htet Oo', time: 'မနက် 10:00 – 11:30', courseTitle: 'Python for Beginners', desc: 'Class နဲ့ object တွေကို လက်တွေ့ mini project တစ်ခု ဆောက်ရင်း သင်ယူပါမယ်။', liveNow: false, joined: 112 },
-    { id: 4, day: '29', mon: 'နိုဝင်ဘာ', when: 'တနင်္ဂနွေ', title: 'Figma Auto Layout Masterclass', instructor: 'Nilar Win', time: 'နေ့လယ် 2:00 – 3:30', courseTitle: 'UI/UX Design with Figma', desc: 'Responsive UI တွေအတွက် Auto Layout ကို အဆင့်မြင့် နည်းလမ်းတွေနဲ့ သုံးပြပါမယ်။', liveNow: false, joined: 73 },
-    { id: 5, day: '30', mon: 'နိုဝင်ဘာ', when: 'တနင်္လာ', title: 'Laravel REST API — Live Q&A', instructor: 'Aung Khant', time: 'ညနေ 7:30 – 8:30', courseTitle: 'PHP & Laravel Framework', desc: 'API project လုပ်နေသူတွေအတွက် error ဖြေရှင်းနည်းနဲ့ best practice များ ဆွေးနွေးပါမယ်။', liveNow: false, joined: 41 },
-];
-
 const AGENDA = [
     { time: '7:00', item: 'အတန်း စတင်ခြင်း နှင့် မိတ်ဆက်ခြင်း' },
     { time: '7:10', item: 'အဓိက အကြောင်းအရာ live coding ဖြင့် ရှင်းပြခြင်း' },
@@ -34,11 +25,20 @@ const AGENDA = [
 ];
 
 export default function Show({ live }: { live?: LiveClass | null }) {
-    const { url } = usePage();
-    const idFromUrl = Number(url.split('/').filter(Boolean).pop());
-    const item = live ?? SAMPLE.find((s) => s.id === idFromUrl) ?? SAMPLE[0];
     const [reminded, setReminded] = useState(false);
     const [joined, setJoined] = useState(false);
+
+    if (!live) {
+        return (
+            <LmsShell title="Live Class" nav="student">
+                <Head title="Live Class" />
+                <Link href="/student/live-classes" className="inline-flex items-center gap-1 text-sm font-semibold text-slate-600 hover:text-teal-700 dark:text-slate-300"><ChevronLeft className="size-4" /> Live Classes အားလုံး</Link>
+                <p className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">ဤ live class ကို ရှာမတွေ့ပါ။</p>
+            </LmsShell>
+        );
+    }
+
+    const item = live;
 
     return (
         <LmsShell title="Live Class" nav="student">
