@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Course;
+use App\Models\CourseCategory;
 use App\Models\CoursePayment;
 use App\Models\Enrollment;
 use App\Models\LiveSession;
@@ -22,7 +23,9 @@ use Illuminate\Support\Collection;
  * — recorded 2026-11-23, needs user confirmation). Order-level payments
  * (course_id null) are attributed to instructors by splitting the payment
  * across the order's items in proportion to each item's price — see
- * orderRevenueForCourses().
+ * orderRevenueForCourses(). The same attribution feeds the admin
+ * breakdowns (topCourses, categoryShare, monthlyRevenue), so admin
+ * reports and instructor stats agree on course revenue.
  */
 class AcademyAnalytics
 {
@@ -98,7 +101,10 @@ class AcademyAnalytics
             ->groupBy('month')
             ->pluck('total', 'month');
 
-        // Course-scoped views also include attributed order revenue.
+        // Course-scoped views also include attributed order revenue. The
+        // unscoped base query above has no course_id filter, so it
+        // already sums order-level payments; adding them again here
+        // would double-count.
         $orderMonthly = $courseIds !== null ? static::orderRevenueMonthly($courseIds, $months) : [];
 
         return static::lastMonths($months)->map(function (Carbon $month) use ($sums, $orderMonthly) {
@@ -152,7 +158,13 @@ class AcademyAnalytics
         ])->values()->all();
     }
 
-    /** Approved revenue split by course category. */
+    /**
+     * Approved revenue split by course category. Direct payments join
+     * through their course; order-level payments (course_id null) are
+     * attributed per course with orderRevenuePerCourse() and rolled up
+     * to each course's category, so a category whose revenue came only
+     * through orders still appears.
+     */
     public static function categoryShare(): array
     {
         $rows = CoursePayment::query()
@@ -160,24 +172,46 @@ class AcademyAnalytics
             ->whereNotNull('course_payments.course_id')
             ->join('courses', 'course_payments.course_id', '=', 'courses.id')
             ->join('course_categories', 'courses.category_id', '=', 'course_categories.id')
-            ->selectRaw('course_categories.name as name, SUM(course_payments.amount) as total')
+            ->selectRaw('course_categories.id as id, course_categories.name as name, SUM(course_payments.amount) as total')
             ->groupBy('course_categories.id', 'course_categories.name')
-            ->orderByDesc('total')
             ->get();
 
-        $grand = (float) $rows->sum('total');
+        // category_id => ['name' => ..., 'total' => ...]
+        $totals = [];
+        foreach ($rows as $row) {
+            $totals[$row->id] = ['name' => $row->name, 'total' => (float) $row->total];
+        }
 
-        return $rows->map(fn ($row, int $i) => [
-            'name' => $row->name,
-            'pct' => $grand > 0 ? (int) round(((float) $row->total / $grand) * 100) : 0,
-            'amount' => (float) $row->total,
-            'col' => static::CATEGORY_COLORS[$i % count(static::CATEGORY_COLORS)],
-        ])->values()->all();
+        $courseCategories = Course::query()->pluck('category_id', 'id');
+        $categoryNames = CourseCategory::query()->pluck('name', 'id');
+        foreach (static::orderRevenuePerCourse($courseCategories->keys()->all()) as $courseId => $amount) {
+            $categoryId = $courseCategories[$courseId] ?? null;
+            if ($categoryId === null) {
+                continue;
+            }
+            $totals[$categoryId] ??= ['name' => $categoryNames[$categoryId] ?? '—', 'total' => 0.0];
+            $totals[$categoryId]['total'] += $amount;
+        }
+
+        $grand = (float) collect($totals)->sum('total');
+
+        return collect($totals)
+            ->sortByDesc('total')
+            ->values()
+            ->map(fn (array $row, int $i) => [
+                'name' => $row['name'],
+                'pct' => $grand > 0 ? (int) round(($row['total'] / $grand) * 100) : 0,
+                'amount' => $row['total'],
+                'col' => static::CATEGORY_COLORS[$i % count(static::CATEGORY_COLORS)],
+            ])->all();
     }
 
     /**
      * Top courses by approved CoursePayment revenue, with enrollment
-     * counts and average approved-review rating.
+     * counts and average approved-review rating. Revenue is direct
+     * payments plus each course's share of order-level payments
+     * (orderRevenuePerCourse), so admin breakdowns match instructor
+     * stats.
      */
     public static function topCourses(?array $courseIds = null, int $limit = 5): array
     {
@@ -194,7 +228,11 @@ class AcademyAnalytics
             ->withCount(['enrollments as students_count' => fn (Builder $q) => $q->whereIn('status', ['active', 'completed'])])
             ->withAvg(['reviews as rating_avg' => fn (Builder $q) => $q->where('is_approved', true)], 'rating')
             ->when($courseIds !== null, fn (Builder $q) => $q->whereIn('id', $courseIds))
-            ->get()
+            ->get();
+
+        $orderRevenue = static::orderRevenuePerCourse($courses->pluck('id')->all());
+
+        return $courses
             ->map(fn (Course $course) => [
                 'id' => $course->id,
                 'title' => $course->title,
@@ -202,14 +240,12 @@ class AcademyAnalytics
                 'students' => (int) $course->students_count,
                 'rating' => round((float) ($course->rating_avg ?? 0), 1),
                 'price' => (float) $course->price,
-                'revenue' => (float) ($revenue[$course->id] ?? 0),
+                'revenue' => (float) ($revenue[$course->id] ?? 0) + (float) ($orderRevenue[$course->id] ?? 0),
             ])
             ->sortByDesc('revenue')
             ->take($limit)
             ->values()
             ->all();
-
-        return $courses;
     }
 
     /** Course IDs an instructor teaches (owner or co-instructor). */

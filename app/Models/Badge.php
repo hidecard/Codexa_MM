@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 #[Fillable(['name', 'icon', 'description', 'rule_type', 'threshold', 'is_active'])]
 class Badge extends Model
@@ -21,6 +22,31 @@ class Badge extends Model
     public const RULE_QUIZZES_PASSED = 'quizzes_passed';
 
     public const RULE_ASSIGNMENTS_SUBMITTED = 'assignments_submitted';
+
+    public const RULE_TYPES = [
+        self::RULE_XP_THRESHOLD,
+        self::RULE_COURSES_COMPLETED,
+        self::RULE_LESSONS_COMPLETED,
+        self::RULE_QUIZZES_PASSED,
+        self::RULE_ASSIGNMENTS_SUBMITTED,
+    ];
+
+    /**
+     * Icon keys. These are keys into the Achievements page icon map;
+     * 'award' is the column default and falls back to the Award icon.
+     */
+    public const ICONS = ['award', 'book', 'cert', 'flame', 'quiz', 'pen', 'chat', 'live', 'moon', 'target'];
+
+    /** Emoji icons used by the legacy settings-JSON badges, mapped to icon keys. */
+    public const LEGACY_ICON_MAP = [
+        '🎯' => 'target',
+        '🧠' => 'quiz',
+        '🔥' => 'flame',
+        '🛠️' => 'pen',
+        '📺' => 'live',
+        '🎓' => 'cert',
+        '🏅' => 'award',
+    ];
 
     protected function casts(): array
     {
@@ -60,5 +86,56 @@ class Badge extends Model
         foreach (static::starterBadges() as $badge) {
             static::query()->firstOrCreate(['name' => $badge['name']], $badge);
         }
+    }
+
+    /**
+     * Migrate legacy settings-JSON badge definitions
+     * ({name, desc, xp, icon, active}) into Badge records. The JSON
+     * badges carried only an XP value, so they become xp_threshold
+     * badges with threshold = xp. Entries whose key (slug of the name,
+     * falling back to the raw name when the slug is empty) matches an
+     * existing badge — e.g. the starter badges — are skipped, so the
+     * migration is idempotent and never duplicates. Returns the number
+     * of badges created.
+     */
+    public static function migrateFromJson(array $jsonBadges): int
+    {
+        $existing = static::query()->pluck('name')
+            ->map(fn (string $name) => static::badgeKey($name))
+            ->all();
+        $created = 0;
+
+        foreach ($jsonBadges as $json) {
+            if (! is_array($json)) {
+                continue;
+            }
+            $name = trim((string) ($json['name'] ?? ''));
+            if ($name === '' || in_array(static::badgeKey($name), $existing, true)) {
+                continue;
+            }
+
+            $icon = (string) ($json['icon'] ?? '');
+            static::query()->create([
+                'name' => $name,
+                'icon' => static::LEGACY_ICON_MAP[$icon]
+                    ?? (in_array($icon, static::ICONS, true) ? $icon : 'award'),
+                'description' => (string) ($json['desc'] ?? $json['description'] ?? ''),
+                'rule_type' => in_array($json['rule_type'] ?? null, static::RULE_TYPES, true)
+                    ? $json['rule_type']
+                    : self::RULE_XP_THRESHOLD,
+                'threshold' => max(1, (int) ($json['threshold'] ?? $json['xp'] ?? 1)),
+                'is_active' => (bool) ($json['active'] ?? $json['is_active'] ?? true),
+            ]);
+            $existing[] = static::badgeKey($name);
+            $created++;
+        }
+
+        return $created;
+    }
+
+    /** Dedup key for a badge name: its slug, or the raw name when the slug is empty (e.g. Myanmar-only names). */
+    public static function badgeKey(string $name): string
+    {
+        return Str::slug($name) ?: $name;
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\CommunityComment;
+use App\Models\CommunityLike;
 use App\Models\CommunityPost;
 use App\Services\BadgeService;
 use Illuminate\Http\RedirectResponse;
@@ -21,6 +23,8 @@ class CommunityPostController extends Controller
         $posts = CommunityPost::query()
             ->published()
             ->with('user:id,name')
+            ->withCount(['likes', 'comments'])
+            ->withExists(['likes as liked' => fn ($q) => $q->where('user_id', $request->user()->id)])
             ->when(in_array($category, CommunityPost::CATEGORIES, true), fn ($q) => $q->where('category', $category))
             ->latest()
             ->get()
@@ -42,8 +46,21 @@ class CommunityPostController extends Controller
             404,
         );
 
+        $post->load('user:id,name')->loadCount(['likes', 'comments'])->loadExists([
+            'likes as liked' => fn ($q) => $q->where('user_id', $request->user()->id),
+        ]);
+
+        $comments = CommunityComment::query()
+            ->with('user:id,name')
+            ->where('community_post_id', $post->id)
+            ->oldest()
+            ->get()
+            ->map(fn (CommunityComment $c) => $this->mapComment($c, $request->user()->id))
+            ->values();
+
         return Inertia::render('Student/Community/Show', [
-            'post' => $this->mapPost($post->load('user:id,name'), $request->user()->id),
+            'post' => $this->mapPost($post, $request->user()->id),
+            'comments' => $comments,
             'categories' => CommunityPost::CATEGORIES,
         ]);
     }
@@ -91,6 +108,31 @@ class CommunityPostController extends Controller
         return redirect()->route('student.community.index')->with('success', 'ပို့စ် ဖျက်ပြီးပါပြီ');
     }
 
+    // One like per user per post (unique index); toggles on repeat calls.
+    public function toggleLike(Request $request, CommunityPost $post): RedirectResponse
+    {
+        abort_unless(
+            $post->status === CommunityPost::STATUS_PUBLISHED || $post->user_id === $request->user()->id,
+            404,
+        );
+
+        $existing = CommunityLike::query()
+            ->where('community_post_id', $post->id)
+            ->where('user_id', $request->user()->id)
+            ->first();
+
+        if ($existing) {
+            $existing->delete();
+        } else {
+            CommunityLike::create([
+                'user_id' => $request->user()->id,
+                'community_post_id' => $post->id,
+            ]);
+        }
+
+        return back();
+    }
+
     private function mapPost(CommunityPost $p, int $viewerId): array
     {
         $name = $p->user?->name ?? 'Unknown';
@@ -104,13 +146,27 @@ class CommunityPostController extends Controller
             'cat' => $p->category,
             'title' => $p->title,
             'body' => $p->body ?? '',
-            // There is no like/comment model; counts stay 0.
-            'likes' => 0,
-            'comments' => 0,
-            'liked' => false,
+            'likes' => (int) ($p->likes_count ?? $p->likes()->count()),
+            'comments' => (int) ($p->comments_count ?? $p->comments()->count()),
+            'liked' => (bool) ($p->liked ?? $p->likes()->where('user_id', $viewerId)->exists()),
             'saved' => false,
             'mine' => $p->user_id === $viewerId,
             'status' => $p->status,
+        ];
+    }
+
+    private function mapComment(CommunityComment $c, int $viewerId): array
+    {
+        $name = $c->user?->name ?? 'Unknown';
+
+        return [
+            'id' => $c->id,
+            'name' => $name,
+            'init' => BadgeService::initials($name),
+            'col' => BadgeService::colorFor($c->user_id),
+            'time' => $c->created_at ? self::relativeDay($c->created_at) : '',
+            'body' => $c->body,
+            'mine' => $c->user_id === $viewerId,
         ];
     }
 

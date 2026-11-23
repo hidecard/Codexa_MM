@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Academy;
 
 use App\Http\Controllers\Controller;
 use App\Models\Coupon;
+use App\Support\ActivityLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -50,7 +51,9 @@ class CouponController extends Controller
     {
         $validated = $request->validate($this->rules());
 
-        Coupon::query()->create($validated);
+        $coupon = Coupon::query()->create($validated);
+
+        ActivityLog::record('coupon.created', 'Created coupon '.$coupon->code, $coupon);
 
         return back()->with('success', 'Coupon '.$validated['code'].' ဖန်တီးပြီးပါပြီ။');
     }
@@ -61,6 +64,8 @@ class CouponController extends Controller
 
         $coupon->update($validated);
 
+        ActivityLog::record('coupon.updated', 'Updated coupon '.$coupon->code, $coupon);
+
         return back()->with('success', 'Coupon '.$coupon->code.' ပြင်ဆင်ပြီးပါပြီ။');
     }
 
@@ -69,12 +74,16 @@ class CouponController extends Controller
         $code = $coupon->code;
         $coupon->delete();
 
+        ActivityLog::record('coupon.deleted', 'Deleted coupon '.$code, $coupon, level: 'warning');
+
         return back()->with('success', 'Coupon '.$code.' ဖျက်ပြီးပါပြီ။');
     }
 
     public function toggle(Coupon $coupon): RedirectResponse
     {
         $coupon->update(['is_active' => ! $coupon->is_active]);
+
+        ActivityLog::record($coupon->is_active ? 'coupon.activated' : 'coupon.deactivated', ($coupon->is_active ? 'Activated' : 'Deactivated').' coupon '.$coupon->code, $coupon);
 
         return back()->with('success', 'Coupon '.$coupon->code.($coupon->is_active ? ' ပြန်ဖွင့်ပြီးပါပြီ။' : ' ပိတ်ပြီးပါပြီ။'));
     }

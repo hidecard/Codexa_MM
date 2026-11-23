@@ -10,6 +10,7 @@ use App\Models\LiveSession;
 use App\Models\Payout;
 use App\Models\User;
 use App\Support\AcademyAnalytics;
+use App\Support\ActivityLog;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -108,13 +109,15 @@ class PayoutController extends Controller
             'method' => ['required', 'string', 'in:kbzpay,wavepay,cbpay,bank'],
         ]);
 
-        Payout::create([
+        $payout = Payout::create([
             'instructor_id' => $user->id,
             'amount' => $validated['amount'],
             'method' => $validated['method'],
             'status' => 'pending',
             'period' => now()->format('Y-m'),
         ]);
+
+        ActivityLog::record('payout.requested', 'Requested payout of '.number_format((float) $validated['amount']).' Ks via '.$validated['method'], $payout);
 
         return back()->with('success', 'Payout တောင်းဆိုမှု ပို့ပြီးပါပြီ — Admin အတည်ပြုရန် စောင့်နေပါသည်');
     }

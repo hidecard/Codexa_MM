@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Support\ActivityLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
@@ -162,6 +163,8 @@ class SettingController extends Controller
                 }
             }
         }
+
+        ActivityLog::record('settings.updated', 'Platform settings saved', context: ['keys' => array_keys($validated)]);
 
         return redirect()->back()->with('success', 'Settings saved.');
     }

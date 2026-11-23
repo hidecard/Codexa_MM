@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Academy;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\CourseModule;
+use App\Services\LessonResourceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -100,6 +101,7 @@ class ModuleController extends Controller
 
     public function destroy(CourseModule $module): RedirectResponse
     {
+        app(LessonResourceService::class)->deleteForModule($module);
         $module->delete();
 
         return back()->with('success', 'Module removed.');

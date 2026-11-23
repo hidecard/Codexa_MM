@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\CoursePayment;
 use App\Models\Refund;
+use App\Support\ActivityLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -104,12 +105,14 @@ class RefundRequestController extends Controller
             $reason .= "\n\n".$validated['detail'];
         }
 
-        Refund::create([
+        $refund = Refund::create([
             'course_payment_id' => $payment->id,
             'amount' => $validated['amount'],
             'reason' => $reason,
             'status' => 'pending',
         ]);
+
+        ActivityLog::record('refund.requested', 'Requested refund of '.number_format((float) $validated['amount']).' Ks for '.($payment->course?->title ?? 'course'), $refund);
 
         return back()->with('success', 'တောင်းဆိုမှု လက်ခံရရှိပါပြီ — Support အဖွဲ့က 3 ရက် အတွင်း အကြောင်းပြန်ပါမည်');
     }

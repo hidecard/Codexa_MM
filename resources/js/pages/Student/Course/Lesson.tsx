@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { YouTubeEmbed } from '@/components/lms/youtube-embed';
-import { CheckCircle2, ChevronLeft, ChevronRight, Clock3, FileText, Gauge, HelpCircle, ListVideo, NotebookPen } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, Clock3, Download, FileText, Gauge, HelpCircle, ListVideo, NotebookPen } from 'lucide-react';
 
 type NavLesson = { id: number; title: string; duration: number; is_completed: boolean };
 type Props = {
@@ -203,7 +203,7 @@ export default function Lesson({ course, modules = [], lesson, questions = [] }:
                             ) : (
                                 <ul className="space-y-2">
                                     {lesson.resources.map((r) => (
-                                        <li key={r.id} className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-200"><FileText className="size-4 shrink-0 text-teal-600" /> {r.name}</li>
+                                        <li key={r.id} className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-200"><FileText className="size-4 shrink-0 text-teal-600" /> <span className="flex-1">{r.name}</span><a href={`/student/resources/${r.id}/download`} className="inline-flex shrink-0 items-center gap-1 font-bold text-teal-600 hover:text-teal-700"><Download className="size-4" /> ဒေါင်းလုဒ်ရန်</a></li>
                                     ))}
                                 </ul>
                             )}

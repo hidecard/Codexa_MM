@@ -59,6 +59,7 @@ Route::middleware(['auth', 'verified', 'admin.access'])->prefix('admin')->name('
         Route::post('/moderation/posts/{post}/hide', [AcademyModerationController::class, 'hidePost'])->name('moderation.posts.hide');
         Route::post('/moderation/posts/{post}/unhide', [AcademyModerationController::class, 'unhidePost'])->name('moderation.posts.unhide');
         Route::delete('/moderation/posts/{post}', [AcademyModerationController::class, 'destroyPost'])->name('moderation.posts.destroy');
+        Route::delete('/moderation/comments/{comment}', [AcademyModerationController::class, 'destroyComment'])->name('moderation.comments.destroy');
 
         // Curriculum builder (GET overrides the sample-data closure in admin.php)
         // plus module/lesson writes used by the builder.
@@ -69,5 +70,7 @@ Route::middleware(['auth', 'verified', 'admin.access'])->prefix('admin')->name('
         Route::post('/lessons', [AcademyLessonController::class, 'store'])->name('lessons.store');
         Route::put('/lessons/{lesson}', [AcademyLessonController::class, 'update'])->name('lessons.update');
         Route::delete('/lessons/{lesson}', [AcademyLessonController::class, 'destroy'])->name('lessons.destroy');
+        Route::post('/lessons/{lesson}/resources', [AcademyLessonController::class, 'storeResource'])->name('lessons.resources.store');
+        Route::delete('/lessons/{lesson}/resources/{resource}', [AcademyLessonController::class, 'destroyResource'])->name('lessons.resources.destroy');
     });
 });

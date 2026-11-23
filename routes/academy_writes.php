@@ -10,6 +10,7 @@ use App\Http\Controllers\Instructor\PayoutController as InstructorPayoutControll
 use App\Http\Controllers\Instructor\ProfileController as InstructorProfileController;
 use App\Http\Controllers\Instructor\QaController as InstructorQaController;
 use App\Http\Controllers\Instructor\ReviewReplyController as InstructorReviewReplyController;
+use App\Http\Controllers\Student\CommunityCommentController as StudentCommunityCommentController;
 use App\Http\Controllers\Student\CommunityPostController as StudentCommunityPostController;
 use App\Http\Controllers\Student\NoteController as StudentNoteController;
 use App\Http\Controllers\Student\OrderController as StudentOrderController;
@@ -48,6 +49,10 @@ Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->name
     Route::post('/community', [StudentCommunityPostController::class, 'store'])->name('community.store');
     Route::put('/community/{post}', [StudentCommunityPostController::class, 'update'])->name('community.update');
     Route::delete('/community/{post}', [StudentCommunityPostController::class, 'destroy'])->name('community.destroy');
+    Route::post('/community/{post}/like', [StudentCommunityPostController::class, 'toggleLike'])->name('community.like');
+    Route::post('/community/{post}/comments', [StudentCommunityCommentController::class, 'store'])->name('community.comments.store');
+    Route::put('/community/comments/{comment}', [StudentCommunityCommentController::class, 'update'])->name('community.comments.update');
+    Route::delete('/community/comments/{comment}', [StudentCommunityCommentController::class, 'destroy'])->name('community.comments.destroy');
 
     Route::get('/notes', [StudentNoteController::class, 'index'])->name('notes.index');
     Route::post('/notes', [StudentNoteController::class, 'store'])->name('notes.store');

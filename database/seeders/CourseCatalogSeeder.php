@@ -12,14 +12,16 @@ use App\Models\Lesson;
 use App\Models\LessonResource;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
 
 class CourseCatalogSeeder extends Seeder
 {
     public function run(): void
     {
+        // Use the UserSeeder instructor account as the catalog owner (no competing seed users).
         $instructor = User::firstOrCreate(
-            ['email' => 'instructor@codexa.test'],
-            ['name' => 'Codexa Academy', 'password' => 'password', 'status' => 'active'],
+            ['email' => 'instructor@codexamm.test'],
+            ['name' => 'Instructor User', 'password' => 'password', 'status' => 'active', 'email_verified_at' => now()],
         );
         $instructor->assignRole('instructor');
 
@@ -39,15 +41,22 @@ class CourseCatalogSeeder extends Seeder
             ['category' => 'product-design', 'title' => 'Digital Product Design', 'slug' => 'digital-product-design', 'short_description' => 'Move from a rough idea to a validated, usable product direction.', 'description' => 'Learn research, user flows, wireframes, interface systems, and product storytelling.', 'level' => 'beginner', 'duration' => 20, 'price' => 120000, 'pricing_type' => 'package', 'outcomes' => ['Map user journeys', 'Create interface systems', 'Present product decisions']],
         ];
 
-        $coInstructors = User::factory()->count(2)->create(['status' => 'active']);
-        foreach ($coInstructors as $index => $coInstructor) {
-            $coInstructor->name = $index === 0 ? 'Mya Thandar' : 'Ko Aung Htet';
-            $coInstructor->email = $index === 0 ? 'mya.thandar@codexa.test' : 'ko.aung.htet@codexa.test';
-            $coInstructor->save();
+        // Idempotent: updateOrCreate so re-running the seeder does not violate the unique email constraint.
+        $coInstructors = collect([
+            ['name' => 'Mya Thandar', 'email' => 'mya.thandar@codexa.test'],
+            ['name' => 'Ko Aung Htet', 'email' => 'ko.aung.htet@codexa.test'],
+        ])->map(function (array $attributes) {
+            $coInstructor = User::updateOrCreate(
+                ['email' => $attributes['email']],
+                [...$attributes, 'password' => 'password', 'status' => 'active', 'email_verified_at' => now()],
+            );
             $coInstructor->assignRole('instructor');
-        }
+
+            return $coInstructor;
+        });
 
         $seededCourses = collect();
+        $firstLesson = null;
 
         foreach ($courses as $i => $attributes) {
             $category = $categories[$attributes['category']];
@@ -76,10 +85,9 @@ class CourseCatalogSeeder extends Seeder
                     ['module_id' => $module->id, 'position' => 1],
                     ['title' => "{$title}: first steps", 'content' => 'A guided lesson with practical exercises and a clear next step.', 'duration' => 25, 'type' => 'video', 'is_free' => $position === 0, 'video_url' => 'private://lesson/'.$course->slug.'/'.$module->position, 'meta' => ['captions' => true]],
                 );
-                LessonResource::updateOrCreate(
-                    ['lesson_id' => $lesson->id, 'original_name' => 'Lesson notes.pdf'],
-                    ['file_path' => 'private/lessons/'.$lesson->id.'/notes.pdf', 'file_type' => 'application/pdf', 'file_size' => 0],
-                );
+                // Real lesson files are the instructor's to upload; the seeder
+                // only ships one clearly-marked sample (see seedSampleResource).
+                $firstLesson ??= $lesson;
             }
 
             CourseAnnouncement::updateOrCreate(
@@ -100,5 +108,66 @@ class CourseCatalogSeeder extends Seeder
             ['name' => 'Codexa Growth Bundle', 'description' => 'A practical bundle for learners building a complete product skill set.', 'price' => 250000, 'status' => 'published', 'published_at' => now()],
         );
         $package->courses()->sync($seededCourses->values()->mapWithKeys(fn (Course $course, int $position) => [$course->id => ['position' => $position + 1]])->all());
+
+        $this->seedSampleResource($firstLesson);
+    }
+
+    /**
+     * Seed exactly one clearly-marked sample resource with a real file on
+     * disk, so the lesson-resource download path works in dev. This is a
+     * placeholder, not lesson content — real files are the instructor's
+     * to upload. Seeding never fails if storage is unavailable: the
+     * sample is simply skipped. Previously-seeded phantom rows (files
+     * that never existed on disk) are removed so downloads stop erroring.
+     */
+    private function seedSampleResource(?Lesson $lesson): void
+    {
+        LessonResource::query()
+            ->where('original_name', 'Lesson notes.pdf')
+            ->where('file_path', 'like', 'private/lessons/%')
+            ->get()
+            ->each(function (LessonResource $resource) {
+                try {
+                    if (! Storage::disk('local')->exists($resource->file_path)) {
+                        $resource->delete();
+                    }
+                } catch (\Throwable) {
+                    // Storage unavailable: leave the row alone, never break seeding.
+                }
+            });
+
+        if (! $lesson) {
+            return;
+        }
+
+        $path = 'lessons/sample/sample-lesson-notes.txt';
+        $contents = "SAMPLE FILE - Codexa MM lesson resource placeholder.\n\n"
+            ."This is a sample file shipped with the demo seed data so the lesson\n"
+            ."resource download path can be verified. It is not real lesson content.\n\n"
+            ."Instructors upload real lesson files from the course curriculum editor.\n"
+            ."Enrolled students can download them from the lesson player or the\n"
+            ."Resources page.\n";
+
+        try {
+            if (! Storage::disk('local')->exists($path)) {
+                Storage::disk('local')->put($path, $contents);
+            }
+            if (! Storage::disk('local')->exists($path)) {
+                return;
+            }
+            $size = Storage::disk('local')->size($path);
+        } catch (\Throwable) {
+            return;
+        }
+
+        LessonResource::updateOrCreate(
+            ['original_name' => 'SAMPLE - Lesson notes.txt'],
+            [
+                'lesson_id' => $lesson->id,
+                'file_path' => $path,
+                'file_type' => 'text/plain',
+                'file_size' => $size,
+            ],
+        );
     }
 }

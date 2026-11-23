@@ -7,6 +7,8 @@ use App\Models\Course;
 use App\Models\CourseCategory;
 use App\Models\CourseModule;
 use App\Models\Lesson;
+use App\Models\LessonResource;
+use App\Services\LessonResourceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -118,6 +120,7 @@ class CourseController extends Controller
     {
         $this->authorize('update', $course);
         abort_unless($module->course_id === $course->id, 404);
+        app(LessonResourceService::class)->deleteForModule($module);
         $module->delete();
 
         return back()->with('success', 'Module removed.');
@@ -165,9 +168,31 @@ class CourseController extends Controller
     {
         $this->authorize('update', $course);
         abort_unless($module->course_id === $course->id && $lesson->module_id === $module->id, 404);
+        app(LessonResourceService::class)->deleteForLesson($lesson);
         $lesson->delete();
 
         return back()->with('success', 'Lesson removed.');
+    }
+
+    public function storeLessonResource(Request $request, Course $course, CourseModule $module, Lesson $lesson): RedirectResponse
+    {
+        $this->authorize('update', $course);
+        abort_unless($module->course_id === $course->id && $lesson->module_id === $module->id, 404);
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'max:20480', 'mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,txt,csv,png,jpg,jpeg'],
+        ]);
+        app(LessonResourceService::class)->store($lesson, $validated['file']);
+
+        return back()->with('success', 'Resource uploaded.');
+    }
+
+    public function destroyLessonResource(Request $request, Course $course, CourseModule $module, Lesson $lesson, LessonResource $resource): RedirectResponse
+    {
+        $this->authorize('update', $course);
+        abort_unless($module->course_id === $course->id && $lesson->module_id === $module->id && $resource->lesson_id === $lesson->id, 404);
+        app(LessonResourceService::class)->delete($resource);
+
+        return back()->with('success', 'Resource removed.');
     }
 
     private function validateCourse(Request $request, ?int $ignoreId = null): array

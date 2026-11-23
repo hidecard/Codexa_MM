@@ -73,7 +73,13 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         Fortify::resetPasswordView(function ($request) {
-            return inertia('Auth/ResetPassword', ['request' => $request]);
+            // Pass the token and email as plain props: a raw Request object
+            // serializes to {} under Inertia, so the page would never see
+            // the token it needs to submit the reset.
+            return inertia('Auth/ResetPassword', [
+                'email' => $request->email,
+                'token' => $request->route('token'),
+            ]);
         });
 
         Fortify::verifyEmailView(function () {

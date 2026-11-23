@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\AcademyAnalytics;
+use App\Support\ActivityLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -82,6 +83,8 @@ class UserController extends Controller
 
         $user->syncRoles($validated['roles']);
 
+        ActivityLog::record('user.roles_updated', 'Updated roles for '.$user->name.' ('.implode(', ', $validated['roles']).')', $user);
+
         return back()->with('success', $user->name.' ၏ role များကို ပြင်ဆင်ပြီးပါပြီ');
     }
 
@@ -130,6 +133,8 @@ class UserController extends Controller
         }
 
         $role->syncPermissions($validated['permissions']);
+
+        ActivityLog::record('role.permissions_updated', 'Updated permissions for role '.$role->name, $role);
 
         return back()->with('success', $role->name.' role ၏ permission များကို ပြင်ဆင်ပြီးပါပြီ');
     }

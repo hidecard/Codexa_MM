@@ -37,6 +37,10 @@ Route::middleware(['auth', 'verified', 'admin.access'])->prefix('admin')->name('
 
         Route::get('/gamification', [GamificationController::class, 'index'])->name('gamification.index');
         Route::put('/gamification', [GamificationController::class, 'update'])->name('gamification.update');
+        Route::post('/gamification/badges', [GamificationController::class, 'storeBadge'])->name('gamification.badges.store');
+        Route::put('/gamification/badges/{badge}', [GamificationController::class, 'updateBadge'])->name('gamification.badges.update');
+        Route::delete('/gamification/badges/{badge}', [GamificationController::class, 'destroyBadge'])->name('gamification.badges.destroy');
+        Route::post('/gamification/badges/{badge}/toggle', [GamificationController::class, 'toggleBadge'])->name('gamification.badges.toggle');
 
         Route::get('/cms', [CmsController::class, 'index'])->name('cms.index');
         Route::put('/cms', [CmsController::class, 'update'])->name('cms.update');

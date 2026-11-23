@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Academy;
 use App\Http\Controllers\Controller;
 use App\Models\Payout;
 use App\Models\User;
+use App\Support\ActivityLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -57,7 +58,9 @@ class PayoutController extends Controller
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        Payout::query()->create([...$validated, 'status' => 'pending']);
+        $payout = Payout::query()->create([...$validated, 'status' => 'pending']);
+
+        ActivityLog::record('payout.created', 'Created payout '.$payout->displayCode().' ('.number_format((float) $payout->amount).' Ks)', $payout);
 
         return back()->with('success', 'Payout မှတ်တမ်း ဖန်တီးပြီးပါပြီ။');
     }
@@ -70,6 +73,8 @@ class PayoutController extends Controller
 
         $payout->update(['status' => 'paid', 'paid_at' => now()]);
 
+        ActivityLog::record('payout.paid', 'Paid payout '.$payout->displayCode().' ('.number_format((float) $payout->amount).' Ks)', $payout);
+
         return back()->with('success', $payout->displayCode().' ကို ပေးချေပြီးအဖြစ် မှတ်သားပြီးပါပြီ။');
     }
 
@@ -81,6 +86,8 @@ class PayoutController extends Controller
 
         $payout->update(['status' => 'hold']);
 
+        ActivityLog::record('payout.held', 'Put payout '.$payout->displayCode().' on hold', $payout, level: 'warning');
+
         return back()->with('success', $payout->displayCode().' ကို ဆိုင်းငံ့ထားပြီးပါပြီ။');
     }
 
@@ -91,6 +98,8 @@ class PayoutController extends Controller
         }
 
         $payout->update(['status' => 'rejected']);
+
+        ActivityLog::record('payout.rejected', 'Rejected payout '.$payout->displayCode(), $payout, level: 'warning');
 
         return back()->with('success', $payout->displayCode().' ကို ပယ်ချပြီးပါပြီ။');
     }

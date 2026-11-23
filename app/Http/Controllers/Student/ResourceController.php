@@ -9,8 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ResourceController extends Controller
 {
@@ -52,7 +52,7 @@ class ResourceController extends Controller
      * point at paths that may not exist on disk yet — those return the
      * student to the list with an honest message instead of a fake file.
      */
-    public function download(Request $request, LessonResource $resource): BinaryFileResponse|RedirectResponse
+    public function download(Request $request, LessonResource $resource): StreamedResponse|RedirectResponse
     {
         $resource->load('lesson.module.course:id');
 

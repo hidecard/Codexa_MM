@@ -133,8 +133,10 @@ test('instructor share defaults to 50 percent and follows the setting', function
 test('earnings stats include order revenue and use the configured share', function () {
     $instructor = intMakeUser('instructor');
     $student = intMakeUser('student');
-    $courseA = intMakeCourse($instructor, ['price' => 100000]);
-    $courseB = intMakeCourse($instructor, ['price' => 50000]);
+    // Fixed titles: courseEarnings orders by title, and faker titles
+    // made the expected order a coin flip.
+    $courseA = intMakeCourse($instructor, ['price' => 100000, 'title' => 'AAA Course']);
+    $courseB = intMakeCourse($instructor, ['price' => 50000, 'title' => 'ZZZ Course']);
 
     intMakeOrderPayment($student, [$courseA->id => 100000, $courseB->id => 50000], 150000);
     Setting::setValue('instructor_share_pct', 70, 'general');

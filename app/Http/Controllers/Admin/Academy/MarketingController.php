@@ -3,25 +3,17 @@
 namespace App\Http\Controllers\Admin\Academy;
 
 use App\Http\Controllers\Controller;
-use App\Mail\CampaignMail;
-use App\Models\CampaignTracking;
 use App\Models\EmailCampaign;
+use App\Services\CampaignDispatchService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class MarketingController extends Controller
 {
-    /**
-     * Mailers that never deliver real email. Sending is blocked while any of
-     * these is configured so the UI can never claim a fake delivery.
-     */
-    private const NON_DELIVERY_MAILERS = ['log', 'array', 'fail', 'fake'];
-
-    public function index(): Response
+    public function index(CampaignDispatchService $dispatcher): Response
     {
         $campaigns = EmailCampaign::query()
             ->withCount([
@@ -36,7 +28,7 @@ class MarketingController extends Controller
         return Inertia::render('Admin/Academy/Marketing/Index', [
             'campaigns' => $campaigns,
             'audiences' => EmailCampaign::AUDIENCE_LABELS,
-            'mailConfigured' => $this->mailIsConfigured(),
+            'mailConfigured' => $dispatcher->mailIsConfigured(),
         ]);
     }
 
@@ -90,9 +82,9 @@ class MarketingController extends Controller
         return back()->with('success', 'Campaign ပို့ရန် အချိန်သတ်မှတ်ပြီးပါပြီ။');
     }
 
-    public function send(EmailCampaign $campaign): RedirectResponse
+    public function send(EmailCampaign $campaign, CampaignDispatchService $dispatcher): RedirectResponse
     {
-        if (! $this->mailIsConfigured()) {
+        if (! $dispatcher->mailIsConfigured()) {
             return back()->withErrors([
                 'send' => 'Email ပို့ရန် mail server မပြင်ဆင်ထားသေးပါ။ MAIL_MAILER ကို အစစ်အမှန် mail service (SMTP / SES / Mailgun) အဖြစ် ပြင်ဆင်ပြီးမှ campaign ပို့နိုင်ပါမယ်။',
             ]);
@@ -102,40 +94,9 @@ class MarketingController extends Controller
             return back()->withErrors(['send' => 'ဤ campaign ကို ပို့ပြီးသားပါ။']);
         }
 
-        // Dispatch one queued mailable per active recipient in the audience.
-        // CampaignMail implements ShouldQueue, so this only enqueues jobs;
-        // a queue worker (php artisan queue:work) delivers them.
-        // Create the open/click tracking rows first so stats can populate.
-        CampaignTracking::attachToCampaign($campaign);
-
-        $dispatched = 0;
-
-        EmailCampaign::audienceQuery($campaign->audience)
-            ->chunkById(200, function ($recipients) use ($campaign, &$dispatched) {
-                foreach ($recipients as $recipient) {
-                    Mail::to($recipient)->queue(new CampaignMail($campaign, $recipient));
-                    $dispatched++;
-                }
-            });
-
-        $campaign->update([
-            'status' => EmailCampaign::STATUS_SENT,
-            'sent_at' => now(),
-            'recipients_count' => $dispatched,
-        ]);
+        $dispatcher->send($campaign);
 
         return back()->with('success', 'Campaign ပို့ပြီးပါပြီ — လက်ခံသူ '.$campaign->recipients_count.' ဦး။');
-    }
-
-    private function mailIsConfigured(): bool
-    {
-        $mailer = config('mail.default');
-
-        if (! $mailer || in_array($mailer, self::NON_DELIVERY_MAILERS, true)) {
-            return false;
-        }
-
-        return (bool) config('mail.from.address');
     }
 
     /**

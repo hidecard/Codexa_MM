@@ -30,13 +30,12 @@ export default function Index({ posts = [], categories = [] }: Props) {
     const [body, setBody] = useState('');
     const [newCat, setNewCat] = useState(categories[0] ?? 'General');
     const [notice, setNotice] = useState('');
-    // Likes/saves have no backend model yet — local display state only.
-    const [likedIds, setLikedIds] = useState<Set<number>>(new Set());
+    // Saves have no backend model yet — local display state only.
     const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
 
     const filtered = posts.filter((p) => cat === 'All' || p.cat === cat);
 
-    const toggleLike = (id: number) => setLikedIds((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+    const toggleLike = (id: number) => router.post(`/student/community/${id}/like`, {}, { preserveScroll: true });
     const toggleSave = (id: number) => setSavedIds((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
     const addPost = () => {
@@ -100,7 +99,7 @@ export default function Index({ posts = [], categories = [] }: Props) {
 
             <div className="mt-6 flex flex-col gap-4">
                 {filtered.map((p) => {
-                    const liked = likedIds.has(p.id);
+                    const liked = p.liked;
                     const saved = savedIds.has(p.id);
                     return (
                     <article key={p.id} className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
@@ -123,7 +122,7 @@ export default function Index({ posts = [], categories = [] }: Props) {
                         {p.body && <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-slate-400">{p.body}</p>}
                         <div className="mt-4 flex flex-wrap gap-2.5">
                             <button onClick={() => toggleLike(p.id)} className={`inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-xs font-bold ${liked ? 'border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-800 dark:bg-rose-900/20' : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'}`}>
-                                <Heart className={`size-4 ${liked ? 'fill-rose-500 text-rose-500' : ''}`} /> {p.likes + (liked ? 1 : 0)}
+                                <Heart className={`size-4 ${liked ? 'fill-rose-500 text-rose-500' : ''}`} /> {p.likes}
                             </button>
                             <Link href={`/student/community/${p.id}`} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
                                 <MessageCircle className="size-4" /> မှတ်ချက် {p.comments}

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Academy;
 
 use App\Http\Controllers\Controller;
+use App\Models\CommunityComment;
 use App\Models\CommunityPost;
 use App\Models\CourseReview;
 use Illuminate\Http\RedirectResponse;
@@ -112,5 +113,14 @@ class ModerationController extends Controller
         $post->delete();
 
         return back()->with('success', 'Post removed.');
+    }
+
+    // --- Community comments (admin moderation) ---
+
+    public function destroyComment(CommunityComment $comment): RedirectResponse
+    {
+        $comment->delete();
+
+        return back()->with('success', 'Comment removed.');
     }
 }

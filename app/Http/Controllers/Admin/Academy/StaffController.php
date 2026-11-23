@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Academy;
 use App\Http\Controllers\Controller;
 use App\Mail\StaffInviteMail;
 use App\Models\User;
+use App\Support\ActivityLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -97,6 +98,8 @@ class StaffController extends Controller
 
         $user->syncRoles(static::rolesFor($validated['role']));
 
+        ActivityLog::record('staff.invited', 'Invited staff member '.$user->name.' ('.$user->email.') as '.$validated['role'], $user);
+
         $setupUrl = URL::temporarySignedRoute(
             'staff.invite.accept',
             now()->addDays(self::INVITE_LINK_TTL_DAYS),
@@ -136,6 +139,8 @@ class StaffController extends Controller
 
         $user->syncRoles(static::rolesFor($validated['role']));
 
+        ActivityLog::record('staff.role_changed', "Changed {$user->name}'s role to {$validated['role']}", $user);
+
         return redirect()->back()->with('success', 'Role updated.');
     }
 
@@ -151,6 +156,8 @@ class StaffController extends Controller
         }
 
         $user->update(['status' => $validated['status']]);
+
+        ActivityLog::record('staff.status_changed', 'Set '.$user->name.' status to '.$validated['status'], $user, level: $validated['status'] === 'inactive' ? 'warning' : 'info');
 
         return redirect()->back()->with('success', 'Staff status updated.');
     }

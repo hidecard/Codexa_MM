@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Badge;
 use App\Models\CertificateTemplate;
 use App\Models\Setting;
 use App\Models\User;
@@ -288,46 +289,46 @@ test('staff status can be toggled, but not for your own account', function () {
 // Gamification
 // ---------------------------------------------------------------------------
 
-test('gamification index returns badges and xp rules', function () {
+test('gamification index returns badge records and xp rules', function () {
     $admin = platformMakeAdmin();
 
     $this->actingAs($admin)->get('/admin/academy/gamification')
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Admin/Academy/Gamification/Index')
-            ->has('badges', 6)
+            ->has('badges', 8)
             ->where('badges.0.name', 'First Steps')
-            ->where('badges.0.active', true)
+            ->where('badges.0.is_active', true)
+            ->where('badges.0.rule_type', 'lessons_completed')
+            ->where('badges.0.threshold', 1)
             ->has('xpRules', 6)
             ->where('xpRules.0.key', 'xp_lesson_complete')
             ->where('xpRules.0.xp', 20)
+            ->has('ruleTypes', 5)
+            ->has('icons')
         );
 
-    $this->assertDatabaseHas('settings', ['key' => 'badges', 'group' => 'gamification', 'type' => 'json']);
+    // Badges come from the Badge model now; no JSON 'badges' setting is created.
+    $this->assertDatabaseHas('badges', ['name' => 'First Steps', 'rule_type' => 'lessons_completed', 'threshold' => 1]);
     $this->assertDatabaseHas('settings', ['key' => 'xp_quiz_pass', 'value' => '50', 'group' => 'gamification']);
+    $this->assertDatabaseMissing('settings', ['key' => 'badges']);
 });
 
-test('gamification update persists xp rules and badges', function () {
+test('gamification update persists xp rules only', function () {
     $admin = platformMakeAdmin();
     $this->actingAs($admin)->get('/admin/academy/gamification')->assertOk();
 
     $this->actingAs($admin)->put('/admin/academy/gamification', [
         'xp_lesson_complete' => 25,
         'xp_quiz_pass' => 60,
-        'badges' => [
-            ['name' => 'First Steps', 'desc' => 'First lesson', 'xp' => 20, 'icon' => '🎯', 'active' => false],
-            ['name' => 'New Badge', 'desc' => 'Brand new', 'xp' => 5, 'icon' => '🏅', 'active' => true],
-        ],
         'some_random_key' => 'ignored',
     ])->assertRedirect();
 
     expect(Setting::getValue('xp_lesson_complete'))->toBe(25);
     expect(Setting::getValue('xp_quiz_pass'))->toBe(60);
-    $badges = Setting::getValue('badges');
-    expect($badges)->toHaveCount(2)
-        ->and($badges[0]['active'])->toBeFalse()
-        ->and($badges[1]['name'])->toBe('New Badge');
     $this->assertDatabaseMissing('settings', ['key' => 'some_random_key']);
+    // Badge records are untouched by the XP-rules update.
+    expect(Badge::count())->toBe(8);
 });
 
 // ---------------------------------------------------------------------------

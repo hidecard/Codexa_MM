@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Academy;
 
 use App\Http\Controllers\Controller;
 use App\Models\Refund;
+use App\Support\ActivityLog;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -52,6 +53,8 @@ class RefundController extends Controller
         // the refund status.
         $refund->coursePayment?->markRefunded();
 
+        ActivityLog::record('refund.approved', 'Approved refund request #'.$refund->id.' ('.number_format((float) $refund->amount).' Ks)', $refund);
+
         return back()->with('success', 'Refund တောင်းခံမှုကို အတည်ပြုပြီးပါပြီ။');
     }
 
@@ -63,6 +66,8 @@ class RefundController extends Controller
 
         $refund->update(['status' => 'rejected']);
 
+        ActivityLog::record('refund.rejected', 'Rejected refund request #'.$refund->id, $refund, level: 'warning');
+
         return back()->with('success', 'Refund တောင်းခံမှုကို ပယ်ချပြီးပါပြီ။');
     }
 
@@ -73,6 +78,8 @@ class RefundController extends Controller
         }
 
         $refund->update(['status' => 'processed']);
+
+        ActivityLog::record('refund.processed', 'Processed refund #'.$refund->id.' ('.number_format((float) $refund->amount).' Ks)', $refund);
 
         return back()->with('success', 'Refund ငွေပြန်အမ်းပြီးအဖြစ် မှတ်သားပြီးပါပြီ။');
     }

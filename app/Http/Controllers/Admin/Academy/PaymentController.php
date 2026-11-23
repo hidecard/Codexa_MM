@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Coupon;
 use App\Models\CoursePayment;
 use App\Models\Enrollment;
+use App\Support\ActivityLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -117,6 +118,8 @@ class PaymentController extends Controller
             Coupon::query()->where('code', $coursePayment->coupon_code)->increment('used_count');
         }
 
+        ActivityLog::record('payment.approved', 'Approved payment '.$coursePayment->displayCode().' ('.number_format((float) $coursePayment->amount).' Ks)', $coursePayment);
+
         return back()->with('success', $coursePayment->displayCode().' ကို အတည်ပြုပြီးပါပြီ။');
     }
 
@@ -153,6 +156,8 @@ class PaymentController extends Controller
             'reviewed_at' => now(),
         ]);
 
+        ActivityLog::record('payment.rejected', 'Rejected payment '.$coursePayment->displayCode(), $coursePayment, level: 'warning');
+
         return back()->with('success', $coursePayment->displayCode().' ကို ပယ်ချပြီးပါပြီ။');
     }
 
@@ -167,6 +172,8 @@ class PaymentController extends Controller
             'reviewed_at' => now(),
         ]);
         $coursePayment->markRefunded();
+
+        ActivityLog::record('payment.refunded', 'Refunded payment '.$coursePayment->displayCode().' ('.number_format((float) $coursePayment->amount).' Ks) — course access revoked', $coursePayment, level: 'warning');
 
         return back()->with('success', $coursePayment->displayCode().' ကို ငွေပြန်အမ်းအဖြစ် မှတ်သားပြီးပါပြီ။');
     }

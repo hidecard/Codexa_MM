@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin\Academy;
 
 use App\Http\Controllers\Controller;
 use App\Models\Lesson;
+use App\Models\LessonResource;
+use App\Services\LessonResourceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -73,8 +75,27 @@ class LessonController extends Controller
 
     public function destroy(Lesson $lesson): RedirectResponse
     {
+        app(LessonResourceService::class)->deleteForLesson($lesson);
         $lesson->delete();
 
         return back()->with('success', 'Lesson removed.');
+    }
+
+    public function storeResource(Request $request, Lesson $lesson): RedirectResponse
+    {
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'max:20480', 'mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,txt,csv,png,jpg,jpeg'],
+        ]);
+        app(LessonResourceService::class)->store($lesson, $validated['file']);
+
+        return back()->with('success', 'Resource uploaded.');
+    }
+
+    public function destroyResource(Lesson $lesson, LessonResource $resource): RedirectResponse
+    {
+        abort_unless($resource->lesson_id === $lesson->id, 404);
+        app(LessonResourceService::class)->delete($resource);
+
+        return back()->with('success', 'Resource removed.');
     }
 }

@@ -155,6 +155,8 @@ Route::middleware(['auth', 'verified', 'role:instructor'])->prefix('instructor')
     Route::post('/courses/{course}/modules/{module}/lessons', [InstructorCourseController::class, 'storeLesson'])->name('courses.modules.lessons.store');
     Route::put('/courses/{course}/modules/{module}/lessons/{lesson}', [InstructorCourseController::class, 'updateLesson'])->name('courses.modules.lessons.update');
     Route::delete('/courses/{course}/modules/{module}/lessons/{lesson}', [InstructorCourseController::class, 'destroyLesson'])->name('courses.modules.lessons.destroy');
+    Route::post('/courses/{course}/modules/{module}/lessons/{lesson}/resources', [InstructorCourseController::class, 'storeLessonResource'])->name('courses.modules.lessons.resources.store');
+    Route::delete('/courses/{course}/modules/{module}/lessons/{lesson}/resources/{resource}', [InstructorCourseController::class, 'destroyLessonResource'])->name('courses.modules.lessons.resources.destroy');
 
     Route::get('/curriculum', fn () => redirect()->route('instructor.courses.index'))->name('curriculum.index');
     Route::get('/lessons', fn () => redirect()->route('instructor.courses.index'))->name('lessons.index');
