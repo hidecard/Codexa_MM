@@ -1,18 +1,12 @@
-import { usePage, Link, Head } from '@inertiajs/react';
-import { AppShell } from '@/components/shared/app-shell';
-import { PageHeader } from '@/components/ui/page-header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, User, ArrowLeft } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { LmsShell } from '@/components/shared/lms-shell';
+import { formatDate } from '@/lib/format';
+import { Avatar, LmsCard, PageIntro, Pill, btnGhostCls, inkCls, mutedCls } from '@/pages/Admin/Academy/_shared';
+import { cn } from '@/lib/utils';
 
-interface Option {
-    id: number;
-    text: string;
-    is_correct: boolean;
-}
-
-interface Answer {
+type Option = { id: number; text: string; is_correct: boolean };
+type Answer = {
     question_id: number;
     question: string;
     question_type: string;
@@ -22,9 +16,8 @@ interface Answer {
     is_correct: boolean;
     correct_option: string | null;
     options: Option[];
-}
-
-interface Attempt {
+};
+type Attempt = {
     id: number;
     student: { id: number; name: string; email: string } | null;
     score: number;
@@ -32,97 +25,81 @@ interface Attempt {
     started_at: string;
     completed_at: string | null;
     answers: Answer[];
+};
+type Quiz = { id: number; title: string; pass_mark: number; show_correct_answers: boolean };
+
+function initials(name: string) {
+    return name
+        .split(' ')
+        .map((w) => w[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase();
 }
 
-interface Quiz {
-    id: number;
-    title: string;
-    pass_mark: number;
-    show_correct_answers: boolean;
+function optionBorder(isSelected: boolean, isCorrect: boolean, showCorrect: boolean) {
+    if (isSelected && isCorrect) return 'border-green-500';
+    if (isSelected && !isCorrect) return 'border-rose-500';
+    if (!isSelected && isCorrect && showCorrect) return 'border-green-500';
+    return 'border-slate-200 dark:border-[#1e2c52]';
 }
 
-interface PageProps {
-    quiz: Quiz;
-    attempt: Attempt;
-    [key: string]: unknown;
-}
-
-export default function AttemptDetail() {
-    const { quiz, attempt } = usePage<PageProps>().props;
+export default function AttemptDetail({ quiz, attempt }: { quiz: Quiz; attempt: Attempt }) {
     const passed = attempt.status === 'passed';
     const correctCount = attempt.answers.filter((a) => a.is_correct).length;
     const totalPoints = attempt.answers.reduce((sum, a) => sum + a.points, 0);
     const earnedPoints = attempt.answers.filter((a) => a.is_correct).reduce((sum, a) => sum + a.points, 0);
 
-    const formatDate = (dateStr: string | null) => {
-        if (!dateStr) return '-';
-        return new Date(dateStr).toLocaleString();
-    };
-
-    const headerActions = (
-        <Link href={`/instructor/quizzes/${quiz.id}/results`}>
-            <Button variant="outline"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Results</Button>
-        </Link>
-    );
-
     return (
-        <AppShell>
-            <Head title={`Attempt Details: ${quiz.title}`} />
-            <PageHeader
-                eyebrow="Codexa MM"
-                title="Attempt Details"
-                description={quiz.title}
-                actions={headerActions}
+        <LmsShell title="ဖြေဆိုမှု အသေးစိတ်" nav="instructor">
+            <Head title={`ဖြေဆိုမှု အသေးစိတ် · ${quiz.title}`} />
+            <PageIntro
+                title="ဖြေဆိုမှု အသေးစိတ်"
+                description={`${quiz.title} · ${attempt.student?.name ?? 'Unknown'}`}
+                actions={
+                    <Link href={`/instructor/quizzes/${quiz.id}/results`} className={btnGhostCls}>
+                        <ArrowLeft className="size-4" /> ရလဒ်များ ပြန်ကြည့်ရန်
+                    </Link>
+                }
             />
 
             <div className="mt-6 grid gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-2 space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Student Answers</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-6 pt-0">
+                <div className="space-y-6 lg:col-span-2">
+                    <LmsCard className="p-5 sm:p-6">
+                        <h2 className={`text-lg font-extrabold ${inkCls}`}>ကျောင်းသား အဖြေများ</h2>
+                        <div className="mt-4 space-y-6">
                             {attempt.answers.map((answer, index) => (
-                                <div key={answer.question_id} className="space-y-4 p-4 rounded-lg border bg-slate-50">
+                                <div key={answer.question_id} className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-[#1e2c52] dark:bg-[#12234a]">
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="flex-1">
-                                            <h4 className="font-medium text-slate-900">
-                                                Question {index + 1} <span className="font-normal text-slate-500">({answer.points} pts)</span>
+                                            <h4 className={`font-medium ${inkCls}`}>
+                                                မေးခွန်း {index + 1} <span className={cn('font-normal', mutedCls)}>({answer.points} မှတ်)</span>
                                             </h4>
-                                            <p className="mt-1 text-slate-700">{answer.question}</p>
+                                            <p className={`mt-1 ${inkCls}`}>{answer.question}</p>
                                         </div>
-                                        <Badge variant={answer.is_correct ? 'default' : 'danger'} className="flex-shrink-0 gap-1">
-                                            {answer.is_correct ? (
-                                                <CheckCircle className="h-3 w-3" />
-                                            ) : (
-                                                <XCircle className="h-3 w-3" />
-                                            )}
-                                            {answer.is_correct ? 'Correct' : 'Incorrect'}
-                                        </Badge>
+                                        {answer.is_correct ? (
+                                            <Pill tone="teal">
+                                                <CheckCircle className="mr-1 size-3" /> မှန်ပါတယ်
+                                            </Pill>
+                                        ) : (
+                                            <Pill tone="rose">
+                                                <XCircle className="mr-1 size-3" /> မှားပါတယ်
+                                            </Pill>
+                                        )}
                                     </div>
 
-                                    <div className="space-y-2 pl-4 border-l-2 border-slate-200">
+                                    <div className="space-y-2 border-l-2 border-slate-200 pl-4 dark:border-[#1e2c52]">
                                         {answer.question_type === 'single_choice' || answer.question_type === 'true_false' ? (
                                             answer.options.map((option) => {
                                                 const isSelected = answer.answer === option.id;
                                                 const isCorrect = option.is_correct;
-
-                                                let borderColor = '#e2e8f0';
-                                                if (isSelected && isCorrect) borderColor = '#22c55e';
-                                                else if (isSelected && !isCorrect) borderColor = '#ef4444';
-                                                else if (!isSelected && isCorrect && quiz.show_correct_answers) borderColor = '#22c55e';
-
                                                 return (
-                                                    <div key={option.id} className="flex items-center gap-3 p-3 rounded-lg border" style={{ borderColor }}>
-                                                        <span className={`flex-shrink-0 h-5 w-5 rounded border-2 flex items-center justify-center ${
-                                                            isCorrect ? 'text-green-600 border-green-600' : isSelected ? 'text-red-600 border-red-600' : 'text-slate-300 border-slate-300'
-                                                        }`}>
-                                                            {isCorrect ? <CheckCircle className="h-4 w-4" /> : isSelected ? <XCircle className="h-4 w-4" /> : null}
+                                                    <div key={option.id} className={cn('flex items-center gap-3 rounded-lg border bg-white p-3 dark:bg-[#0d1730]', optionBorder(isSelected, isCorrect, quiz.show_correct_answers))}>
+                                                        <span className={cn('flex size-5 flex-none items-center justify-center rounded-full border-2', isCorrect ? 'border-green-600 text-green-600' : isSelected ? 'border-rose-600 text-rose-600' : 'border-slate-300 text-slate-300')}>
+                                                            {isCorrect ? <CheckCircle className="size-4" /> : isSelected ? <XCircle className="size-4" /> : null}
                                                         </span>
-                                                        <span className="text-slate-700">{option.text}</span>
-                                                        {quiz.show_correct_answers && isCorrect && (
-                                                            <Badge variant="success" className="ml-auto">Correct answer</Badge>
-                                                        )}
+                                                        <span className={inkCls}>{option.text}</span>
+                                                        {quiz.show_correct_answers && isCorrect && <Pill tone="teal">အဖြေမှန်</Pill>}
                                                     </div>
                                                 );
                                             })
@@ -131,108 +108,92 @@ export default function AttemptDetail() {
                                                 const selectedIds = Array.isArray(answer.answer) ? answer.answer : [];
                                                 const isSelected = selectedIds.includes(option.id);
                                                 const isCorrect = option.is_correct;
-
-                                                let borderColor = '#e2e8f0';
-                                                if (isSelected && isCorrect) borderColor = '#22c55e';
-                                                else if (isSelected && !isCorrect) borderColor = '#ef4444';
-                                                else if (!isSelected && isCorrect && quiz.show_correct_answers) borderColor = '#22c55e';
-
                                                 return (
-                                                    <div key={option.id} className="flex items-center gap-3 p-3 rounded-lg border" style={{ borderColor }}>
-                                                        <span className={`flex-shrink-0 h-5 w-5 rounded border-2 flex items-center justify-center ${
-                                                            isCorrect ? 'text-green-600 border-green-600' : isSelected ? 'text-red-600 border-red-600' : 'text-slate-300 border-slate-300'
-                                                        }`}>
-                                                            {isCorrect ? <CheckCircle className="h-4 w-4" /> : isSelected ? <XCircle className="h-4 w-4" /> : null}
+                                                    <div key={option.id} className={cn('flex items-center gap-3 rounded-lg border bg-white p-3 dark:bg-[#0d1730]', optionBorder(isSelected, isCorrect, quiz.show_correct_answers))}>
+                                                        <span className={cn('flex size-5 flex-none items-center justify-center rounded-full border-2', isCorrect ? 'border-green-600 text-green-600' : isSelected ? 'border-rose-600 text-rose-600' : 'border-slate-300 text-slate-300')}>
+                                                            {isCorrect ? <CheckCircle className="size-4" /> : isSelected ? <XCircle className="size-4" /> : null}
                                                         </span>
-                                                        <span className="text-slate-700">{option.text}</span>
-                                                        {quiz.show_correct_answers && isCorrect && (
-                                                            <Badge variant="success" className="ml-auto">Correct answer</Badge>
-                                                        )}
+                                                        <span className={inkCls}>{option.text}</span>
+                                                        {quiz.show_correct_answers && isCorrect && <Pill tone="teal">အဖြေမှန်</Pill>}
                                                     </div>
                                                 );
                                             })
                                         ) : answer.question_type === 'short_answer' ? (
                                             <div className="space-y-2">
-                                                <div className="flex items-center gap-3 p-3 rounded-lg border border-slate-200">
-                                                    <span className="text-slate-700 font-mono text-sm">{answer.answer as string || '(empty)'}</span>
-                                                    {answer.is_correct ? (
-                                                        <CheckCircle className="h-5 w-5 text-green-600" />
-                                                    ) : (
-                                                        <XCircle className="h-5 w-5 text-red-600" />
-                                                    )}
+                                                <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-[#1e2c52] dark:bg-[#0d1730]">
+                                                    <span className={cn('font-mono text-sm', inkCls)}>{(answer.answer as string) || '(အဖြေ မရှိ)'}</span>
+                                                    {answer.is_correct ? <CheckCircle className="size-5 text-green-600" /> : <XCircle className="size-5 text-rose-600" />}
                                                 </div>
                                                 {quiz.show_correct_answers && answer.correct_option && (
-                                                    <div className="flex items-center gap-3 p-3 rounded-lg border border-green-200 bg-green-50">
-                                                        <CheckCircle className="h-5 w-5 text-green-600" />
-                                                        <span className="text-slate-700">Correct answer: <span className="font-mono">{answer.correct_option}</span></span>
+                                                    <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-900 dark:bg-green-950/30">
+                                                        <CheckCircle className="size-5 text-green-600" />
+                                                        <span className={inkCls}>
+                                                            အဖြေမှန်: <span className="font-mono">{answer.correct_option}</span>
+                                                        </span>
                                                     </div>
                                                 )}
                                             </div>
                                         ) : (
-                                            <p className="text-sm text-slate-500">Unsupported question type</p>
+                                            <p className={`text-sm ${mutedCls}`}>မပံ့ပိုးသော မေးခွန်း အမျိုးအစား</p>
                                         )}
                                     </div>
 
                                     {answer.explanation && quiz.show_correct_answers && (
-                                        <div className="mt-4 p-3 rounded-lg bg-blue-50 border border-blue-200">
-                                            <p className="text-sm text-blue-800"><strong>Explanation:</strong> {answer.explanation}</p>
+                                        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950/30">
+                                            <p className="text-sm text-blue-800 dark:text-blue-200">
+                                                <strong>ရှင်းလင်းချက်:</strong> {answer.explanation}
+                                            </p>
                                         </div>
                                     )}
                                 </div>
                             ))}
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </LmsCard>
                 </div>
 
                 <div className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Student Info</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3 pt-0">
-                            <div className="flex items-center gap-3">
-                                <User className="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600" />
-                                <div>
-                                    <p className="font-medium text-slate-900">{attempt.student?.name || 'Unknown'}</p>
-                                    <p className="text-sm text-slate-500">{attempt.student?.email}</p>
-                                </div>
+                    <LmsCard className="p-5">
+                        <h2 className={`text-lg font-extrabold ${inkCls}`}>ကျောင်းသား အချက်အလက်</h2>
+                        <div className="mt-3 flex items-center gap-3">
+                            <Avatar init={initials(attempt.student?.name ?? '?')} color="#0ea892" />
+                            <div>
+                                <p className={`font-medium ${inkCls}`}>{attempt.student?.name || 'Unknown'}</p>
+                                <p className={`text-sm ${mutedCls}`}>{attempt.student?.email}</p>
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </LmsCard>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Attempt Summary</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4 pt-0">
-                            <div className="text-center">
-                                <div className="text-4xl font-bold text-slate-900">{attempt.score}%</div>
-                                <div className="text-sm text-slate-500">{earnedPoints} / {totalPoints} points</div>
+                    <LmsCard className="p-5">
+                        <h2 className={`text-lg font-extrabold ${inkCls}`}>ဖြေဆိုမှု အကျဉ်းချုပ်</h2>
+                        <div className="mt-4 text-center">
+                            <div className={`text-4xl font-extrabold ${inkCls}`}>{attempt.score}%</div>
+                            <div className={`text-sm ${mutedCls}`}>
+                                {earnedPoints} / {totalPoints} မှတ်
                             </div>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                    <span className="text-slate-600">Status</span>
-                                    <span className={`font-medium ${passed ? 'text-green-600' : 'text-red-600'}`}>
-                                        {passed ? 'Passed' : 'Failed'}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-slate-600">Correct Answers</span>
-                                    <span className="font-medium">{correctCount} / {attempt.answers.length}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-slate-600">Started</span>
-                                    <span className="font-medium">{formatDate(attempt.started_at)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-slate-600">Completed</span>
-                                    <span className="font-medium">{formatDate(attempt.completed_at)}</span>
-                                </div>
+                        </div>
+                        <div className="mt-4 space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className={mutedCls}>အခြေအနေ</span>
+                                <span className={cn('font-medium', passed ? 'text-green-600' : 'text-rose-600')}>{passed ? 'အောင်မြင်' : 'ကျရှုံး'}</span>
                             </div>
-                        </CardContent>
-                    </Card>
+                            <div className="flex justify-between">
+                                <span className={mutedCls}>အဖြေမှန်</span>
+                                <span className={cn('font-medium', inkCls)}>
+                                    {correctCount} / {attempt.answers.length}
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className={mutedCls}>စတင်ချိန်</span>
+                                <span className={cn('font-medium', inkCls)}>{formatDate(attempt.started_at)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className={mutedCls}>ပြီးဆုံးချိန်</span>
+                                <span className={cn('font-medium', inkCls)}>{formatDate(attempt.completed_at)}</span>
+                            </div>
+                        </div>
+                    </LmsCard>
                 </div>
             </div>
-        </AppShell>
+        </LmsShell>
     );
 }

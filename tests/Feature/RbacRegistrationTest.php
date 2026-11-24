@@ -6,11 +6,13 @@ use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
-test('the standard seeder creates the four portal roles', function () {
+test('the standard seeder creates the four portal roles plus staff roles', function () {
     $this->seed();
 
+    // Four portal roles plus the Support/Finance staff roles, which enter
+    // the admin panel via the `admin.access` permission.
     expect(Role::pluck('name')->sort()->values()->all())
-        ->toBe(['admin', 'client', 'instructor', 'student']);
+        ->toBe(['admin', 'client', 'finance', 'instructor', 'student', 'support']);
 });
 
 test('public registration assigns only the student role', function () {

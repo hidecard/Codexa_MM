@@ -53,9 +53,18 @@ class PublicInstructorController extends Controller
             ->latest('published_at')
             ->get();
 
+        $reviews = \App\Models\CourseReview::query()
+            ->where('is_approved', true)
+            ->whereIn('course_id', $courses->pluck('id'))
+            ->with(['student:id,name', 'course:id,title,slug'])
+            ->latest()
+            ->take(6)
+            ->get(['id', 'course_id', 'student_id', 'rating', 'comment']);
+
         return Inertia::render('Public/Instructors/Show', [
             'instructor' => $instructor,
             'courses' => $courses,
+            'reviews' => $reviews,
         ]);
     }
 }

@@ -6,11 +6,15 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\UpdateUserProfileInformation;
+use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
 use Laravel\Fortify\Fortify;
 
@@ -23,6 +27,33 @@ class FortifyServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Custom authentication so login can enforce account status and
+        // maintenance mode with clear errors. Bad credentials still return
+        // null, which Fortify turns into the standard "auth.failed" error.
+        Fortify::authenticateUsing(function (Request $request) {
+            $user = User::where(Fortify::username(), $request->input(Fortify::username()))->first();
+
+            if (! $user || ! Hash::check((string) $request->input('password'), (string) $user->password)) {
+                return null;
+            }
+
+            if ($user->status !== 'active') {
+                throw ValidationException::withMessages([
+                    Fortify::username() => [$user->status === 'suspended'
+                        ? 'Your account has been suspended. Please contact Codexa MM support.'
+                        : 'Your account is not currently active. Please contact Codexa MM support.'],
+                ]);
+            }
+
+            if (Setting::getValue('feature_maintenance', false) && ! $user->hasRole('admin')) {
+                throw ValidationException::withMessages([
+                    Fortify::username() => ['Codexa MM is under maintenance right now. Please try again later.'],
+                ]);
+            }
+
+            return $user;
+        });
+
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
@@ -42,7 +73,13 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         Fortify::resetPasswordView(function ($request) {
-            return inertia('Auth/ResetPassword', ['request' => $request]);
+            // Pass the token and email as plain props: a raw Request object
+            // serializes to {} under Inertia, so the page would never see
+            // the token it needs to submit the reset.
+            return inertia('Auth/ResetPassword', [
+                'email' => $request->email,
+                'token' => $request->route('token'),
+            ]);
         });
 
         Fortify::verifyEmailView(function () {

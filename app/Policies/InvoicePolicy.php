@@ -14,12 +14,12 @@ class InvoicePolicy
 
     public function view(User $user, Invoice $invoice): bool
     {
-        if ($user->can('invoices.view')) {
-            return true;
-        }
-
         if ($user->hasRole('client')) {
             return $invoice->client->user_id === $user->id;
+        }
+
+        if ($user->can('invoices.view')) {
+            return true;
         }
 
         return true; // Admin and staff can view

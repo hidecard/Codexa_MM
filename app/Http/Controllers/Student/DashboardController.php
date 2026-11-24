@@ -7,7 +7,9 @@ use App\Models\Assignment;
 use App\Models\Certificate;
 use App\Models\Enrollment;
 use App\Models\LessonProgress;
+use App\Models\LiveSession;
 use App\Models\StudentNotification;
+use App\Services\BadgeService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,7 +21,7 @@ class DashboardController extends Controller
         $user = $request->user();
 
         $enrollments = Enrollment::query()
-            ->with(['course.category', 'course.modules.lessons'])
+            ->with(['course.category', 'course.instructor:id,name', 'course.modules.lessons'])
             ->where('student_id', $user->id)
             ->latest('enrolled_at')
             ->get();
@@ -61,6 +63,8 @@ class DashboardController extends Controller
                     'title' => $enrollment->course->title,
                     'slug' => $enrollment->course->slug,
                     'category' => $enrollment->course->category?->name,
+                    'instructor' => $enrollment->course->instructor?->name,
+                    'thumbnail' => $enrollment->course->thumbnail,
                 ],
                 'continue_lesson' => $continueLesson ? [
                     'id' => $continueLesson->id,
@@ -121,6 +125,58 @@ class DashboardController extends Controller
                 'created_at' => optional($n->created_at)?->toDateTimeString(),
             ])->values();
 
+        // Upcoming live classes for enrolled courses
+        $courseIds = $enrollments->pluck('course_id');
+        $liveClasses = LiveSession::query()
+            ->with(['course:id,title', 'instructor:id,name'])
+            ->withCount('attendances')
+            ->whereIn('course_id', $courseIds)
+            ->whereIn('status', [LiveSession::STATUS_SCHEDULED, LiveSession::STATUS_LIVE])
+            ->where('scheduled_at', '>=', now())
+            ->orderBy('scheduled_at')
+            ->limit(3)
+            ->get()
+            ->map(fn (LiveSession $s) => [
+                'id' => $s->id,
+                'title' => $s->title,
+                'instructor' => $s->instructor?->name ?? '',
+                'time' => $s->scheduled_at?->format('D · h:i A') ?? '',
+                'liveNow' => $s->status === LiveSession::STATUS_LIVE,
+                'status' => $s->status,
+            ])->values();
+
+        // Leaderboard (weekly XP)
+        $leaderboard = app(BadgeService::class)->leaderboard(now()->subDays(7), $user->id)
+            ->map(function (array $entry, $index) use ($user) {
+                return [
+                    'rank' => $index + 1,
+                    'name' => $entry['name'],
+                    'xp' => $entry['xp'],
+                    'you' => $entry['user_id'] === $user->id,
+                ];
+            })->values();
+
+        // Weekly study activity (last 7 days) from lesson watch time.
+        $dayNames = ['တနင်္ဂနွေ', 'တနင်္လာ', 'အင်္ဂါ', 'ဗုဒ္ဓဟူး', 'ကြာသပတေး', 'သောကြာ', 'စနေ'];
+        $weeklySeconds = LessonProgress::query()
+            ->whereIn('enrollment_id', $enrollmentIds)
+            ->where('updated_at', '>=', now()->subDays(6)->startOfDay())
+            ->selectRaw('DATE(updated_at) as day, SUM(watch_time) as seconds')
+            ->groupBy('day')
+            ->pluck('seconds', 'day');
+        $weeklyActivity = collect(range(6, 0))->map(function ($ago) use ($weeklySeconds, $dayNames) {
+            $date = now()->subDays($ago);
+            $seconds = (int) ($weeklySeconds[$date->toDateString()] ?? 0);
+
+            return [
+                'day' => $dayNames[$date->dayOfWeek],
+                'minutes' => (int) round($seconds / 60),
+            ];
+        })->values();
+        $totalWatchMinutes = (int) round(
+            LessonProgress::query()->whereIn('enrollment_id', $enrollmentIds)->sum('watch_time') / 60
+        );
+
         return Inertia::render('Student/Dashboard', [
             'enrollments' => $cards,
             'stats' => [
@@ -132,6 +188,10 @@ class DashboardController extends Controller
             'activities' => $activities,
             'certificates' => $certificates,
             'notifications' => $notifications,
+            'weeklyActivity' => $weeklyActivity,
+            'totalWatchMinutes' => $totalWatchMinutes,
+            'liveClasses' => $liveClasses,
+            'leaderboard' => $leaderboard,
         ]);
     }
 }

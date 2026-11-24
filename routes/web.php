@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\CertificateVerificationController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\InstructorApplicationController;
 use App\Http\Controllers\PublicBlogController;
 use App\Http\Controllers\PublicCourseController;
 use App\Http\Controllers\PublicFaqController;
+use App\Http\Controllers\PublicHomeController;
 use App\Http\Controllers\PublicInstructorController;
 use App\Http\Controllers\PublicPortfolioController;
 use App\Http\Controllers\PublicServiceController;
@@ -12,15 +14,30 @@ use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Public/Home');
-})->name('home');
+Route::get('/', PublicHomeController::class)->name('home');
+
+// Maintenance notice: authenticated non-admin users are redirected here
+// while feature_maintenance is on (EnsureNotUnderMaintenance middleware).
+Route::get('/maintenance', function () {
+    return Inertia::render('Auth/Maintenance');
+})->name('maintenance');
+
+Route::get('/jobs', function () {
+    return Inertia::render('Public/Jobs');
+})->name('jobs');
+
+Route::get('/teach', [InstructorApplicationController::class, 'show'])->name('teach');
+Route::post('/teach/apply', [InstructorApplicationController::class, 'store'])
+    ->middleware(['auth', 'verified'])
+    ->name('teach.apply');
 
 Route::get('/dashboard', function () {
     $user = request()->user();
 
     return match (true) {
         $user->hasRole('admin') => redirect()->route('admin.dashboard'),
+        // Support/Finance staff enter the admin panel via `admin.access`.
+        $user->hasAnyRole(['support', 'finance']) => redirect()->route('admin.dashboard'),
         $user->hasRole('instructor') => redirect()->route('instructor.dashboard'),
         $user->hasRole('client') => redirect()->route('client.dashboard'),
         $user->hasRole('student') => redirect()->route('student.dashboard'),
@@ -34,15 +51,11 @@ Route::get('/about', function () {
 
 Route::get('/courses', [PublicCourseController::class, 'index'])->name('courses.index');
 
-Route::get('/courses/categories', function () {
-    return Inertia::render('Public/Courses/Categories');
-})->name('courses.categories');
+Route::get('/courses/categories', [PublicCourseController::class, 'categories'])->name('courses.categories');
 
 Route::get('/courses/{course:slug}', [PublicCourseController::class, 'show'])->name('courses.show');
 
-Route::get('/courses/{course:slug}/curriculum', function () {
-    return Inertia::render('Public/Courses/Curriculum');
-})->name('courses.curriculum');
+Route::get('/courses/{course:slug}/curriculum', [PublicCourseController::class, 'curriculum'])->name('courses.curriculum');
 
 Route::get('/services', [PublicServiceController::class, 'index'])->name('services.index');
 
@@ -87,6 +100,14 @@ Route::get('/robots.txt', function () {
 
 require __DIR__.'/health.php';
 require __DIR__.'/auth.php';
+// Backend-completion write routes. The duplicate closure sample-data
+// routes in academy.php/admin.php were removed at integration, so these
+// controller routes are the only registration for their URIs.
+require __DIR__.'/admin_commerce.php';
+require __DIR__.'/admin_content.php';
+require __DIR__.'/admin_platform.php';
+require __DIR__.'/admin_ops.php';
+require __DIR__.'/academy_writes.php';
 require __DIR__.'/academy.php';
 require __DIR__.'/solutions.php';
 require __DIR__.'/admin.php';

@@ -27,6 +27,6 @@ class ProjectMilestone extends Model
 
     public function tasks(): HasMany
     {
-        return $this->hasMany(ProjectTask::class)->orderBy('id');
+        return $this->hasMany(ProjectTask::class, 'milestone_id')->orderBy('id');
     }
 }

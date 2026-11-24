@@ -41,6 +41,18 @@ class PublicBlogController extends Controller
         abort_unless($post->status === 'published' && $post->published_at, 404);
         $post->load(['category', 'author:id,name']);
 
-        return Inertia::render('Public/Blog/Show', ['post' => $post]);
+        $related = BlogPost::query()
+            ->published()
+            ->where('id', '!=', $post->id)
+            ->with(['category:id,name,slug', 'author:id,name'])
+            ->when($post->category_id, fn ($query) => $query->orderByRaw('category_id = ? desc', [$post->category_id]))
+            ->latest('published_at')
+            ->take(3)
+            ->get(['id', 'category_id', 'title', 'slug', 'excerpt', 'published_at']);
+
+        return Inertia::render('Public/Blog/Show', [
+            'post' => $post,
+            'related' => $related,
+        ]);
     }
 }

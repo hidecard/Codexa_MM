@@ -1,27 +1,11 @@
-import { Head, Link, router } from "@inertiajs/react";
-import {
-    ArrowRight,
-    BookOpen,
-    Clock3,
-    Search,
-    SlidersHorizontal,
-} from "lucide-react";
-import { FormEvent, useState } from "react";
+import { Head, Link, router } from '@inertiajs/react';
+import { Search } from 'lucide-react';
+import { type FormEvent, useState } from 'react';
+import { PublicLayout } from '@/components/shared/public-layout';
+import { CourseCard } from '@/components/lms/course-card';
+import { SAMPLE_COURSES, formatCount, mapApiCourse, type ApiCourse } from '../sample-data';
 
 type Category = { id: number; name: string; slug: string };
-type Course = {
-    id: number;
-    title: string;
-    slug: string;
-    short_description?: string;
-    level: string;
-    duration: number;
-    price: string;
-    sale_price?: string;
-    category?: Category;
-    instructor?: { name: string };
-    instructors?: { id?: number; name: string }[];
-};
 type Page<T> = {
     data: T[];
     current_page: number;
@@ -32,204 +16,227 @@ type Page<T> = {
     links: { url: string | null; label: string; active: boolean }[];
 };
 type Props = {
-    courses: Page<Course>;
-    categories: Category[];
-    filters: { q?: string; category?: number | null };
+    courses?: Page<ApiCourse>;
+    categories?: Category[];
+    filters?: { q?: string; category?: number | null; level?: string | null; sort?: string | null };
 };
 
-const money = (value: string) =>
-    `${new Intl.NumberFormat("en-US").format(Number(value))} MMK`;
+const levels = ['All', 'Beginner', 'Intermediate', 'Advanced'];
+const sorts = [
+    { value: 'newest', label: 'နောက်ဆုံးထွက်' },
+    { value: 'priceAsc', label: 'ဈေးအနည်းဆုံး' },
+    { value: 'priceDesc', label: 'ဈေးအများဆုံး' },
+];
 
-export default function Index({ courses, categories, filters }: Props) {
-    const [q, setQ] = useState(filters.q ?? "");
-    const [category, setCategory] = useState(
-        filters.category?.toString() ?? "",
-    );
-    const submit = (event: FormEvent) => {
-        event.preventDefault();
+export default function Index({ courses, categories = [], filters = {} }: Props) {
+    const [q, setQ] = useState(filters.q ?? '');
+    const [category, setCategory] = useState(filters.category?.toString() ?? '');
+    const [level, setLevel] = useState(filters.level ?? 'All');
+    const [sort, setSort] = useState(filters.sort ?? 'newest');
+
+    const hasActiveFilter = Boolean(filters.q || filters.category || (filters.level && filters.level !== 'All'));
+    // Sample-data fallback: only when the catalog is empty and no filter is active.
+    const usingSample = (!courses || courses.data.length === 0) && !hasActiveFilter;
+    const sampleFiltered = SAMPLE_COURSES.filter((c) => {
+        if (level !== 'All' && c.level !== level) return false;
+        if (category) {
+            const cat = categories.find((item) => item.id.toString() === category);
+            if (cat && c.category !== cat.name) return false;
+        }
+        if (q.trim()) {
+            const needle = q.trim().toLowerCase();
+            if (!`${c.title} ${c.category} ${c.instructor}`.toLowerCase().includes(needle)) return false;
+        }
+        return true;
+    }).sort((a, b) => {
+        if (sort === 'priceAsc') return (a.price ?? 0) - (b.price ?? 0);
+        if (sort === 'priceDesc') return (b.price ?? 0) - (a.price ?? 0);
+        return (b.students ?? 0) - (a.students ?? 0);
+    });
+
+    const go = (next: { q?: string; category?: string; level?: string; sort?: string }) => {
         router.get(
-            "/courses",
-            { q: q || undefined, category: category || undefined },
+            '/courses',
+            {
+                q: next.q || undefined,
+                category: next.category || undefined,
+                level: next.level && next.level !== 'All' ? next.level : undefined,
+                sort: next.sort && next.sort !== 'newest' ? next.sort : undefined,
+            },
             { preserveState: true, replace: true },
         );
     };
 
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        if (usingSample) return; // sample fallback filters client-side
+        go({ q, category, level, sort });
+    };
+
+    const pickCategory = (id: string) => {
+        setCategory(id);
+        if (!usingSample) go({ q, category: id, level, sort });
+    };
+
+    const total = usingSample ? sampleFiltered.length : (courses?.total ?? 0);
+
     return (
-        <>
-            <Head title="Academy courses" />
-            <div className="min-h-screen bg-slate-50 text-slate-950">
-                <header className="border-b border-slate-200 bg-white">
-                    <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-                        <p className="text-sm font-black uppercase tracking-[0.22em] text-blue-600">
-                            Codexa Academy
-                        </p>
-                        <h1 className="mt-4 max-w-3xl text-5xl font-black tracking-tight sm:text-6xl">
-                            Learn skills that ship.
-                        </h1>
-                        <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-                            Practical courses, guided projects, and a clearer
-                            path from your first line of code to real-world
-                            confidence.
+        <PublicLayout>
+            <Head title="သင်တန်းများ" />
+            <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">သင်တန်းများ ရှာဖွေရန်</h1>
+                        <p className="mt-1 text-sm text-[#5a6a8a] dark:text-[#97a6c6]">
+                            Programming, Web, Mobile နဲ့ Design သင်တန်း <b className="text-[#0d1730] dark:text-white">{formatCount(total)}</b> ခု ရှိပါတယ်
                         </p>
                     </div>
-                </header>
-                <main className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
-                    <form
-                        onSubmit={submit}
-                        className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row"
+                    <Link href="/courses/categories" className="text-sm font-bold text-teal-700 dark:text-teal-300">
+                        နယ်ပယ်အလိုက် ကြည့်ရန် →
+                    </Link>
+                </div>
+
+                <div className="-mx-1 mt-6 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    <button
+                        type="button"
+                        onClick={() => pickCategory('')}
+                        className={`flex-none rounded-full px-4 py-2 text-sm font-bold transition ${
+                            category === ''
+                                ? 'bg-teal-600 text-white'
+                                : 'bg-white text-[#5a6a8a] ring-1 ring-[#dce3f0] hover:bg-[#eef3fb] dark:bg-[#0d1730] dark:text-[#97a6c6] dark:ring-[#1e2c52] dark:hover:bg-[#12234a]'
+                        }`}
                     >
-                        <label className="relative flex-1">
-                            <span className="sr-only">Search courses</span>
-                            <Search
-                                className="absolute left-3 top-3.5 text-slate-400"
-                                size={18}
-                            />
-                            <input
-                                value={q}
-                                onChange={(e) => setQ(e.target.value)}
-                                placeholder="Search courses…"
-                                className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-4 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                            />
-                        </label>
-                        <label className="flex items-center gap-2 rounded-xl border border-slate-200 px-3">
-                            <SlidersHorizontal
-                                size={17}
-                                className="text-slate-400"
-                            />
-                            <span className="sr-only">Filter by category</span>
-                            <select
-                                value={category}
-                                onChange={(e) => setCategory(e.target.value)}
-                                className="bg-transparent py-3 pr-8 text-sm font-semibold outline-none"
-                            >
-                                <option value="">All categories</option>
-                                {categories.map((item) => (
-                                    <option key={item.id} value={item.id}>
-                                        {item.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                        <button className="rounded-xl bg-slate-950 px-6 py-3 font-bold text-white transition hover:bg-blue-600">
-                            Search
+                        အားလုံး
+                    </button>
+                    {categories.map((c) => (
+                        <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => pickCategory(c.id.toString())}
+                            className={`flex-none rounded-full px-4 py-2 text-sm font-bold transition ${
+                                category === c.id.toString()
+                                    ? 'bg-teal-600 text-white'
+                                    : 'bg-white text-[#5a6a8a] ring-1 ring-[#dce3f0] hover:bg-[#eef3fb] dark:bg-[#0d1730] dark:text-[#97a6c6] dark:ring-[#1e2c52] dark:hover:bg-[#12234a]'
+                            }`}
+                        >
+                            {c.name}
                         </button>
-                    </form>
-                    <div className="mt-10 flex items-center justify-between">
-                        <p className="text-sm font-semibold text-slate-500">
-                            {courses.total} course
-                            {courses.total === 1 ? "" : "s"} available
-                        </p>
-                        <p className="hidden text-sm text-slate-500 sm:block">
-                            {courses.from && courses.to
-                                ? `Showing ${courses.from}–${courses.to}`
-                                : "No results"}
-                        </p>
-                    </div>
-                    {courses.data.length ? (
-                        <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                            {courses.data.map((course) => (
-                                <article
-                                    key={course.id}
-                                    className="group flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-slate-200/60"
-                                >
-                                    <div className="flex h-40 items-end bg-gradient-to-br from-blue-600 via-blue-500 to-slate-950 p-5">
-                                        <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
-                                            {course.category?.name}
-                                        </span>
-                                    </div>
-                                    <div className="flex flex-1 flex-col p-6">
-                                        <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-slate-400">
-                                            <span>{course.level}</span>
-                                            <span>·</span>
-                                            <span className="inline-flex items-center gap-1">
-                                                <Clock3 size={13} />{" "}
-                                                {course.duration} hours
-                                            </span>
-                                        </div>
-                                        <h2 className="mt-3 text-2xl font-black leading-tight">
-                                            {course.title}
-                                        </h2>
-                                        <p className="mt-3 flex-1 leading-7 text-slate-600">
-                                            {course.short_description}
-                                        </p>
-                                        {(() => {
-                                            const names = Array.from(
-                                                new Set(
-                                                    [course.instructor?.name, ...(course.instructors ?? []).map((i) => i.name)].filter(
-                                                        (n): n is string => Boolean(n),
-                                                    ),
-                                                ),
-                                            );
-                                            return names.length ? (
-                                                <p className="mt-3 text-sm font-semibold text-slate-500">By {names.join(', ')}</p>
-                                            ) : null;
-                                        })()}
-                                        <div className="mt-6 flex items-end justify-between gap-4">
-                                            <div>
-                                                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                                    From
-                                                </p>
-                                                <p className="mt-1 text-lg font-black text-slate-950">
-                                                    {money(
-                                                        course.sale_price ??
-                                                            course.price,
-                                                    )}
-                                                </p>
-                                            </div>
-                                            <Link
-                                                href={`/courses/${course.slug}`}
-                                                className="inline-flex items-center gap-2 font-bold text-blue-600 transition group-hover:gap-3"
-                                            >
-                                                View course{" "}
-                                                <ArrowRight size={17} />
-                                            </Link>
-                                        </div>
-                                    </div>
-                                </article>
+                    ))}
+                </div>
+
+                <form onSubmit={submit} className="mt-4 flex flex-wrap gap-3">
+                    <label className="relative min-w-[210px] flex-1">
+                        <span className="sr-only">သင်တန်း ရှာရန်</span>
+                        <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#8494b3] dark:text-[#67779c]" />
+                        <input
+                            type="search"
+                            value={q}
+                            onChange={(e) => setQ(e.target.value)}
+                            placeholder="သင်တန်းအမည်၊ နည်းပညာ ရှာရန်…"
+                            className="w-full rounded-xl bg-white py-2.5 pl-10 pr-4 text-sm ring-1 ring-[#dce3f0] outline-none placeholder:text-[#8494b3] focus:ring-2 focus:ring-teal-500 dark:bg-[#0d1730] dark:ring-[#1e2c52] dark:placeholder:text-[#67779c]"
+                        />
+                    </label>
+                    <select
+                        value={level}
+                        onChange={(e) => {
+                            setLevel(e.target.value);
+                            if (!usingSample) go({ q, category, level: e.target.value, sort });
+                        }}
+                        aria-label="Level"
+                        className="rounded-xl bg-white px-3.5 py-2.5 text-sm font-semibold ring-1 ring-[#dce3f0] outline-none focus:ring-2 focus:ring-teal-500 dark:bg-[#0d1730] dark:ring-[#1e2c52]"
+                    >
+                        {levels.map((l) => (
+                            <option key={l} value={l}>
+                                {l === 'All' ? 'Level အားလုံး' : l}
+                            </option>
+                        ))}
+                    </select>
+                    <select
+                        value={sort}
+                        onChange={(e) => {
+                            setSort(e.target.value);
+                            if (!usingSample) go({ q, category, level, sort: e.target.value });
+                        }}
+                        aria-label="Sort"
+                        className="rounded-xl bg-white px-3.5 py-2.5 text-sm font-semibold ring-1 ring-[#dce3f0] outline-none focus:ring-2 focus:ring-teal-500 dark:bg-[#0d1730] dark:ring-[#1e2c52]"
+                    >
+                        {sorts.map((s) => (
+                            <option key={s.value} value={s.value}>
+                                {s.label}
+                            </option>
+                        ))}
+                    </select>
+                    <button type="submit" className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-teal-700">
+                        ရှာဖွေရန်
+                    </button>
+                </form>
+
+                {usingSample ? (
+                    sampleFiltered.length > 0 ? (
+                        <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                            {sampleFiltered.map((course) => (
+                                <CourseCard key={course.id} course={course} />
                             ))}
                         </div>
                     ) : (
-                        <div className="mt-6 rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-20 text-center">
-                            <BookOpen
-                                className="mx-auto text-slate-300"
-                                size={36}
-                            />
-                            <h2 className="mt-4 text-xl font-black">
-                                No courses found
-                            </h2>
-                            <p className="mt-2 text-slate-500">
-                                Try a different search or category.
-                            </p>
+                        <EmptyCatalog onReset={() => { setQ(''); setCategory(''); setLevel('All'); }} />
+                    )
+                ) : courses && courses.data.length > 0 ? (
+                    <>
+                        <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                            {courses.data.map((course) => (
+                                <CourseCard key={course.id} course={mapApiCourse(course)} showAddToCart />
+                            ))}
                         </div>
-                    )}
-                    <nav
-                        className="mt-10 flex flex-wrap justify-center gap-2"
-                        aria-label="Course pagination"
-                    >
-                        {courses.links.map((link, index) =>
-                            link.url ? (
-                                <Link
-                                    key={index}
-                                    href={link.url}
-                                    preserveScroll
-                                    className={`rounded-lg px-3 py-2 text-sm font-bold ${link.active ? "bg-blue-600 text-white" : "bg-white text-slate-600 hover:bg-blue-50"}`}
-                                    dangerouslySetInnerHTML={{
-                                        __html: link.label,
-                                    }}
-                                />
-                            ) : (
-                                <span
-                                    key={index}
-                                    className="rounded-lg px-3 py-2 text-sm text-slate-300"
-                                    dangerouslySetInnerHTML={{
-                                        __html: link.label,
-                                    }}
-                                />
-                            ),
+                        {courses.links.length > 3 && (
+                            <nav className="mt-10 flex flex-wrap justify-center gap-2" aria-label="Pagination">
+                                {courses.links.map((link, i) =>
+                                    link.url ? (
+                                        <Link
+                                            key={i}
+                                            href={link.url}
+                                            preserveScroll
+                                            className={`rounded-lg px-3 py-2 text-sm font-bold ${
+                                                link.active
+                                                    ? 'bg-teal-600 text-white'
+                                                    : 'bg-white text-[#5a6a8a] ring-1 ring-[#dce3f0] hover:bg-[#eef3fb] dark:bg-[#0d1730] dark:text-[#97a6c6] dark:ring-[#1e2c52]'
+                                            }`}
+                                            dangerouslySetInnerHTML={{ __html: link.label }}
+                                        />
+                                    ) : (
+                                        <span key={i} className="rounded-lg px-3 py-2 text-sm text-[#8494b3]" dangerouslySetInnerHTML={{ __html: link.label }} />
+                                    ),
+                                )}
+                            </nav>
                         )}
-                    </nav>
-                </main>
+                    </>
+                ) : (
+                    <EmptyCatalog
+                        onReset={() => {
+                            setQ('');
+                            setCategory('');
+                            setLevel('All');
+                            router.get('/courses', {}, { preserveState: true, replace: true });
+                        }}
+                    />
+                )}
             </div>
-        </>
+        </PublicLayout>
+    );
+}
+
+function EmptyCatalog({ onReset }: { onReset: () => void }) {
+    return (
+        <div className="mt-6 rounded-2xl bg-white p-10 text-center ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52]">
+            <p className="text-lg font-extrabold">ရှာဖွေမှုနဲ့ ကိုက်ညီတဲ့ သင်တန်း မတွေ့ပါ</p>
+            <p className="mt-1.5 text-sm text-[#5a6a8a] dark:text-[#97a6c6]">တခြား keyword သို့မဟုတ် category ဖြင့် ပြန်ရှာကြည့်ပါ</p>
+            <button
+                type="button"
+                onClick={onReset}
+                className="mt-4 rounded-xl bg-white px-4 py-2 text-sm font-bold ring-1 ring-[#dce3f0] transition hover:bg-[#eef3fb] dark:bg-[#0d1730] dark:ring-[#1e2c52] dark:hover:bg-[#12234a]"
+            >
+                Filter အားလုံး ရှင်းရန်
+            </button>
+        </div>
     );
 }

@@ -7,6 +7,13 @@
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <link rel="apple-touch-icon" href="{{ asset('brand/codexa-mark.svg') }}">
     <title>{{ config('app.name', 'Code Nest') }}</title>
+    <script>
+        try {
+            document.documentElement.dataset.theme = localStorage.getItem('codexa-theme') || 'light';
+        } catch (e) {
+            document.documentElement.dataset.theme = 'light';
+        }
+    </script>
     @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.tsx'])
     @inertiaHead

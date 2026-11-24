@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Listeners\LogAuthActivity;
 use App\Models\Assignment;
 use App\Models\Client;
 use App\Models\Course;
+use App\Models\Enrollment;
 use App\Models\Invoice;
 use App\Models\Lead;
 use App\Models\Project;
@@ -28,6 +30,11 @@ use App\Policies\ServiceCategoryPolicy;
 use App\Policies\ServicePolicy;
 use App\Policies\SubmissionPolicy;
 use App\Policies\SupportTicketPolicy;
+use App\Observers\CourseObserver;
+use App\Observers\EnrollmentObserver;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -60,6 +67,13 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Quotation::class, QuotationPolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);
         Gate::policy(SupportTicket::class, SupportTicketPolicy::class);
+
+        // Activity-log instrumentation: auth events and the course /
+        // enrollment lifecycle write to system_logs (see App\Support\ActivityLog).
+        Event::listen(Login::class, [LogAuthActivity::class, 'handleLogin']);
+        Event::listen(Logout::class, [LogAuthActivity::class, 'handleLogout']);
+        Course::observe(CourseObserver::class);
+        Enrollment::observe(EnrollmentObserver::class);
 
         Gate::define('access-student-portal', fn ($user) => $user->hasRole('student'));
         Gate::define('access-instructor-portal', fn ($user) => $user->hasRole('instructor'));

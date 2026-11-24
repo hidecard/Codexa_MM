@@ -1,45 +1,146 @@
-﻿import { Head, router } from '@inertiajs/react';
-import { PublicLayout } from '@/components/shared/public-layout';
-import { PageHeader } from '@/components/ui/page-header';
-import { Search } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { ChevronDown, Mail, MessageSquare, Search } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
+import { PublicLayout } from '@/components/shared/public-layout';
+import { SAMPLE_FAQS } from './sample-data';
 
 type FaqItem = { id: number; question: string; answer: string; category?: string | null };
 type Page<T> = { data: T[]; links: { url: string | null; label: string; active: boolean }[] };
 type Props = { faqs?: Page<FaqItem>; categories?: string[]; filters?: { q?: string; category?: string } };
 
-const fallback: FaqItem[] = [
-    { id: 1, question: 'What is Codexa MM?', answer: 'Codexa MM is a platform combining Codexa Academy (programming education) and Codexa Solutions (software development services).' },
-    { id: 2, question: 'Who can enroll in courses?', answer: 'Anyone can register as a student to browse and enroll in available courses.' },
-    { id: 3, question: 'Do you build custom software?', answer: 'Yes. Codexa Solutions provides web, mobile, and software development services. Contact us to discuss your project.' },
-    { id: 4, question: 'How do I get started?', answer: 'Create an account to access the student portal, or reach out through the contact page for services and partnerships.' },
-];
+const fallback: FaqItem[] = SAMPLE_FAQS.map((f, i) => ({ id: i + 1, question: f.q, answer: f.a }));
 
 export default function Faq({ faqs, categories = [], filters = {} }: Props) {
     const [q, setQ] = useState(filters.q ?? '');
     const [category, setCategory] = useState(filters.category ?? '');
-    const items = faqs?.data?.length ? faqs.data : (faqs ? [] : fallback);
-    const submit = (event: FormEvent) => { event.preventDefault(); router.get('/faq', { q: q || undefined, category: category || undefined }, { preserveState: true, replace: true }); };
+    const [openId, setOpenId] = useState<number | null>(null);
+    const items = faqs?.data?.length ? faqs.data : faqs ? [] : fallback;
+
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        if (!faqs) return; // sample fallback: filter client-side below
+        router.get('/faq', { q: q || undefined, category: category || undefined }, { preserveState: true, replace: true });
+    };
+
+    const visible = faqs
+        ? items
+        : items.filter((item) => {
+              if (q.trim()) {
+                  const needle = q.trim().toLowerCase();
+                  if (!`${item.question} ${item.answer}`.toLowerCase().includes(needle)) return false;
+              }
+              return true;
+          });
 
     return (
         <PublicLayout>
-            <Head title="FAQ" />
-            <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-                <PageHeader eyebrow="Support" title="Frequently Asked Questions" description="Quick answers about Codexa MM, our academy, and our services." />
-                <form onSubmit={submit} className="mt-8 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row">
-                    <label className="relative flex-1"><span className="sr-only">Search FAQs</span><Search className="absolute left-3 top-3 text-slate-400" size={18} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search questions…" className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-4 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" /></label>
-                    <label className="sm:w-44"><span className="sr-only">Filter by category</span><select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"><option value="">All categories</option>{categories.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-                    <button className="rounded-xl bg-slate-950 px-5 py-2.5 font-semibold text-white hover:bg-blue-600">Search</button>
+            <Head title="အကူအညီ & FAQ" />
+            <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+                <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">အကူအညီ & FAQ</h1>
+                <p className="mt-1 text-sm text-[#5a6a8a] dark:text-[#97a6c6]">မကြာခဏ မေးလေ့ရှိတဲ့ မေးခွန်းတွေရဲ့ အဖြေများနဲ့ support ထံ ဆက်သွယ်ရန် နည်းလမ်းများ</p>
+
+                <form onSubmit={submit} className="mt-8 flex flex-col gap-3 rounded-2xl bg-white p-4 ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52] sm:flex-row">
+                    <label className="relative flex-1">
+                        <span className="sr-only">မေးခွန်း ရှာရန်</span>
+                        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#8494b3] dark:text-[#67779c]" />
+                        <input
+                            value={q}
+                            onChange={(e) => setQ(e.target.value)}
+                            placeholder="မေးခွန်း ရှာရန်…"
+                            className="w-full rounded-xl bg-white py-2.5 pl-10 pr-4 text-sm ring-1 ring-[#dce3f0] outline-none placeholder:text-[#8494b3] focus:ring-2 focus:ring-teal-500 dark:bg-[#0d1730] dark:ring-[#1e2c52] dark:placeholder:text-[#67779c]"
+                        />
+                    </label>
+                    {categories.length > 0 && (
+                        <label className="sm:w-44">
+                            <span className="sr-only">အမျိုးအစား</span>
+                            <select
+                                value={category}
+                                onChange={(e) => setCategory(e.target.value)}
+                                className="w-full rounded-xl bg-white px-3 py-2.5 text-sm ring-1 ring-[#dce3f0] outline-none focus:ring-2 focus:ring-teal-500 dark:bg-[#0d1730] dark:ring-[#1e2c52]"
+                            >
+                                <option value="">အမျိုးအစား အားလုံး</option>
+                                {categories.map((item) => (
+                                    <option key={item} value={item}>
+                                        {item}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    )}
+                    <button type="submit" className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-teal-700">
+                        ရှာဖွေရန်
+                    </button>
                 </form>
-                <div className="mt-10 space-y-4">
-                    {items.map((item) => (
-                        <details key={item.id ?? item.question} className="group rounded-2xl border border-slate-200 bg-white p-5">
-                            <summary className="cursor-pointer list-none rounded-lg font-semibold text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">{item.question}</summary>
-                            <p className="mt-3 whitespace-pre-line leading-7 text-slate-600">{item.answer}</p>
-                        </details>
+
+                <h2 className="mt-10 text-xl font-extrabold">အမေးများသော မေးခွန်းများ</h2>
+                <div className="mt-4 space-y-3.5">
+                    {visible.map((item) => (
+                        <div key={item.id ?? item.question} className="overflow-hidden rounded-2xl bg-white ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52]">
+                            <button type="button" onClick={() => setOpenId(openId === item.id ? null : item.id)} className="flex w-full items-center gap-3 p-5 text-left">
+                                <span className="min-w-0 flex-1 font-extrabold leading-snug">{item.question}</span>
+                                <ChevronDown className={`size-4 flex-none text-[#8494b3] transition-transform dark:text-[#67779c] ${openId === item.id ? 'rotate-180' : ''}`} />
+                            </button>
+                            {openId === item.id && (
+                                <div className="px-5 pb-5">
+                                    <p className="whitespace-pre-line text-sm leading-relaxed text-[#5a6a8a] dark:text-[#97a6c6]">{item.answer}</p>
+                                </div>
+                            )}
+                        </div>
                     ))}
+                    {visible.length === 0 && (
+                        <p className="rounded-2xl bg-white p-8 text-center text-sm text-[#5a6a8a] ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52] dark:text-[#97a6c6]">
+                            ရှာဖွေမှုနဲ့ ကိုက်ညီတဲ့ မေးခွန်း မတွေ့ပါ
+                        </p>
+                    )}
                 </div>
-                {faqs && <nav className="mt-10 flex flex-wrap justify-center gap-2" aria-label="FAQ pagination">{faqs.links.map((link, i) => link.url ? <a key={i} href={link.url} className={`rounded-lg px-3 py-2 text-sm font-bold ${link.active ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-blue-50'}`} dangerouslySetInnerHTML={{ __html: link.label }} /> : <span key={i} className="rounded-lg px-3 py-2 text-sm text-slate-300" dangerouslySetInnerHTML={{ __html: link.label }} />)}</nav>}
+
+                {faqs && faqs.links.length > 3 && (
+                    <nav className="mt-10 flex flex-wrap justify-center gap-2" aria-label="FAQ pagination">
+                        {faqs.links.map((link, i) =>
+                            link.url ? (
+                                <a
+                                    key={i}
+                                    href={link.url}
+                                    className={`rounded-lg px-3 py-2 text-sm font-bold ${
+                                        link.active
+                                            ? 'bg-teal-600 text-white'
+                                            : 'bg-white text-[#5a6a8a] ring-1 ring-[#dce3f0] hover:bg-[#eef3fb] dark:bg-[#0d1730] dark:text-[#97a6c6] dark:ring-[#1e2c52]'
+                                    }`}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ) : (
+                                <span key={i} className="rounded-lg px-3 py-2 text-sm text-[#8494b3]" dangerouslySetInnerHTML={{ __html: link.label }} />
+                            ),
+                        )}
+                    </nav>
+                )}
+
+                <section className="mt-10 rounded-2xl bg-white p-6 ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52]">
+                    <h2 className="text-lg font-extrabold">Support Ticket တင်ရန်</h2>
+                    <p className="mt-1 text-sm leading-relaxed text-[#5a6a8a] dark:text-[#97a6c6]">
+                        အဖြေ မတွေ့ရင် ပြဿနာကို အသေးစိတ် ရေးပြီး တင်ပေးပါ — ပုံမှန်အားဖြင့် 1 ရက်အတွင်း ပြန်ဖြေပေးပါတယ်
+                    </p>
+                    <div className="mt-5 flex flex-wrap gap-3">
+                        <Link href="/contact" className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-teal-700">
+                            <Mail className="size-4" /> ဆက်သွယ်ရန်
+                        </Link>
+                        <Link
+                            href="/student/messages"
+                            className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold ring-1 ring-[#dce3f0] transition hover:bg-[#eef3fb] dark:bg-[#0d1730] dark:ring-[#1e2c52] dark:hover:bg-[#12234a]"
+                        >
+                            <MessageSquare className="size-4" /> Messages မှ စာပို့ရန်
+                        </Link>
+                        <Link
+                            href="/student/community"
+                            className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold ring-1 ring-[#dce3f0] transition hover:bg-[#eef3fb] dark:bg-[#0d1730] dark:ring-[#1e2c52] dark:hover:bg-[#12234a]"
+                        >
+                            Community မှာ မေးရန်
+                        </Link>
+                    </div>
+                    <p className="mt-4 text-sm text-[#5a6a8a] dark:text-[#97a6c6]">
+                        Email: <a href="mailto:support@codexamm.com" className="font-semibold text-teal-700 dark:text-teal-300">support@codexamm.com</a>
+                    </p>
+                </section>
             </div>
         </PublicLayout>
     );

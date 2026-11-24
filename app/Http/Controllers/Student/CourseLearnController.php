@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Models\CourseQuestion;
 use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
+use App\Services\BadgeService;
 use App\Services\CertificateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -70,7 +72,11 @@ class CourseLearnController extends Controller
 
         $meta = $lesson->meta ?? [];
         $captions = collect($meta['captions'] ?? [])->filter(fn ($c) => is_array($c) && ! empty($c['src']))->values()->all();
-        $hasVideo = $lesson->type === 'video' && ! empty($lesson->getRawOriginal('video_url'));
+        $rawVideoUrl = $lesson->getRawOriginal('video_url');
+        $youtubeId = $this->extractYoutubeId(is_string($rawVideoUrl) ? $rawVideoUrl : null)
+            ?? (is_string($meta['youtube_id'] ?? null) ? $meta['youtube_id'] : null);
+        // A YouTube lesson is played via the embed, not the signed local stream.
+        $hasVideo = $lesson->type === 'video' && $youtubeId === null && ! empty($rawVideoUrl);
         $streamUrl = $hasVideo
             ? URL::temporarySignedRoute('student.courses.lesson.stream', now()->addMinutes(30), [
                 'course' => $course->id,
@@ -105,10 +111,28 @@ class CourseLearnController extends Controller
                     'size' => $r->file_size,
                 ])->values(),
                 'stream_url' => $streamUrl,
+                'youtube_id' => $youtubeId,
+                'video_url' => is_string($rawVideoUrl) ? $rawVideoUrl : null,
                 'captions' => $captions,
                 'resume_position' => (int) (data_get($currentProgress?->meta, 'position') ?? $currentProgress?->watch_time ?? 0),
                 'playback_speeds' => [0.75, 1, 1.25, 1.5, 1.75, 2],
             ],
+            // The student's own questions for this lesson, with answers.
+            'questions' => CourseQuestion::query()
+                ->with('answeredBy:id,name')
+                ->where('course_id', $course->id)
+                ->where('lesson_id', $lesson->id)
+                ->where('student_id', $request->user()->id)
+                ->latest()
+                ->get()
+                ->map(fn (CourseQuestion $q) => [
+                    'id' => $q->id,
+                    'question' => $q->question,
+                    'answer' => $q->answer,
+                    'is_answered' => (bool) $q->is_answered,
+                    'answered_by' => $q->answeredBy?->name,
+                    'created_at' => optional($q->created_at)?->toDateTimeString(),
+                ])->values(),
         ]);
     }
 
@@ -170,6 +194,9 @@ class CourseLearnController extends Controller
 
         $this->recalculateCompletion($course, $enrollment);
 
+        // Completing a lesson can earn XP-based and lesson/course badges.
+        app(BadgeService::class)->evaluate($request->user());
+
         return back()->with('success', 'Lesson marked as complete.');
     }
 
@@ -200,5 +227,18 @@ class CourseLearnController extends Controller
         abort_unless($enrollment, 403, 'You are not enrolled in this course.');
 
         return $enrollment;
+    }
+
+    private function extractYoutubeId(?string $url): ?string
+    {
+        if (! $url) {
+            return null;
+        }
+
+        if (preg_match('/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/', $url, $m)) {
+            return $m[1];
+        }
+
+        return null;
     }
 }
