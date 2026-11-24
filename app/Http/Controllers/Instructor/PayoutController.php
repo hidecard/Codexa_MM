@@ -188,7 +188,7 @@ class PayoutController extends Controller
             ->whereIn('course_id', $courseIds)
             ->where('status', 'approved')
             ->where('created_at', '>=', $from)
-            ->selectRaw("strftime('%Y-%m', created_at) as month, COUNT(*) as sales, SUM(amount) as total")
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as sales, SUM(amount) as total")
             ->groupBy('month')
             ->get()
             ->keyBy('month');

@@ -33,7 +33,7 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'ziggy' => fn () => [
-                ...(new Ziggy)->toArray(),
+                ...$this->ziggyRoutes(),
                 'location' => $request->url(),
             ],
             'flash' => [
@@ -41,5 +41,20 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
             ],
         ];
+    }
+
+    /**
+     * Get Ziggy route definitions, gracefully degrading when route
+     * reflection fails (e.g. SerializableClosure not installed).
+     *
+     * @return array<string, mixed>
+     */
+    protected function ziggyRoutes(): array
+    {
+        try {
+            return (new Ziggy)->toArray();
+        } catch (\ReflectionException) {
+            return [];
+        }
     }
 }

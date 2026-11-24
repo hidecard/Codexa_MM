@@ -25,6 +25,7 @@ use App\Http\Controllers\Student\QuizController;
 use App\Http\Controllers\Student\ResourceController as StudentResourceController;
 use App\Http\Controllers\Student\ReviewController;
 use App\Http\Controllers\Student\ScheduleController as StudentScheduleController;
+use App\Http\Controllers\Student\SearchController;
 use App\Http\Controllers\Student\WishlistController as StudentWishlistController;
 use App\Models\Quiz;
 use Illuminate\Support\Facades\Route;
@@ -132,7 +133,7 @@ Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->name
     Route::get('/events', fn () => Inertia::render('Student/Events/Index'))->name('events.index');
     Route::get('/mentors', fn () => Inertia::render('Student/Mentors/Index'))->name('mentors.index');
     Route::get('/referrals', fn () => Inertia::render('Student/Referrals/Index'))->name('referrals.index');
-    Route::get('/search', fn () => Inertia::render('Student/Search/Index'))->name('search.index');
+    Route::get('/search', [SearchController::class])->name('search.index');
     Route::get('/study-groups', fn () => Inertia::render('Student/StudyGroups/Index'))->name('study-groups.index');
     Route::get('/gift-cards', fn () => Inertia::render('Student/GiftCards/Index'))->name('gift-cards.index');
     Route::get('/whats-new', fn () => Inertia::render('Student/WhatsNew/Index'))->name('whats-new.index');

@@ -97,7 +97,7 @@ class AcademyAnalytics
             ->where('status', 'approved')
             ->where('created_at', '>=', $from)
             ->when($courseIds !== null, fn (Builder $q) => $q->whereIn('course_id', $courseIds))
-            ->selectRaw("strftime('%Y-%m', created_at) as month, SUM(amount) as total")
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(amount) as total")
             ->groupBy('month')
             ->pluck('total', 'month');
 
@@ -125,7 +125,7 @@ class AcademyAnalytics
 
         $counts = Enrollment::query()
             ->where('enrolled_at', '>=', $from)
-            ->selectRaw("strftime('%Y-%m', enrolled_at) as month, COUNT(*) as total")
+            ->selectRaw("DATE_FORMAT(enrolled_at, '%Y-%m') as month, COUNT(*) as total")
             ->groupBy('month')
             ->pluck('total', 'month');
 
