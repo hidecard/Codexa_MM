@@ -1,58 +1,104 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Codexa MM
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+**Learn. Build. Innovate.** Codexa MM is a Myanmar-focused learning and digital-solutions platform. The repository contains a Laravel application with an Inertia.js, React, and TypeScript frontend.
 
-## About Laravel
+> **Project status:** Core public-site, learning-management, administration, client-portal, and finance code is present. This repository has not yet documented a production deployment or continuous-integration workflow. Treat seeded credentials and sample content as development-only. Review the [implementation roadmap](todo.md) and verify the current code and tests before deploying.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Product areas
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Public website:** course and service catalogues, portfolio, instructors, blog, FAQ, contact form, SEO metadata, sitemap, and certificate verification.
+- **Codexa Academy:** role-based student and instructor portals; course curriculum and learning; enrollments and progress; assignments, quizzes, reviews, announcements, and certificates; administration and moderation.
+- **Codexa Solutions:** service and lead management, projects, milestones, tasks, client documents, support, feedback, quotations, invoices, and payment records.
+- **Administration and operations:** user and role management, content, settings, reports, activity logs, imports, integrations, scheduled campaigns, and live-class-related code.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+The presence of a screen or route does not by itself mean the workflow has passed production testing. Payment-provider integration and other deployment-dependent capabilities may require additional configuration.
 
-## Learning Laravel
+## Technology
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- PHP 8.3 or newer and Laravel 13
+- Inertia.js with React 18 and TypeScript
+- Vite 8 and Tailwind CSS 4
+- SQLite by default for local development; Laravel database configuration also defines other drivers
+- Pest for application tests
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Requirements
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Install PHP 8.3+, Composer, Node.js compatible with Vite 8 (Node.js 20.19+ or 22.12+), and npm. Enable the PHP extensions required by Laravel and the Composer packages, including PDO/SQLite when using the default local database.
 
-## Agentic Development
+## Local development
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+From the repository root:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+cp .env.example .env
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+The default database is SQLite. Create its file before running migrations:
+
+```bash
+touch database/database.sqlite
+php artisan key:generate
+php artisan migrate --seed
+```
+
+Install frontend dependencies and compile assets:
+
+```bash
+npm ci
+npm run build
+```
+
+Start the Laravel development server:
+
+```bash
+php artisan serve
+```
+
+Open `http://127.0.0.1:8000`. For frontend hot reload, run `npm run dev` in a second terminal while developing.
+
+### Seeded development accounts
+
+Running `php artisan db:seed` creates development accounts for the administrator, instructor, client, and student roles. The seeder uses the password `password`; example addresses include `admin@codexamm.test`, `instructor@codexamm.test`, `client@codexamm.test`, and `student@codexamm.test`.
+
+**These credentials are public in source code and must never be used in a production environment.** Do not seed these accounts into a publicly accessible deployment. Create production accounts through a secure, controlled process and set unique credentials.
+
+## Checks
+
+Run the backend suite with:
+
+```bash
+php artisan test
+```
+
+Run the production frontend build with:
+
+```bash
+npm run build
+```
+
+TypeScript is configured in `tsconfig.json`. A dedicated `typecheck` script is not currently defined in `package.json`; use the project's chosen TypeScript command or add a maintained check script before relying on it in CI. Formatting and CI requirements are tracked in [`todo.md`](todo.md).
+
+## Configuration notes
+
+- `.env.example` is configured for local SQLite, database-backed sessions/cache/queue, and log-based mail. Configure real mail delivery, a production database, storage, queue workers, cache, and scheduler explicitly before deployment.
+- Do not commit `.env`, production keys, API tokens, or user data.
+- The scheduler includes a once-per-minute dispatch for scheduled email campaigns. A production scheduler/worker must be configured and monitored for this behavior to run.
+- Review private file authorization and storage configuration before enabling uploads or serving user documents.
+
+## Documentation and planning
+
+- [Master implementation plan and launch checklist](todo.md)
+- [Burmese README](README_MM.md)
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Before changing the application, review [`AGENTS.md`](AGENTS.md) and [`CLAUDE.md`](CLAUDE.md) for repository-specific development guidance. Keep changes focused, add or update tests for behavior changes, run the applicable checks, and update the roadmap when implementation status changes.
 
-## Code of Conduct
+## Security
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Do not report security vulnerabilities in public issues. Contact the repository maintainers privately through a security contact configured for this GitHub repository. Until a private security policy/contact is configured, avoid posting exploit details publicly.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+The repository does not currently contain a standalone `LICENSE` file. No license is stated here; contact the maintainers before redistributing or reusing the code.
