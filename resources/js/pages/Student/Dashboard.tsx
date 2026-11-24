@@ -4,7 +4,7 @@ import { StatCard } from '@/components/lms/stat-card';
 import { SectionCard } from '@/components/lms/section-card';
 import { ProgressBar } from '@/components/lms/progress-bar';
 import { formatMinutes } from '@/lib/format';
-import { BookOpen, CalendarDays, Flame, PlayCircle, Radio, Trophy, Video } from 'lucide-react';
+import { BookOpen, CalendarDays, Flame, PlayCircle, Radio, Video } from 'lucide-react';
 
 type EnrollmentCard = {
     id: number;
@@ -25,6 +25,8 @@ type Props = {
     notifications?: { id: number; title: string; message: string; is_read: boolean; created_at?: string | null }[];
     weeklyActivity?: { day: string; minutes: number }[];
     totalWatchMinutes?: number;
+    liveClasses?: { id: number; title: string; instructor: string; time: string; liveNow: boolean; status: string }[];
+    leaderboard?: { rank: number; name: string; xp: number; you: boolean }[];
 };
 
 /* SAMPLE DATA — fallback only, shown when no real data exists yet (from prototype). */
@@ -36,15 +38,6 @@ const SAMPLE_WEEK = [
     { day: 'သောကြာ', minutes: 20 },
     { day: 'စနေ', minutes: 41 },
     { day: 'တနင်္ဂနွေ', minutes: 0 },
-];
-const SAMPLE_LIVE = [
-    { id: 1, title: 'React Hooks Deep Dive — Live Session', instructor: 'Thura Aung', time: 'ယနေ့ · ညနေ 7:00 – 8:30', liveNow: true },
-    { id: 2, title: 'JavaScript Async Patterns — Q&A Live', instructor: 'May Thazin', time: 'မနက်ဖြန် · ညနေ 7:00 – 8:00', liveNow: false },
-];
-const SAMPLE_LEADERS = [
-    { rank: 1, name: 'May Thandar', xp: 2480 },
-    { rank: 2, name: 'Kaung Htet', xp: 2310, you: true },
-    { rank: 3, name: 'Thiri Nanda', xp: 2105 },
 ];
 const QUICK_LINKS = [
     { href: '/student/live-classes', label: 'Live Classes', sub: 'တိုက်ရိုက် သင်တန်းများ', icon: Video },
@@ -127,20 +120,24 @@ export default function Dashboard({
                 </div>
 
                 <SectionCard title="လာမည့် Live Class" action={<Link href="/student/live-classes" className="text-sm font-bold text-teal-600 hover:text-teal-700">အားလုံး</Link>}>
-                    <ul className="space-y-3">
-                        {SAMPLE_LIVE.map((live) => (
-                            <li key={live.id}>
-                                <Link href={`/student/live-classes/${live.id}`} className="flex items-start gap-3 rounded-xl bg-slate-50 p-3 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700">
-                                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-900/40"><Radio className="size-5" /></span>
-                                    <span>
-                                        <span className="block font-bold text-slate-900 dark:text-white">{live.title}</span>
-                                        <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{live.instructor} · {live.time}</span>
-                                        {live.liveNow && <span className="mt-1 inline-block rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-bold text-white">ယခု Live လွှင့်နေသည်</span>}
-                                    </span>
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
+                    {liveClasses && liveClasses.length > 0 ? (
+                        <ul className="space-y-3">
+                            {liveClasses.map((live) => (
+                                <li key={live.id}>
+                                    <Link href={`/student/live-classes/${live.id}`} className="flex items-start gap-3 rounded-xl bg-slate-50 p-3 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700">
+                                        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-900/40"><Radio className="size-5" /></span>
+                                        <span>
+                                            <span className="block font-bold text-slate-900 dark:text-white">{live.title}</span>
+                                            <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{live.instructor} · {live.time}</span>
+                                            {live.liveNow && <span className="mt-1 inline-block rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-bold text-white">ယခု Live လွှင့်နေသည်</span>}
+                                        </span>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Live Class လာမည့် မရှိသေးပါ။</p>
+                    )}
                 </SectionCard>
             </div>
 
@@ -203,16 +200,19 @@ export default function Dashboard({
                 </SectionCard>
 
                 <SectionCard title="Leaderboard" action={<Link href="/student/leaderboard" className="text-sm font-bold text-teal-600 hover:text-teal-700">အားလုံး</Link>}>
-                    <ul className="space-y-2">
-                        {SAMPLE_LEADERS.map((l) => (
-                            <li key={l.rank} className={`flex items-center gap-3 rounded-xl p-3 ${'you' in l && l.you ? 'bg-teal-50 ring-1 ring-teal-200 dark:bg-teal-900/20 dark:ring-teal-800' : 'bg-slate-50 dark:bg-slate-800'}`}>
-                                <span className="w-6 text-center text-sm font-extrabold text-amber-500">#{l.rank}</span>
-                                <span className="flex-1 font-bold text-slate-900 dark:text-white">{l.name}{'you' in l && l.you && <span className="ml-2 rounded-full bg-teal-600 px-2 py-0.5 text-[11px] font-bold text-white">သင်</span>}</span>
-                                <span className="text-sm font-bold text-slate-500 dark:text-slate-400">{l.xp.toLocaleString()} XP</span>
-                            </li>
-                        ))}
-                    </ul>
-                    <p className="mt-3 text-xs text-slate-400">ဤအပတ် အဆင့်သတ်မှတ်ချက် (နမူနာ)</p>
+                    {leaderboard && leaderboard.length > 0 ? (
+                        <ul className="space-y-2">
+                            {leaderboard.map((l) => (
+                                <li key={l.rank} className={`flex items-center gap-3 rounded-xl p-3 ${l.you ? 'bg-teal-50 ring-1 ring-teal-200 dark:bg-teal-900/20 dark:ring-teal-800' : 'bg-slate-50 dark:bg-slate-800'}`}>
+                                    <span className="w-6 text-center text-sm font-extrabold text-amber-500">#{l.rank}</span>
+                                    <span className="flex-1 font-bold text-slate-900 dark:text-white">{l.name}{l.you && <span className="ml-2 rounded-full bg-teal-600 px-2 py-0.5 text-[11px] font-bold text-white">သင်</span>}</span>
+                                    <span className="text-sm font-bold text-slate-500 dark:text-slate-400">{l.xp.toLocaleString()} XP</span>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Leaderboard data not available.</p>
+                    )}
                 </SectionCard>
 
                 <SectionCard title="လတ်တလော လုပ်ဆောင်မှု">

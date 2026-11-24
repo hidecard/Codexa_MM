@@ -3,28 +3,46 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { StatCard } from '@/components/lms/stat-card';
 import { SectionCard } from '@/components/lms/section-card';
-import { Award, Bell, BookOpen, Crown, Flame, MapPin, Pencil, ShieldCheck } from 'lucide-react';
+import { ProgressBar } from '@/components/lms/progress-bar';
+import { Award, Bell, BookOpen, Crown, Flame, MapPin, Pencil, ShieldCheck, Target, Trophy } from 'lucide-react';
+import { formatNumber } from '@/lib/format';
+
+const ICON_MAP: Record<string, React.ElementType> = {
+    award: Award,
+    book: BookOpen,
+    cert: Award,
+    flame: Flame,
+    quiz: BookOpen,
+    pen: Award,
+    chat: Award,
+    live: Award,
+    moon: Award,
+    target: Target,
+};
+
+const GOALS = ['Web Developer ဖြစ်ရန်', 'Mobile Developer ဖြစ်ရန်', 'UI/UX Designer ဖြစ်�ရန်', 'Freelance လုပ်ရန်'];
+
+type Badge = {
+    name: string;
+    desc: string;
+    icon: string;
+    earned: boolean;
+    date: string | null;
+    cur: number;
+    total: number;
+    unit: string;
+};
 
 type Props = {
     stats?: { enrolled?: number; watch_hours?: number; streak_days?: number; certificates?: number };
+    badges?: Badge[];
+    totalXp?: number;
 };
 
-/* SAMPLE DATA — badges/plan fallback (from prototype); profile identity comes from the signed-in user. */
-const SAMPLE_BADGES = [
-    { name: 'ပထမဆုံး သင်တန်း', desc: 'သင်တန်း 1 ခု ပြီးဆုံးပြီး', earned: true },
-    { name: '12 ရက် Streak', desc: '12 ရက် ဆက်တိုက် လေ့လာပြီး', earned: true },
-    { name: 'Quiz Master', desc: 'Quiz 10 ခု အောင်မြင်ပြီး', earned: true },
-    { name: 'Assignment Star', desc: 'Assignment 14 ခု ပြီးဆုံးပြီး', earned: true },
-    { name: 'သင်တန်း 5 ခု ပြီးဆုံး', desc: '3 / 5 ပြီးပါပြီ', earned: false },
-    { name: '30 ရက် Streak', desc: '12 / 30 ရက်', earned: false },
-];
-
-const GOALS = ['Web Developer ဖြစ်ရန်', 'Mobile Developer ဖြစ်ရန်', 'UI/UX Designer ဖြစ်ရန်', 'Freelance လုပ်ရန်'];
-
-export default function Profile({ stats = {} }: Props) {
+export default function Profile({ stats = {}, badges = [], totalXp = 0 }: Props) {
     const { auth } = usePage<{ auth?: { user?: { name?: string | null; email?: string | null } } }>().props;
     const user = auth?.user;
-    const name = user?.name ?? 'Kaung Htet';
+    const name = user?.name ?? 'ကျောင်းသား';
     const initials = name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
     const [editing, setEditing] = useState(false);
@@ -50,11 +68,16 @@ export default function Profile({ stats = {} }: Props) {
         </button>
     );
 
+    const badgeIcon = (iconKey: string) => {
+        const Icon = ICON_MAP[iconKey] ?? Award;
+        return <Icon className="size-5" />;
+    };
+
     return (
         <LmsShell title="Profile & Settings" nav="student">
             <Head title="Profile" />
             <div>
-                <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">Profile &amp; Settings</h1>
+                <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">Profile & Settings</h1>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">သင့်အကောင့် အချက်အလက်၊ အောင်မြင်မှုများနဲ့ ချိန်ညှိမှုများကို ဒီနေရာမှာ စီမံနိုင်ပါတယ်</p>
             </div>
 
@@ -65,10 +88,10 @@ export default function Profile({ stats = {} }: Props) {
                         <div className="flex flex-wrap items-center gap-2">
                             <h2 className="text-2xl font-extrabold">{displayName}</h2>
                             <span className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-2.5 py-1 text-[11px] font-extrabold text-amber-950"><Crown className="size-3" /> PRO PLAN</span>
-                            <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-extrabold">LEVEL 7</span>
+                            <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-extrabold">LEVEL {Math.max(1, Math.floor(totalXp / 500))}</span>
                         </div>
                         <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-slate-300">
-                            <MapPin className="size-4" /> {city} · စုစုပေါင်း 2,310 XP
+                            <MapPin className="size-4" /> {city} · {formatNumber(totalXp)} XP
                         </p>
                         {user?.email && <p className="mt-0.5 text-sm text-slate-400">{user.email}</p>}
                         <p className="mt-2 max-w-xl text-sm text-slate-300">{bio}</p>
@@ -85,10 +108,10 @@ export default function Profile({ stats = {} }: Props) {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
-                <StatCard label="စာရင်းသွင်း သင်တန်း" value={stats.enrolled ?? 6} tone="teal" />
-                <StatCard label="လေ့လာချိန်" value={`${stats.watch_hours ?? 48.5} နာရီ`} tone="blue" />
-                <StatCard label="ဆက်တိုက် လေ့လာမှု" value={`${stats.streak_days ?? 12} ရက်`} tone="amber" />
-                <StatCard label="လက်မှတ်" value={stats.certificates ?? 3} tone="purple" />
+                <StatCard label="စာရင်းသွင်း သင်တန်း" value={stats.enrolled ?? 0} tone="teal" />
+                <StatCard label="လေ့လာချိန်" value={`${stats.watch_hours ?? 0} နာရီ`} tone="blue" />
+                <StatCard label="ဆက်တိုက် လေ့လာမှု" value={`${stats.streak_days ?? 0} ရက်`} tone="amber" />
+                <StatCard label="လက်မှတ်" value={stats.certificates ?? 0} tone="purple" />
             </div>
 
             {editing && (
@@ -131,20 +154,36 @@ export default function Profile({ stats = {} }: Props) {
 
             <div className="mt-6 grid gap-6 lg:grid-cols-2">
                 <SectionCard title="အောင်မြင်မှု Badges" action={<Link href="/student/achievements" className="text-sm font-bold text-teal-600 hover:text-teal-700">အားလုံး</Link>}>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">ရရှိထားတဲ့ badge {SAMPLE_BADGES.filter((b) => b.earned).length} ခု · နောက်ထပ် {SAMPLE_BADGES.filter((b) => !b.earned).length} ခု ရရန် ကျန်ပါသေးတယ်</p>
-                    <ul className="mt-4 space-y-3">
-                        {SAMPLE_BADGES.map((b) => (
-                            <li key={b.name} className={`flex items-center gap-3 rounded-xl p-3 ${b.earned ? 'bg-slate-50 dark:bg-slate-800' : 'bg-slate-50/60 opacity-60 dark:bg-slate-800/60'}`}>
-                                <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${b.earned ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30' : 'bg-slate-100 text-slate-400 dark:bg-slate-700'}`}>
-                                    {b.name.includes('Streak') ? <Flame className="size-5" /> : b.name.includes('Quiz') ? <BookOpen className="size-5" /> : <Award className="size-5" />}
-                                </span>
-                                <span>
-                                    <span className="block font-bold text-slate-900 dark:text-white">{b.name}</span>
-                                    <span className="block text-xs text-slate-500 dark:text-slate-400">{b.desc}{!b.earned && ' · မရသေးပါ'}</span>
-                                </span>
-                            </li>
-                        ))}
-                    </ul>
+                    {badges.length > 0 ? (
+                        <>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                                ရရှိထားတဲ့ badge {badges.filter((b) => b.earned).length} ခု · နောက်ထပ် {badges.filter((b) => !b.earned).length} ခု ရရန် ကျန်ပါသေးတယ်
+                            </p>
+                            <ul className="mt-4 space-y-3">
+                                {badges.map((b) => (
+                                    <li key={b.name} className={`flex items-center gap-3 rounded-xl p-3 ${b.earned ? 'bg-slate-50 dark:bg-slate-800' : 'bg-slate-50/60 opacity-60 dark:bg-slate-800/60'}`}>
+                                        <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${b.earned ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30' : 'bg-slate-100 text-slate-400 dark:bg-slate-700'}`}>
+                                            {badgeIcon(b.icon)}
+                                        </span>
+                                        <span>
+                                            <span className="block font-bold text-slate-900 dark:text-white">{b.name}</span>
+                                            <span className="block text-xs text-slate-500 dark:text-slate-400">
+                                                {b.desc}
+                                                {!b.earned && ' · မရသေးပါ'}
+                                                {b.cur !== undefined && b.total !== undefined && (
+                                                    <span className="ml-2 font-semibold text-teal-600 dark:text-teal-400">
+                                                        ({b.cur} / {b.total} {b.unit})
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </>
+                    ) : (
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Badges မရှိသေးပါ။</p>
+                    )}
                 </SectionCard>
 
                 <div className="space-y-6">

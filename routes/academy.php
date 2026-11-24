@@ -23,9 +23,11 @@ use App\Http\Controllers\Student\PaymentController as StudentPaymentController;
 use App\Http\Controllers\Student\ProgressController as StudentProgressController;
 use App\Http\Controllers\Student\QuizController;
 use App\Http\Controllers\Student\ResourceController as StudentResourceController;
+use App\Http\Controllers\Student\ProfileController;
 use App\Http\Controllers\Student\ReviewController;
 use App\Http\Controllers\Student\ScheduleController as StudentScheduleController;
 use App\Http\Controllers\Student\SearchController;
+use App\Http\Controllers\Student\SubmissionController;
 use App\Http\Controllers\Student\WishlistController as StudentWishlistController;
 use App\Models\Quiz;
 use Illuminate\Support\Facades\Route;
@@ -50,9 +52,7 @@ Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->name
     Route::get('/assignments/{assignment}', [StudentAssignmentController::class, 'show'])->name('assignments.show');
     Route::post('/assignments/{assignment}/submit', [StudentAssignmentController::class, 'submit'])->name('assignments.submit');
 
-    Route::get('/submissions', function () {
-        return redirect()->route('student.assignments.index');
-    })->name('submissions.index');
+    Route::get('/submissions', [SubmissionController::class, 'index'])->name('submissions.index');
 
     Route::get('/quizzes', function () {
         $studentId = request()->user()->id;
@@ -99,9 +99,7 @@ Route::middleware(['auth', 'verified', 'role:student'])->prefix('student')->name
 
     Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
 
-    Route::get('/profile', function () {
-        return Inertia::render('Student/Profile');
-    })->name('profile');
+    Route::get('/profile', [ProfileController::class])->name('profile');
 
     Route::get('/certificates/{certificate}', [StudentCertificateController::class, 'show'])->name('certificates.show');
     Route::get('/certificates/{certificate}/print', [StudentCertificateController::class, 'print'])->name('certificates.print');
