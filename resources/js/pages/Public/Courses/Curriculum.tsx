@@ -2,7 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, BookOpen, Check, Clock3, Play } from 'lucide-react';
 import { useState } from 'react';
 import { PublicLayout } from '@/components/shared/public-layout';
-import { SAMPLE_COURSES, categoryMeta } from '../sample-data';
+import { categoryMeta } from '@/lib/ui-utils';
 
 type Lesson = { id: number; title: string; duration: number; type: string; is_free: boolean };
 type Module = { id: number; title: string; description?: string | null; position: number; lessons?: Lesson[] };
@@ -18,26 +18,7 @@ type Course = {
 type Props = { course?: Course | null };
 
 export default function Curriculum({ course: apiCourse }: Props) {
-    const usingSample = !apiCourse;
-    const sample = SAMPLE_COURSES[3]; // React.js Complete Course
-    const course: Course = apiCourse ?? {
-        title: sample.title,
-        slug: sample.slug,
-        short_description: sample.desc,
-        level: sample.level,
-        category: { name: sample.category ?? 'Web Development' },
-        modules: sample.topics.map((t, i) => ({
-            id: i + 1,
-            title: t,
-            position: i + 1,
-            lessons: [
-                { id: i * 10 + 1, title: `${t} — မိတ်ဆက်`, duration: 12, type: 'video', is_free: i === 0 },
-                { id: i * 10 + 2, title: `${t} — လက်တွေ့ ဥပမာ`, duration: 18, type: 'video', is_free: false },
-                { id: i * 10 + 3, title: `${t} — လေ့ကျင့်ခန်း`, duration: 10, type: 'assignment', is_free: false },
-            ],
-        })),
-    };
-
+    const course = apiCourse!;
     const modules = course.modules ?? [];
     const [openId, setOpenId] = useState<number | null>(modules[0]?.id ?? null);
     const totalLessons = modules.reduce((s, m) => s + (m.lessons?.length ?? 0), 0);
@@ -77,12 +58,6 @@ export default function Curriculum({ course: apiCourse }: Props) {
                         </div>
                     </div>
                 </header>
-
-                {usingSample && (
-                    <p className="mt-4 rounded-xl bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
-                        သင်ရိုးညွှန်းတမ်း နမူနာ ပြသနေပါတယ် — သင်တန်း အချက်အလက် မရရှိသေးပါ။
-                    </p>
-                )}
 
                 <div className="mt-6 space-y-3">
                     {modules.map((module, mi) => (

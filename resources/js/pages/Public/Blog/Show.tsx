@@ -1,7 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import { PublicLayout } from '@/components/shared/public-layout';
-import { SAMPLE_POSTS, categoryMeta, initials, instructorInfo } from '../sample-data';
+import { categoryMeta, initials, instructorInfo } from '@/lib/ui-utils';
 
 type Post = {
     title: string;
@@ -23,36 +23,26 @@ function formatDate(iso: string | null | undefined): string {
 }
 
 export default function Show({ post: apiPost, related = [] }: Props) {
-    const sample = SAMPLE_POSTS[0];
-    const usingSample = !apiPost;
-    const post: Post = apiPost ?? {
-        title: sample.title,
-        slug: sample.slug,
-        content: sample.body.join('\n\n'),
-        category: { name: sample.cat },
-        author: { name: sample.author },
-    };
+    const post = apiPost!;
     const paragraphs = post.content.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
     const meta = categoryMeta(post.category?.name);
     const authorName = post.author?.name ?? 'Codexa MM အဖွဲ့';
     const info = instructorInfo(authorName);
-    const dateLabel = formatDate(post.published_at) || (usingSample ? sample.date : '');
+    const dateLabel = formatDate(post.published_at);
 
-    const sampleRelated = SAMPLE_POSTS.filter((p) => p.slug !== post.slug).slice(0, 2);
-    const relatedPosts: { key: string; title: string; slug: string; meta: string; grad: string; glyph: string }[] =
-        related.length > 0
-            ? related.map((r) => {
-                  const m = categoryMeta(r.category?.name);
-                  return {
-                      key: String(r.id),
-                      title: r.title,
-                      slug: r.slug,
-                      meta: `${r.author?.name ?? ''}${formatDate(r.published_at) ? ` · ${formatDate(r.published_at)}` : ''}`,
-                      grad: m.grad,
-                      glyph: m.glyph,
-                  };
-              })
-            : sampleRelated.map((p) => ({ key: String(p.id), title: p.title, slug: p.slug, meta: `${p.author} · ${p.date} · ဖတ်ချိန် ${p.read}`, grad: p.grad, glyph: p.glyph }));
+    const relatedPosts = related.length > 0
+        ? related.map((r) => {
+              const m = categoryMeta(r.category?.name);
+              return {
+                  key: String(r.id),
+                  title: r.title,
+                  slug: r.slug,
+                  meta: `${r.author?.name ?? ''}${formatDate(r.published_at) ? ` · ${formatDate(r.published_at)}` : ''}`,
+                  grad: m.grad,
+                  glyph: m.glyph,
+              };
+          })
+        : [];
 
     return (
         <PublicLayout>

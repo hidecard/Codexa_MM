@@ -22,6 +22,8 @@ class DatabaseSeeder extends Seeder
             ServiceCatalogSeeder::class,
             PublicContentSeeder::class,
             BadgeSeeder::class,
+            CouponSeeder::class,
+            OrderSeeder::class,
         ]);
     }
 }

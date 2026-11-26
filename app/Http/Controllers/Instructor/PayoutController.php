@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\CoursePayment;
 use App\Models\Enrollment;
-use App\Models\LiveSession;
 use App\Models\Payout;
 use App\Models\User;
 use App\Support\AcademyAnalytics;
@@ -188,7 +187,7 @@ class PayoutController extends Controller
             ->whereIn('course_id', $courseIds)
             ->where('status', 'approved')
             ->where('created_at', '>=', $from)
-            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as sales, SUM(amount) as total")
+            ->selectRaw(AcademyAnalytics::dateFormatMonth() . ' as month, COUNT(*) as sales, SUM(amount) as total')
             ->groupBy('month')
             ->get()
             ->keyBy('month');
@@ -207,7 +206,7 @@ class PayoutController extends Controller
             $total = (float) ($row->total ?? 0) + (float) ($orderMonthly[$key]['total'] ?? 0);
 
             return [
-                'label' => LiveSession::myanmarMonth((int) $month->format('n')).' '.$month->format('Y'),
+                'label' => AcademyAnalytics::myanmarMonth((int) $month->format('n')).' '.$month->format('Y'),
                 'sales' => (int) ($row->sales ?? 0) + (int) ($orderMonthly[$key]['sales'] ?? 0),
                 'total' => $total,
                 'share' => round($total * AcademyAnalytics::instructorShare(), 2),

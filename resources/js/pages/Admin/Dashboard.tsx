@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { BookOpen, Download, Plus, Star, TrendingUp, Users, Video } from 'lucide-react';
+import { BookOpen, Download, Plus, Star, TrendingUp, Users } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { StatCard } from '@/components/lms/stat-card';
 import { SectionCard } from '@/components/lms/section-card';
@@ -10,7 +10,6 @@ type TopCourse = { id: number; title: string; instructor: string; students: numb
 type RecentPayment = { id: string; n: string; item: string; method: string; amount: number; date: string; status: string };
 type PayMix = { name: string; pct: number; amount: number; col: string };
 type Task = { title: string; desc: string; count: number; href: string };
-type LiveToday = { title: string; instructor: string; time: string; when: string; joined: number; liveNow: boolean } | null;
 
 type Props = {
     stats: {
@@ -31,7 +30,6 @@ type Props = {
     recentPayments: RecentPayment[];
     paymentMix: PayMix[];
     tasks: Task[];
-    liveToday: LiveToday;
 };
 
 const QUICK_LINKS = [
@@ -39,7 +37,6 @@ const QUICK_LINKS = [
     { label: 'ကျောင်းသား စီမံရန်', href: '/admin/academy/students' },
     { label: 'ငွေပေးချေမှုများ', href: '/admin/academy/payments' },
     { label: 'ဆရာ စီမံရန်', href: '/admin/academy/instructors' },
-    { label: 'Live စီမံရန်', href: '/admin/academy/live-classes' },
     { label: 'Review စီမံရန်', href: '/admin/academy/reviews' },
     { label: 'Coupon စီမံရန်', href: '/admin/academy/coupons' },
     { label: 'Reports & Analytics', href: '/admin/reports' },
@@ -188,32 +185,9 @@ export default function Dashboard({ stats, monthlyRevenue, monthlyRevenueTotal, 
                                 ))}
                             </div>
                         )}
-                    </SectionCard>
+</SectionCard>
 
-                    <LmsCard className="p-5">
-                        <div className="flex items-center gap-2">
-                            <Video className="size-4 text-rose-600" />
-                            <h2 className={`text-[1.05rem] font-extrabold ${inkCls}`}>ယနေ့ · LIVE CLASS</h2>
-                        </div>
-                        {liveToday ? (
-                            <>
-                                <p className={`mt-2 text-[.9rem] font-bold ${inkCls}`}>{liveToday.title}</p>
-                                <p className={`mt-1 text-[.8rem] ${mutedCls}`}>
-                                    ဆရာ {liveToday.instructor} · {liveToday.when} · {liveToday.time}
-                                    {liveToday.liveNow ? ' · LIVE NOW' : ''}
-                                </p>
-                            </>
-                        ) : (
-                            <p className={`mt-2 text-[.86rem] ${mutedCls}`}>ယနေ့ စီစဉ်ထားသော Live class မရှိပါ။</p>
-                        )}
-                        <Link href="/admin/academy/live-classes" className={`${btnGhostCls} mt-4 w-full`}>
-                            Session ကြည့်ရန်
-                        </Link>
-                    </LmsCard>
-                </div>
-            </div>
-
-            <LmsCard className="mt-6 p-5 sm:p-6">
+                    <LmsCard className="mt-6 p-5 sm:p-6">
                 <h2 className={`text-[1.05rem] font-extrabold ${inkCls}`}>Admin အမြန် လင့်ခ်များ</h2>
                 <div className="mt-4 flex flex-wrap gap-2.5">
                     {QUICK_LINKS.map((l) => (
@@ -223,6 +197,9 @@ export default function Dashboard({ stats, monthlyRevenue, monthlyRevenueTotal, 
                     ))}
                 </div>
             </LmsCard>
+
+                </div>
+            </div>
         </LmsShell>
     );
 }

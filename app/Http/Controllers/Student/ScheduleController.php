@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use App\Models\Enrollment;
-use App\Models\LiveSession;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -23,6 +22,12 @@ class ScheduleController extends Controller
         4 => 'ကြာသပတေးနေ့', 5 => 'သောကြာနေ့', 6 => 'စနေနေ့',
     ];
 
+    private const MONTHS = [
+        1 => 'ဇန်နဝါရီ', 2 => 'ဖေဖော်ဝါရီ', 3 => 'မတ်', 4 => 'ဧပြီ',
+        5 => 'မေ', 6 => 'ဇွန်', 7 => 'ဇူလိုင်', 8 => 'ဩဂုတ်',
+        9 => 'စက်တင်ဘာ', 10 => 'အောက်တိုဘာ', 11 => 'နိုဝင်ဘာ', 12 => 'ဒီဇင်ဘာ',
+    ];
+
     public function index(Request $request): Response
     {
         $user = $request->user();
@@ -35,14 +40,6 @@ class ScheduleController extends Controller
         $weekStart = now()->startOfWeek(Carbon::MONDAY);
         $weekEnd = $weekStart->copy()->endOfWeek(Carbon::SUNDAY);
 
-        $sessions = LiveSession::query()
-            ->with(['course:id,title', 'instructor:id,name'])
-            ->whereIn('course_id', $courseIds)
-            ->whereIn('status', [LiveSession::STATUS_SCHEDULED, LiveSession::STATUS_LIVE])
-            ->whereBetween('scheduled_at', [$weekStart, $weekEnd])
-            ->orderBy('scheduled_at')
-            ->get();
-
         $assignments = Assignment::query()
             ->with('course:id,title')
             ->whereIn('course_id', $courseIds)
@@ -52,18 +49,6 @@ class ScheduleController extends Controller
             ->get();
 
         $agendaByDate = [];
-        foreach ($sessions as $session) {
-            $key = $session->scheduled_at->toDateString();
-            $agendaByDate[$key][] = [
-                'sort' => $session->scheduled_at->toIso8601String(),
-                'time' => LiveSession::myanmarTimeRange($session->scheduled_at, $session->ends_at),
-                'title' => 'Live Class — '.$session->title,
-                'sub' => 'ဆရာ '.($session->instructor?->name ?? '—').' · '.($session->course?->title ?? ''),
-                'col' => '#ef4444',
-                'href' => '/student/live-classes/'.$session->id,
-                'btn' => 'အသေးစိတ်',
-            ];
-        }
         foreach ($assignments as $assignment) {
             $key = $assignment->due_at->toDateString();
             $agendaByDate[$key][] = [
@@ -89,7 +74,7 @@ class ScheduleController extends Controller
                 'short' => self::DAY_SHORT[(int) $date->format('w')],
                 'name' => self::DAY_NAME[(int) $date->format('w')],
                 'day' => (int) $date->format('j'),
-                'month' => LiveSession::myanmarMonth((int) $date->format('n')),
+                'month' => self::MONTHS[(int) $date->format('n')] ?? '',
                 'date' => $key,
                 'today' => $date->isToday(),
                 'event' => ! empty($agendaByDate[$key]),
@@ -111,17 +96,11 @@ class ScheduleController extends Controller
                 'due' => $this->dueLabel($a->due_at),
             ])->values();
 
-        $liveThisWeek = $sessions->map(fn (LiveSession $s) => [
-            'id' => $s->id,
-            'title' => $s->title,
-            'when' => LiveSession::myanmarWhen($s->scheduled_at).' · '.LiveSession::myanmarTimeRange($s->scheduled_at, $s->ends_at).' · '.($s->instructor?->name ?? '—'),
-        ])->values();
-
         return Inertia::render('Student/Schedule/Index', [
             'weekDays' => $weekDays,
             'agendaByDate' => $agendaByDate,
             'deadlines' => $deadlines,
-            'liveThisWeek' => $liveThisWeek,
+            'liveThisWeek' => [],
         ]);
     }
 
@@ -149,6 +128,6 @@ class ScheduleController extends Controller
             return 'နောက် '.$days.' ရက် · '.$time;
         }
 
-        return LiveSession::myanmarMonth((int) $due->format('n')).' '.$due->format('d').' · '.$time;
+        return (self::MONTHS[(int) $due->format('n')] ?? '').' '.$due->format('d').' · '.$time;
     }
 }

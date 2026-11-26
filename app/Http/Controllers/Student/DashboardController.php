@@ -7,7 +7,6 @@ use App\Models\Assignment;
 use App\Models\Certificate;
 use App\Models\Enrollment;
 use App\Models\LessonProgress;
-use App\Models\LiveSession;
 use App\Models\StudentNotification;
 use App\Services\BadgeService;
 use Illuminate\Http\Request;
@@ -125,34 +124,14 @@ class DashboardController extends Controller
                 'created_at' => optional($n->created_at)?->toDateTimeString(),
             ])->values();
 
-        // Upcoming live classes for enrolled courses
-        $courseIds = $enrollments->pluck('course_id');
-        $liveClasses = LiveSession::query()
-            ->with(['course:id,title', 'instructor:id,name'])
-            ->withCount('attendances')
-            ->whereIn('course_id', $courseIds)
-            ->whereIn('status', [LiveSession::STATUS_SCHEDULED, LiveSession::STATUS_LIVE])
-            ->where('scheduled_at', '>=', now())
-            ->orderBy('scheduled_at')
-            ->limit(3)
-            ->get()
-            ->map(fn (LiveSession $s) => [
-                'id' => $s->id,
-                'title' => $s->title,
-                'instructor' => $s->instructor?->name ?? '',
-                'time' => $s->scheduled_at?->format('D · h:i A') ?? '',
-                'liveNow' => $s->status === LiveSession::STATUS_LIVE,
-                'status' => $s->status,
-            ])->values();
-
         // Leaderboard (weekly XP)
-        $leaderboard = app(BadgeService::class)->leaderboard(now()->subDays(7), $user->id)
+        $leaderboard = collect(app(BadgeService::class)->leaderboard(now()->subDays(7), $user->id))
             ->map(function (array $entry, $index) use ($user) {
                 return [
                     'rank' => $index + 1,
-                    'name' => $entry['name'],
-                    'xp' => $entry['xp'],
-                    'you' => $entry['user_id'] === $user->id,
+                    'name' => $entry['n'] ?? '',
+                    'xp' => $entry['xp'] ?? 0,
+                    'you' => $entry['you'] ?? false,
                 ];
             })->values();
 
@@ -190,7 +169,6 @@ class DashboardController extends Controller
             'notifications' => $notifications,
             'weeklyActivity' => $weeklyActivity,
             'totalWatchMinutes' => $totalWatchMinutes,
-            'liveClasses' => $liveClasses,
             'leaderboard' => $leaderboard,
         ]);
     }

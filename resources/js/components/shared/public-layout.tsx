@@ -34,7 +34,6 @@ const footerColumns = [
         heading: 'Platform',
         links: [
             { label: 'သင်ယူမှု လမ်းကြောင်းများ', href: '/student/paths' },
-            { label: 'Live Classes', href: '/student/live-classes' },
             { label: 'ဆရာ/ဆရာမများ', href: '/instructors' },
             { label: 'Community', href: '/student/community' },
             { label: 'ဆောင်းပါးများ', href: '/blog' },

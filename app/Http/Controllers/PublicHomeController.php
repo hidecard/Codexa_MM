@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\CourseCategory;
 use App\Models\CourseReview;
 use App\Models\Enrollment;
+use App\Models\LearningPath;
 use App\Models\Setting;
 use App\Models\User;
 use Inertia\Inertia;
@@ -47,10 +48,18 @@ class PublicHomeController extends Controller
             );
         });
 
+        $learningPaths = LearningPath::query()
+            ->where('is_active', true)
+            ->withCount(['courses' => fn ($q) => $q->published()])
+            ->orderBy('position')
+            ->take(4)
+            ->get(['id', 'title', 'goal', 'glyph', 'grad', 'months', 'level', 'steps', 'outcomes']);
+
         return Inertia::render('Public/Home', [
             'courses' => $courses,
             'categories' => $categories,
             'instructors' => $instructors,
+            'learningPaths' => $learningPaths,
             // Landing-page content from the admin CMS (keys landing_promo,
             // landing_hero_title, landing_hero_intro). Null when no CMS
             // value exists yet — the page falls back to its hardcoded copy.

@@ -4,7 +4,7 @@ import { StatCard } from '@/components/lms/stat-card';
 import { SectionCard } from '@/components/lms/section-card';
 import { ProgressBar } from '@/components/lms/progress-bar';
 import { formatMinutes } from '@/lib/format';
-import { BookOpen, CalendarDays, Flame, PlayCircle, Radio, Video } from 'lucide-react';
+import { BookOpen, CalendarDays, Check, Flame, PlayCircle, Radio, Trophy, Video } from 'lucide-react';
 
 type EnrollmentCard = {
     id: number;
@@ -25,22 +25,10 @@ type Props = {
     notifications?: { id: number; title: string; message: string; is_read: boolean; created_at?: string | null }[];
     weeklyActivity?: { day: string; minutes: number }[];
     totalWatchMinutes?: number;
-    liveClasses?: { id: number; title: string; instructor: string; time: string; liveNow: boolean; status: string }[];
     leaderboard?: { rank: number; name: string; xp: number; you: boolean }[];
 };
 
-/* SAMPLE DATA — fallback only, shown when no real data exists yet (from prototype). */
-const SAMPLE_WEEK = [
-    { day: 'တနင်္လာ', minutes: 35 },
-    { day: 'အင်္ဂါ', minutes: 50 },
-    { day: 'ဗုဒ္ဓဟူး', minutes: 25 },
-    { day: 'ကြာသပတေး', minutes: 45 },
-    { day: 'သောကြာ', minutes: 20 },
-    { day: 'စနေ', minutes: 41 },
-    { day: 'တနင်္ဂနွေ', minutes: 0 },
-];
 const QUICK_LINKS = [
-    { href: '/student/live-classes', label: 'Live Classes', sub: 'တိုက်ရိုက် သင်တန်းများ', icon: Video },
     { href: '/student/community', label: 'Community', sub: 'ဆွေးနွေးမှုများ', icon: BookOpen },
     { href: '/student/leaderboard', label: 'Leaderboard', sub: 'အဆင့်သတ်မှတ်ချက်', icon: Trophy },
     { href: '/student/schedule', label: 'အချိန်ဇယား', sub: 'ဒီအပတ် အစီအစဉ်', icon: CalendarDays },
@@ -52,13 +40,14 @@ export default function Dashboard({
     assignments = [],
     activities = [],
     certificates = [],
-    weeklyActivity,
+    weeklyActivity = [],
     totalWatchMinutes = 0,
+    leaderboard = [],
 }: Props) {
     const { auth } = usePage<{ auth?: { user?: { name?: string | null } } }>().props;
     const userName = auth?.user?.name?.split(' ')[0] ?? 'ကျောင်းသား';
     const continueItem = enrollments.find((e) => e.continue_lesson && (e.status === 'active' || e.status === 'completed'));
-    const week = weeklyActivity && weeklyActivity.length > 0 ? weeklyActivity : SAMPLE_WEEK;
+    const week = weeklyActivity;
     const maxMinutes = Math.max(1, ...week.map((d) => d.minutes));
     const weekTotal = week.reduce((s, d) => s + d.minutes, 0);
 
@@ -117,28 +106,6 @@ export default function Dashboard({
                         </div>
                         <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">ဒီအပတ် စုစုပေါင်း {formatMinutes(weekTotal)} လေ့လာခဲ့သည်။</p>
                     </SectionCard>
-                </div>
-
-                <SectionCard title="လာမည့် Live Class" action={<Link href="/student/live-classes" className="text-sm font-bold text-teal-600 hover:text-teal-700">အားလုံး</Link>}>
-                    {liveClasses && liveClasses.length > 0 ? (
-                        <ul className="space-y-3">
-                            {liveClasses.map((live) => (
-                                <li key={live.id}>
-                                    <Link href={`/student/live-classes/${live.id}`} className="flex items-start gap-3 rounded-xl bg-slate-50 p-3 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700">
-                                        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-900/40"><Radio className="size-5" /></span>
-                                        <span>
-                                            <span className="block font-bold text-slate-900 dark:text-white">{live.title}</span>
-                                            <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{live.instructor} · {live.time}</span>
-                                            {live.liveNow && <span className="mt-1 inline-block rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-bold text-white">ယခု Live လွှင့်နေသည်</span>}
-                                        </span>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Live Class လာမည့် မရှိသေးပါ။</p>
-                    )}
-                </SectionCard>
             </div>
 
             <section className="mt-8">
@@ -179,6 +146,8 @@ export default function Dashboard({
                     </div>
                 )}
             </section>
+
+            </div>
 
             <div className="mt-8 grid gap-6 lg:grid-cols-2">
                 <SectionCard title="ပေးရမည့် Assignment" action={<Link href="/student/assignments" className="text-sm font-bold text-teal-600 hover:text-teal-700">အားလုံး</Link>}>

@@ -6,11 +6,11 @@ use App\Models\Course;
 use App\Models\CourseCategory;
 use App\Models\CoursePayment;
 use App\Models\Enrollment;
-use App\Models\LiveSession;
 use App\Models\Setting;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Shared read aggregates for the admin dashboard, admin reports and the
@@ -82,10 +82,35 @@ class AcademyAnalytics
         return static::METHOD_LABELS[$method ?? ''] ?? ($method ? ucfirst($method) : '—');
     }
 
+    public static function myanmarMonth(int $month): string
+    {
+        return [
+            1 => 'ဇန်နဝါရီ', 2 => 'ဖေဖော်ဝါရီ', 3 => 'မတ်', 4 => 'ဧပြီ',
+            5 => 'မေ', 6 => 'ဇွန်', 7 => 'ဇူလိုင်', 8 => 'ဩဂုတ်',
+            9 => 'စက်တင်ဘာ', 10 => 'အောက်တိုဘာ', 11 => 'နိုဝင်ဘာ', 12 => 'ဒီဇင်ဘာ',
+        ][$month] ?? '';
+    }
+
     /** Last N months (oldest first) as Carbon instances at month start. */
     public static function lastMonths(int $months = 6): Collection
     {
         return collect(range($months - 1, 0))->map(fn (int $ago) => now()->subMonths($ago)->startOfMonth());
+    }
+
+    /** Get database-agnostic date format for Y-m grouping. */
+    public static function dateFormatMonth(): string
+    {
+        return DB::getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m', created_at)"
+            : "DATE_FORMAT(created_at, '%Y-%m')";
+    }
+
+    /** Get database-agnostic date format for Y-m grouping on a custom column. */
+    public static function dateFormatMonthColumn(string $column): string
+    {
+        return DB::getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m', {$column})"
+            : "DATE_FORMAT({$column}, '%Y-%m')";
     }
 
     /** Approved CoursePayment revenue per month, in lakhs (သိန်း, 100,000 Ks). */
@@ -97,7 +122,7 @@ class AcademyAnalytics
             ->where('status', 'approved')
             ->where('created_at', '>=', $from)
             ->when($courseIds !== null, fn (Builder $q) => $q->whereIn('course_id', $courseIds))
-            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(amount) as total")
+            ->selectRaw(static::dateFormatMonth() . ' as month, SUM(amount) as total')
             ->groupBy('month')
             ->pluck('total', 'month');
 
@@ -112,7 +137,7 @@ class AcademyAnalytics
             $total = (float) ($sums[$key] ?? 0) + (float) ($orderMonthly[$key]['total'] ?? 0);
 
             return [
-                'label' => LiveSession::myanmarMonth((int) $month->format('n')),
+                'label' => static::myanmarMonth((int) $month->format('n')),
                 'value' => round($total / 100000, 2),
             ];
         })->values()->all();
@@ -125,13 +150,13 @@ class AcademyAnalytics
 
         $counts = Enrollment::query()
             ->where('enrolled_at', '>=', $from)
-            ->selectRaw("DATE_FORMAT(enrolled_at, '%Y-%m') as month, COUNT(*) as total")
+            ->selectRaw(static::dateFormatMonthColumn('enrolled_at') . ' as month, COUNT(*) as total')
             ->groupBy('month')
             ->pluck('total', 'month');
 
         return static::lastMonths($months)->map(function (Carbon $month) use ($counts) {
             return [
-                'label' => LiveSession::myanmarMonth((int) $month->format('n')),
+                'label' => static::myanmarMonth((int) $month->format('n')),
                 'value' => (int) ($counts[$month->format('Y-m')] ?? 0),
             ];
         })->values()->all();

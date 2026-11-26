@@ -20,12 +20,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { PublicLayout } from '@/components/shared/public-layout';
 import { CourseCard } from '@/components/lms/course-card';
 import {
-    SAMPLE_CATEGORIES,
-    SAMPLE_COURSES,
-    SAMPLE_FAQS,
-    SAMPLE_INSTRUCTORS,
-    SAMPLE_PATHS,
-    SAMPLE_TESTIMONIALS,
     categoryMeta,
     formatCount,
     initials,
@@ -33,31 +27,27 @@ import {
     mapApiCourse,
     type ApiCourse,
     type LmsCourse,
-} from './sample-data';
+} from '@/lib/ui-utils';
 
 type ApiCategory = { id: number; name: string; slug: string; courses_count?: number };
 type ApiInstructor = { id: number; name: string; courses_count?: number; profile?: { bio?: string | null } | null };
+type LearningPath = { id: number; title: string; goal: string; glyph: string; grad: string; months: string; level: string; steps: string[]; outcomes: string[] };
 type Props = {
     courses?: ApiCourse[];
     categories?: ApiCategory[];
     instructors?: ApiInstructor[];
+    learningPaths?: LearningPath[];
     stats?: { courses?: number; students?: number; instructors?: number; rating?: number | null };
     landing?: { promo?: string | null; heroTitle?: string | null; heroIntro?: string | null };
 };
 
 const features = [
     { icon: BookOpen, tint: 'bg-teal-500/10 text-teal-600 dark:text-teal-300', title: 'မြန်မာဘာသာ သင်ခန်းစာများ', text: 'Concept တိုင်းကို မြန်မာလို ရှင်းရှင်းလင်းလင်း ရှင်းပြပြီး English technical term တွေကိုပါ တွဲဖက် သင်ပေးတာမို့ အခြေခံမရှိသူလည်း လိုက်နိုင်ပါတယ်။' },
-    { icon: Video, tint: 'bg-rose-500/10 text-rose-600 dark:text-rose-300', title: 'Live Class + မှတ်တမ်း', text: 'အပတ်စဉ် live session တွေမှာ ဆရာကို တိုက်ရိုက် မေးမြန်းနိုင်ပြီး လွတ်သွားရင်လည်း မှတ်တမ်းကို အချိန်မရွေး ပြန်ကြည့်နိုင်ပါတယ်။' },
+    { icon: Video, tint: 'bg-rose-500/10 text-rose-600 dark:text-rose-300', title: 'Video Class + မှတ်တမ်း', text: 'Video သင်ခန်းစာတွေမှာ ဆရာကို တိုက်ရိုက် မေးမြန်းနိုင်ပြီး လွတ်သွားရင်လည်း မှတ်တမ်းကို အချိန်မရွေး ပြန်ကြည့်နိုင်ပါတယ်။' },
     { icon: Code2, tint: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-300', title: 'Project-based သင်ယူမှု', text: 'သင်ခန်းစာတိုင်းမှာ လက်တွေ့ လေ့ကျင့်ခန်းနဲ့ assignment ပါဝင်ပြီး ဆရာက အမှတ်ပေး မှတ်ချက် ပြန်ပေးတာမို့ portfolio အတွက် project တွေ စုဆောင်းပြီးသား ဖြစ်ပါတယ်။' },
     { icon: Award, tint: 'bg-amber-500/10 text-amber-600 dark:text-amber-300', title: 'အတည်ပြုနိုင်သော လက်မှတ်', text: 'သင်တန်း ပြီးဆုံးရင် Certificate ID ပါတဲ့ လက်မှတ် ရရှိပြီး အလုပ်ရှင်က link ဖြင့် တိုက်ရိုက် အတည်ပြုနိုင်တာမို့ CV နဲ့ LinkedIn မှာ ယုံကြည်စိတ်ချစွာ ထည့်သုံးနိုင်ပါတယ်။' },
-    { icon: Wallet, tint: 'bg-sky-500/10 text-sky-600 dark:text-sky-300', title: 'မြန်မာ ငွေပေးချေမှုများ', text: 'KBZPay, WavePay, CB Pay နဲ့ bank transfer — ကိုယ် အဆင်ပြေတဲ့ နည်းလမ်းနဲ့ ပေးချေနိုင်ပြီး အတည်ပြုပြီးတာနဲ့ သင်ခန်းစာတွေ ချက်ချင်း ပွင့်သွားပါမယ်။' },
-    { icon: MessagesSquare, tint: 'bg-pink-500/10 text-pink-600 dark:text-pink-300', title: 'Community + ဆရာ Support', text: 'တစ်ယောက်တည်း မဟုတ်ပါ — မေးခွန်းတွေကို community မှာ ဆွေးနွေးနိုင်ပြီး ဆရာတွေကလည်း message ဖြင့် ကူညီ ဖြေကြားပေးပါတယ်။' },
-];
-
-const steps = [
-    { n: '1', grad: 'linear-gradient(135deg,#0ea892,#078575)', title: 'အကောင့် အခမဲ့ ဖွင့်ပါ', text: 'ဖုန်းနံပါတ် သို့မဟုတ် အီးမေးလ်နဲ့ ၁ မိနစ်အတွင်း အကောင့် ဖွင့်ပြီး သင်တန်းတိုင်းရဲ့ အခမဲ့ preview သင်ခန်းစာတွေကို စမ်းကြည့်နိုင်ပါတယ်။', cta: 'အကောင့် ဖွင့်ရန်', href: '/register' },
-    { n: '2', grad: 'linear-gradient(135deg,#2563eb,#0ea892)', title: 'သင်တန်း ရွေးပြီး စာရင်းသွင်းပါ', text: 'ကိုယ့်အဆင့်နဲ့ ကိုက်ညီတဲ့ သင်တန်း သို့မဟုတ် လမ်းကြောင်းကို ရွေးပြီး KBZPay, WavePay စတဲ့ နည်းလမ်းတွေနဲ့ ပေးချေ စာရင်းသွင်းပါ။', cta: 'သင်တန်း ရွေးရန်', href: '/courses' },
-    { n: '3', grad: 'linear-gradient(135deg,#7c3aed,#2563eb)', title: 'သင်ယူပြီး လက်မှတ် ရယူပါ', text: 'Assignment တွေ ဖြေ၊ project တွေ လက်တွေ့ လုပ်ရင်း သင်ယူပါ။ ပြီးဆုံးရင် လက်မှတ်နဲ့ portfolio အဆင်သင့် ဖြစ်နေပါပြီ။', cta: 'လက်မှတ် နမူနာ ကြည့်ရန်', href: '/student/certificates' },
+    { icon: Wallet, tint: 'bg-sky-500/10 text-sky-600 dark:text-sky-300', title: 'မြန်မာ ငွေပေးချေမှုများ', text: 'KBZPay, WavePay, CB Pay နဲ့ bank transfer — ကိုယ် အဆင်ပြေတဲ့ နည်းလမ်းနဲ့ ပေးချေနိုင်ပြီး အတည်ပြုပြီးတာနဲ့ သင်ခန်းစာတွေ ချက်ချင်း ပွင့်သွားပါမယ်。' },
+    { icon: MessagesSquare, tint: 'bg-pink-500/10 text-pink-600 dark:text-pink-300', title: 'Community + ဆရာ Support', text: 'တစ်ယောက်တည်း မဟုတ်ပါ — မေးခွန်းတွေကို community မှာ ဆွေးနွေးနိုင်ပြီး ဆရာတွေကလည်း message ဖြင့် ကူညီ ဖြေကြားပေးပါတယ်。' },
 ];
 
 const plans = [
@@ -83,7 +73,7 @@ const plans = [
         noteYearly: 'နှစ်စဉ် 240,000 ကျပ် တစ်ကြိမ်တည်း ပေးချေရန်',
         featured: true,
         cta: 'Pro စတင်ရန်',
-        features: ['သင်တန်း ဝယ်ယူမှုတိုင်းမှာ အပို 20% လျှော့ဈေး', 'Live class အားလုံး ဝင်ရောက်ခွင့်', 'လက်မှတ် ထုတ်ပေးမှု အခမဲ့', 'Assignment ဦးစားပေး အမှတ်ပေးမှု', 'ဆရာများထံ message support'],
+        features: ['သင်တန်း ဝယ်ယူမှုတိုင်းမှာ အပို 20% လျှော့ဈေး', 'Video class အားလုံး ဝင်ရောက်ခွင့်', 'လက်မှတ် ထုတ်ပေးမှု အခမဲ့', 'Assignment ဦးစားပေး အမှတ်ပေးမှု', 'ဆရာများထံ message support'],
     },
     {
         name: 'Team',
@@ -99,6 +89,12 @@ const plans = [
     },
 ];
 
+const testimonials = [
+    { name: 'May Thandar', init: 'MT', color: '#ec4899', city: 'Yangon', course: 'JavaScript Deep Dive', text: 'အရင်က tutorial တွေ လိုက်ကြည့်ရင်း လမ်းပျောက်နေခဲ့တာ။ Codexa MM မှာ အခန်းလိုက် လေ့ကျင့်ခန်းတွေနဲ့ ဆရာ့ feedback ပါလာတော့ ၃ လအတွင်း ကိုယ်ပိုင် project ၂ ခု ပြီးအောင် လုပ်နိုင်ခဲ့ပါတယ်。' },
+    { name: 'Zaw Lin Htet', init: 'ZL', color: '#f59e0b', city: 'Yangon', course: 'Python for Beginners', text: 'Programming ကို သုညကနေ စတာပါ。 မြန်မာလို ရှင်းပြထားတာမို့ concept တွေ မြန်မြန် နားလည်ပြီး quiz တွေက ကိုယ် ဘယ်နေရာ အားနည်းလဲဆိုတာ တန်းသိရပါတယ်。' },
+    { name: 'Thiri Nanda', init: 'TN', color: '#6366f1', city: 'Mandalay', course: 'UI/UX Design with Figma', text: 'Figma ကို အခြေခံကနေ component, prototype အထိ စနစ်တကျ သင်ခဲ့ရတယ်。 ရလာတဲ့ လက်မှတ်ကို portfolio မှာ ထည့်ထားတာ အလုပ်လျှောက်တဲ့အခါ အထောက်အကူ အများကြီး ဖြစ်ပါတယ်。' },
+];
+
 function slugify(name: string): string {
     return name
         .toLowerCase()
@@ -106,42 +102,30 @@ function slugify(name: string): string {
         .replace(/(^-|-$)/g, '');
 }
 
-export default function Home({ courses: apiCourses, categories: apiCategories, instructors: apiInstructors, stats, landing }: Props) {
-    const usingSampleCourses = !apiCourses || apiCourses.length === 0;
+export default function Home({ courses: apiCourses, categories: apiCategories, instructors: apiInstructors, learningPaths, stats, landing }: Props) {
     const courses: LmsCourse[] = useMemo(
-        () => (usingSampleCourses ? SAMPLE_COURSES : apiCourses.map(mapApiCourse)),
-        [apiCourses, usingSampleCourses],
+        () => (apiCourses?.map(mapApiCourse) ?? []),
+        [apiCourses],
     );
-    const usingSampleInstructors = !apiInstructors || apiInstructors.length === 0;
+    const categories = apiCategories ?? [];
 
     const categoryCards = useMemo(() => {
-        if (apiCategories && apiCategories.length > 0) {
-            return apiCategories.map((c) => ({
+        if (categories.length > 0) {
+            return categories.map((c) => ({
                 name: c.name,
                 slug: c.slug,
                 count: c.courses_count ?? courses.filter((course) => course.category === c.name).length,
                 students: courses.filter((course) => course.category === c.name).reduce((s, course) => s + (course.students ?? 0), 0),
             }));
         }
-        return SAMPLE_CATEGORIES.map((c) => {
-            const mine = courses.filter((course) => course.category === c.name);
-            return { name: c.name, slug: slugify(c.name), count: mine.length, students: mine.reduce((s, course) => s + (course.students ?? 0), 0) };
-        });
-    }, [apiCategories, courses]);
-
-    const sampleStats = useMemo(() => {
-        const totalStudents = courses.reduce((s, c) => s + (c.students ?? 0), 0);
-        const rated = courses.filter((c) => c.rating != null);
-        const avg = rated.length ? rated.reduce((s, c) => s + (c.rating ?? 0), 0) / rated.length : 0;
-        const instructorNames = new Set(courses.map((c) => c.instructor).filter(Boolean));
-        return { courses: courses.length, students: totalStudents, instructors: instructorNames.size, rating: avg };
-    }, [courses]);
+        return [];
+    }, [categories, courses]);
 
     const displayStats = {
-        courses: stats?.courses && stats.courses > 0 ? stats.courses : sampleStats.courses,
-        students: stats?.students && stats.students > 0 ? stats.students : sampleStats.students,
-        instructors: stats?.instructors && stats.instructors > 0 ? stats.instructors : sampleStats.instructors,
-        rating: stats?.rating ? stats.rating : sampleStats.rating,
+        courses: stats?.courses ?? courses.length,
+        students: stats?.students ?? 0,
+        instructors: stats?.instructors ?? 0,
+        rating: stats?.rating ?? 0,
     };
 
     const [cat, setCat] = useState('All');
@@ -164,11 +148,11 @@ export default function Home({ courses: apiCourses, categories: apiCategories, i
     const [faqOpen, setFaqOpen] = useState<number | null>(0);
 
     useEffect(() => {
-        const timer = setInterval(() => setTstIdx((i) => (i + 1) % SAMPLE_TESTIMONIALS.length), 6500);
+        const timer = setInterval(() => setTstIdx((i) => (i + 1) % testimonials.length), 6500);
         return () => clearInterval(timer);
     }, []);
 
-    const testimonial = SAMPLE_TESTIMONIALS[tstIdx];
+    const testimonial = testimonials[tstIdx];
 
     return (
         <PublicLayout>
@@ -266,16 +250,6 @@ export default function Home({ courses: apiCourses, categories: apiCategories, i
                     {/* Hero visual: lesson preview card */}
                     {preview && (
                         <div className="relative min-w-0">
-                            <div className="absolute -top-4 right-2 z-10 hidden max-w-[290px] items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-xl ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52] sm:flex">
-                                <span className="size-2.5 flex-none animate-pulse rounded-full bg-red-500" />
-                                <div className="min-w-0">
-                                    <p className="text-xs font-extrabold leading-snug">Live Class · ယနေ့ ညနေ 7:00</p>
-                                    <p className="truncate text-xs text-[#5a6a8a] dark:text-[#97a6c6]">React Hooks Deep Dive — ဆရာ Thura Aung</p>
-                                </div>
-                                <Link href="/student/live-classes" className="flex-none rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-bold text-white">
-                                    Join
-                                </Link>
-                            </div>
                             <div className="rounded-2xl bg-white p-4 shadow-xl ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52] sm:p-5">
                                 <div className="flex items-center gap-2 border-b border-[#e7ecf5] pb-3 dark:border-[#18264a]">
                                     <span className="size-2.5 rounded-full bg-red-400" />
@@ -455,7 +429,7 @@ export default function Home({ courses: apiCourses, categories: apiCategories, i
                         </Link>
                     </div>
                     <div className="mt-5 grid gap-4 md:grid-cols-2">
-                        {SAMPLE_PATHS.map((p) => (
+                        {(learningPaths ?? []).map((p) => (
                             <div key={p.id} className="overflow-hidden rounded-2xl bg-white ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52]">
                                 <div className="relative overflow-hidden p-5 text-white" style={{ background: p.grad }}>
                                     <div className="absolute -right-6 -top-8 size-28 rounded-full bg-white/20 blur-xl" />
@@ -530,57 +504,36 @@ export default function Home({ courses: apiCourses, categories: apiCategories, i
                         </Link>
                     </div>
                     <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {usingSampleInstructors
-                            ? SAMPLE_INSTRUCTORS.slice(0, 6).map((ins) => (
+                        {(apiInstructors ?? []).slice(0, 6).map((ins) => {
+                              const info = instructorInfo(ins.name);
+                              return (
                                   <div key={ins.id} className="rounded-2xl bg-white p-5 ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52]">
                                       <div className="flex items-center gap-4">
-                                          <span className="grid size-16 flex-none place-items-center rounded-2xl text-base font-extrabold text-white" style={{ background: ins.grad }}>
+                                          <span className="grid size-16 flex-none place-items-center rounded-2xl text-base font-extrabold text-white" style={{ background: info.grad }}>
                                               {initials(ins.name)}
                                           </span>
                                           <div className="min-w-0">
                                               <h3 className="truncate font-extrabold">{ins.name}</h3>
-                                              <p className="text-xs font-bold text-teal-700 dark:text-teal-300">{ins.role}</p>
+                                              <p className="text-xs font-bold text-teal-700 dark:text-teal-300">{info.role}</p>
                                               <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[#5a6a8a] dark:text-[#97a6c6]">
                                                   <Star className="size-3 fill-amber-400 text-amber-400" />
-                                                  <b className="text-[#0d1730] dark:text-white">{ins.rating.toFixed(1)}</b> · ကျောင်းသား {formatCount(ins.students)} ယောက်
+                                                  <b className="text-[#0d1730] dark:text-white">{formatCount(info.students ?? 0)}</b> · ကျောင်းသား {formatCount(ins.courses_count ?? 0)} ယောက်
                                               </p>
                                           </div>
                                       </div>
-                                      <p className="mt-3.5 text-sm leading-relaxed text-[#5a6a8a] dark:text-[#97a6c6]">{ins.bio}</p>
+                                      <p className="mt-3.5 line-clamp-3 text-sm leading-relaxed text-[#5a6a8a] dark:text-[#97a6c6]">{ins.profile?.bio ?? info.bio}</p>
                                       <div className="mt-4 flex items-center justify-between gap-2.5">
-                                          <span className="text-xs font-semibold text-[#5a6a8a] dark:text-[#97a6c6]">သင်တန်း {ins.courses} ခု</span>
-                                          <Link href="/instructors" className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-teal-700">
+                                          <span className="text-xs font-semibold text-[#5a6a8a] dark:text-[#97a6c6]">သင်တန်း {ins.courses_count ?? 0} ခု</span>
+                                          <Link
+                                              href={`/instructors/${ins.id}`}
+                                              className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-teal-700"
+                                          >
                                               အသေးစိတ် ကြည့်ရန်
                                           </Link>
                                       </div>
                                   </div>
-                              ))
-                            : apiInstructors!.map((ins) => {
-                                  const info = instructorInfo(ins.name);
-                                  return (
-                                      <div key={ins.id} className="rounded-2xl bg-white p-5 ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52]">
-                                          <div className="flex items-center gap-4">
-                                              <span className="grid size-16 flex-none place-items-center rounded-2xl text-base font-extrabold text-white" style={{ background: info.grad }}>
-                                                  {initials(ins.name)}
-                                              </span>
-                                              <div className="min-w-0">
-                                                  <h3 className="truncate font-extrabold">{ins.name}</h3>
-                                                  <p className="text-xs font-bold text-teal-700 dark:text-teal-300">{info.role}</p>
-                                              </div>
-                                          </div>
-                                          <p className="mt-3.5 line-clamp-3 text-sm leading-relaxed text-[#5a6a8a] dark:text-[#97a6c6]">{ins.profile?.bio ?? info.bio}</p>
-                                          <div className="mt-4 flex items-center justify-between gap-2.5">
-                                              <span className="text-xs font-semibold text-[#5a6a8a] dark:text-[#97a6c6]">သင်တန်း {ins.courses_count ?? 0} ခု</span>
-                                              <Link
-                                                  href={`/instructors/${ins.id}`}
-                                                  className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-teal-700"
-                                              >
-                                                  အသေးစိတ် ကြည့်ရန်
-                                              </Link>
-                                          </div>
-                                      </div>
-                                  );
-                              })}
+                              );
+                          })}
                     </div>
                 </section>
 
@@ -684,7 +637,7 @@ export default function Home({ courses: apiCourses, categories: apiCategories, i
                             <button
                                 type="button"
                                 aria-label="Previous testimonial"
-                                onClick={() => setTstIdx((tstIdx - 1 + SAMPLE_TESTIMONIALS.length) % SAMPLE_TESTIMONIALS.length)}
+                                onClick={() => setTstIdx((tstIdx - 1 + testimonials.length) % testimonials.length)}
                                 className="grid size-10 place-items-center rounded-xl bg-white ring-1 ring-[#dce3f0] transition hover:bg-[#eef3fb] dark:bg-[#0d1730] dark:ring-[#1e2c52] dark:hover:bg-[#12234a]"
                             >
                                 <ChevronLeft className="size-4" />
@@ -692,7 +645,7 @@ export default function Home({ courses: apiCourses, categories: apiCategories, i
                             <button
                                 type="button"
                                 aria-label="Next testimonial"
-                                onClick={() => setTstIdx((tstIdx + 1) % SAMPLE_TESTIMONIALS.length)}
+                                onClick={() => setTstIdx((tstIdx + 1) % testimonials.length)}
                                 className="grid size-10 place-items-center rounded-xl bg-white ring-1 ring-[#dce3f0] transition hover:bg-[#eef3fb] dark:bg-[#0d1730] dark:ring-[#1e2c52] dark:hover:bg-[#12234a]"
                             >
                                 <ChevronRight className="size-4" />
@@ -718,7 +671,7 @@ export default function Home({ courses: apiCourses, categories: apiCategories, i
                             </div>
                         </div>
                         <div className="mt-5 flex gap-2">
-                            {SAMPLE_TESTIMONIALS.map((t, i) => (
+                            {testimonials.map((t, i) => (
                                 <button
                                     key={t.name}
                                     type="button"
@@ -728,34 +681,6 @@ export default function Home({ courses: apiCourses, categories: apiCategories, i
                                 />
                             ))}
                         </div>
-                    </div>
-                </section>
-
-                {/* FAQ teaser */}
-                <section className="mt-14">
-                    <div className="flex flex-wrap items-end justify-between gap-3">
-                        <div>
-                            <h2 className="text-2xl font-extrabold tracking-tight">အမေးများသော မေးခွန်းများ</h2>
-                            <p className="mt-1 text-sm text-[#5a6a8a] dark:text-[#97a6c6]">မစတင်ခင် သိထားသင့်တာတွေ</p>
-                        </div>
-                        <Link href="/faq" className="text-sm font-bold text-teal-700 dark:text-teal-300">
-                            FAQ အားလုံး + ဆက်သွယ်ရန်
-                        </Link>
-                    </div>
-                    <div className="mt-5 space-y-3.5">
-                        {SAMPLE_FAQS.slice(0, 5).map((f, i) => (
-                            <div key={f.q} className="overflow-hidden rounded-2xl bg-white ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52]">
-                                <button type="button" onClick={() => setFaqOpen(faqOpen === i ? null : i)} className="flex w-full items-center gap-3 p-5 text-left">
-                                    <span className="min-w-0 flex-1 font-extrabold leading-snug">{f.q}</span>
-                                    <ChevronDown className={`size-4 flex-none text-[#8494b3] transition-transform dark:text-[#67779c] ${faqOpen === i ? 'rotate-180' : ''}`} />
-                                </button>
-                                {faqOpen === i && (
-                                    <div className="px-5 pb-5">
-                                        <p className="text-sm leading-relaxed text-[#5a6a8a] dark:text-[#97a6c6]">{f.a}</p>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
                     </div>
                 </section>
 

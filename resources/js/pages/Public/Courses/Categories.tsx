@@ -1,19 +1,13 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowRight, BookOpen } from 'lucide-react';
 import { PublicLayout } from '@/components/shared/public-layout';
-import { SAMPLE_CATEGORIES, SAMPLE_COURSES, categoryMeta, formatCount } from '../sample-data';
+import { categoryMeta, formatCount } from '@/lib/ui-utils';
 
 type Category = { id: number; name: string; slug: string; description?: string | null; courses_count?: number };
 type Props = { categories?: Category[] };
 
 export default function Categories({ categories: apiCategories }: Props) {
-    const usingSample = !apiCategories || apiCategories.length === 0;
-    const categories: { key: string; name: string; slug: string; description?: string | null; count: number; students: number }[] = usingSample
-        ? SAMPLE_CATEGORIES.map((c) => {
-              const mine = SAMPLE_COURSES.filter((course) => course.category === c.name);
-              return { key: c.name, name: c.name, slug: c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), count: mine.length, students: mine.reduce((s, course) => s + (course.students ?? 0), 0) };
-          })
-        : apiCategories!.map((c) => ({ key: String(c.id), name: c.name, slug: c.slug, description: c.description, count: c.courses_count ?? 0, students: 0 }));
+    const categories = apiCategories ?? [];
 
     return (
         <PublicLayout>

@@ -3,7 +3,7 @@ import { ArrowLeft, Award, BookOpen, CheckCircle2, ChevronDown, Clock3, Flag, Gr
 import { useState } from 'react';
 import { PublicLayout } from '@/components/shared/public-layout';
 import { formatKyat } from '@/lib/format';
-import { categoryMeta, formatCount, initials, instructorInfo } from '../sample-data';
+import { categoryMeta, formatCount, initials, instructorInfo } from '@/lib/ui-utils';
 
 type Module = {
     id: number;

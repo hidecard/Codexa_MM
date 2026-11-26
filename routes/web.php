@@ -3,6 +3,7 @@
 use App\Http\Controllers\CertificateVerificationController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\InstructorApplicationController;
+use App\Http\Controllers\PublicAboutController;
 use App\Http\Controllers\PublicBlogController;
 use App\Http\Controllers\PublicCourseController;
 use App\Http\Controllers\PublicFaqController;
@@ -21,10 +22,6 @@ Route::get('/', PublicHomeController::class)->name('home');
 Route::get('/maintenance', function () {
     return Inertia::render('Auth/Maintenance');
 })->name('maintenance');
-
-Route::get('/jobs', function () {
-    return Inertia::render('Public/Jobs');
-})->name('jobs');
 
 Route::get('/teach', [InstructorApplicationController::class, 'show'])->name('teach');
 Route::post('/teach/apply', [InstructorApplicationController::class, 'store'])
@@ -45,9 +42,7 @@ Route::get('/dashboard', function () {
     };
 })->middleware('auth')->name('dashboard');
 
-Route::get('/about', function () {
-    return Inertia::render('Public/About');
-})->name('about');
+Route::get('/about', [PublicAboutController::class, '__invoke'])->name('about');
 
 Route::get('/courses', [PublicCourseController::class, 'index'])->name('courses.index');
 

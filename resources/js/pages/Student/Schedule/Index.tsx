@@ -1,21 +1,19 @@
 import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { LmsShell } from '@/components/shared/lms-shell';
-import { CalendarDays, Clock3, Radio } from 'lucide-react';
+import { CalendarDays, Clock3 } from 'lucide-react';
 
 type WeekDay = { short: string; name: string; day: number; month: string; date: string; today: boolean; event: boolean };
 type AgendaItem = { time: string; title: string; sub: string; col: string; href: string; btn: string };
 type Deadline = { id: number; title: string; course: string; due: string };
-type LiveItem = { id: number; title: string; when: string };
 
 type Props = {
     weekDays: WeekDay[];
     agendaByDate: Record<string, AgendaItem[]>;
     deadlines: Deadline[];
-    liveThisWeek: LiveItem[];
 };
 
-export default function Index({ weekDays, agendaByDate, deadlines, liveThisWeek }: Props) {
+export default function Index({ weekDays, agendaByDate, deadlines }: Props) {
     const todayIndex = Math.max(0, weekDays.findIndex((d) => d.today));
     const [day, setDay] = useState(todayIndex);
     const selected = weekDays[day] ?? weekDays[0];
@@ -26,7 +24,7 @@ export default function Index({ weekDays, agendaByDate, deadlines, liveThisWeek 
             <Head title="Schedule" />
             <div>
                 <h1 className="flex items-center gap-2 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl"><CalendarDays className="size-7 text-teal-600" /> အချိန်ဇယား</h1>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">ဒီအပတ် လေ့လာမှု အစီအစဉ်၊ Live class နှင့် Assignment နောက်ဆုံးရက်များ</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">ဒီအပတ် လေ့လာမှု အစီအစဉ်၊ Assignment နောက်ဆုံးရက်များ</p>
             </div>
 
             <div className="mt-6 grid grid-cols-7 gap-2">
@@ -74,7 +72,9 @@ export default function Index({ weekDays, agendaByDate, deadlines, liveThisWeek 
                             ))
                         )}
                     </div>
+                </div>
 
+                <div className="lg:col-span-2">
                     <h2 className="mt-8 flex items-center gap-2 text-lg font-extrabold text-slate-900 dark:text-white"><Clock3 className="size-5 text-amber-500" /> လာမည့် Deadline များ</h2>
                     {deadlines.length === 0 ? (
                         <p className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">လာမည့် deadline မရှိပါ။</p>
@@ -93,25 +93,6 @@ export default function Index({ weekDays, agendaByDate, deadlines, liveThisWeek 
                             ))}
                         </div>
                     )}
-                </div>
-
-                <div className="lg:col-span-2">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-                        <h2 className="flex items-center gap-2 text-lg font-extrabold text-slate-900 dark:text-white"><Radio className="size-5 text-rose-500" /> ဒီအပတ် Live Class များ</h2>
-                        {liveThisWeek.length === 0 ? (
-                            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">ဒီအပတ် Live class မရှိပါ။</p>
-                        ) : (
-                            <div className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
-                                {liveThisWeek.map((s) => (
-                                    <Link key={s.id} href={`/student/live-classes/${s.id}`} className="block py-3">
-                                        <p className="text-sm font-bold leading-snug text-slate-900 hover:text-teal-700 dark:text-white">{s.title}</p>
-                                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{s.when}</p>
-                                    </Link>
-                                ))}
-                            </div>
-                        )}
-                        <Link href="/student/live-classes" className="mt-3 inline-block text-sm font-bold text-teal-600 hover:text-teal-700">Live Classes အားလုံး →</Link>
-                    </div>
                 </div>
             </div>
         </LmsShell>

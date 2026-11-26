@@ -7,7 +7,6 @@ use App\Models\Course;
 use App\Models\CoursePayment;
 use App\Models\Enrollment;
 use App\Models\LessonProgress;
-use App\Models\LiveSession;
 use App\Models\Submission;
 use App\Models\SupportTicket;
 use App\Models\User;
@@ -91,18 +90,6 @@ class DashboardController extends Controller
             ],
         ];
 
-        $liveToday = LiveSession::query()
-            ->with('instructor:id,name')
-            ->where('status', 'live')
-            ->orWhere(fn ($q) => $q->where('status', 'scheduled')->whereDate('scheduled_at', $now->toDateString()))
-            ->orderBy('scheduled_at')
-            ->first()
-            ?? LiveSession::query()->with('instructor:id,name')
-                ->where('status', 'scheduled')
-                ->where('scheduled_at', '>=', $now)
-                ->orderBy('scheduled_at')
-                ->first();
-
         return Inertia::render('Admin/Dashboard', [
             'stats' => [
                 'monthRevenue' => $monthRevenue,
@@ -122,14 +109,7 @@ class DashboardController extends Controller
             'recentPayments' => $recentPayments,
             'paymentMix' => AcademyAnalytics::paymentMix(),
             'tasks' => $tasks,
-            'liveToday' => $liveToday ? [
-                'title' => $liveToday->title,
-                'instructor' => $liveToday->instructor?->name ?? '—',
-                'time' => $liveToday->scheduled_at ? LiveSession::myanmarTimeRange($liveToday->scheduled_at, $liveToday->ends_at) : '—',
-                'when' => $liveToday->scheduled_at ? LiveSession::myanmarWhen($liveToday->scheduled_at) : '—',
-                'joined' => 0,
-                'liveNow' => $liveToday->status === LiveSession::STATUS_LIVE,
-            ] : null,
+            'liveToday' => null,
         ]);
     }
 
@@ -173,6 +153,12 @@ class DashboardController extends Controller
             return '—';
         }
 
-        return LiveSession::myanmarMonth((int) $date->format('n')).' '.$date->format('d').' · '.$date->format('g:i');
+        $months = [
+            1 => 'ဇန်နဝါရီ', 2 => 'ဖေဖော်ဝါရီ', 3 => 'မတ်', 4 => 'ဧပြီ',
+            5 => 'မေ', 6 => 'ဇွန်', 7 => 'ဇူလိုင်', 8 => 'ဩဂုတ်',
+            9 => 'စက်တင်ဘာ', 10 => 'အောက်တိုဘာ', 11 => 'နိုဝင်ဘာ', 12 => 'ဒီဇင်ဘာ',
+        ];
+
+        return ($months[(int) $date->format('n')] ?? '').' '.$date->format('d').' · '.$date->format('g:i');
     }
 }

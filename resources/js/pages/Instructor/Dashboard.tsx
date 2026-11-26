@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { BookOpen, MessageCircleQuestion, Star, Users, Video, Wallet } from 'lucide-react';
+import { BookOpen, MessageCircleQuestion, Star, Users, Wallet } from 'lucide-react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { StatCard } from '@/components/lms/stat-card';
 import { SectionCard } from '@/components/lms/section-card';
@@ -19,7 +19,6 @@ type Stats = {
 
 type Review = { id: number; name: string; init: string; col: string; stars: number; date: string | null; course: string; text: string };
 type Question = { id: number; q: string; student: string; lesson: string; time: string | null };
-type LiveItem = { title: string; when: string; time: string; joined: number; liveNow: boolean };
 
 type Props = {
     stats: Stats;
@@ -27,10 +26,9 @@ type Props = {
     recentReviews: Review[];
     unansweredQuestions: Question[];
     unansweredCount: number;
-    upcomingLive: LiveItem[];
 };
 
-export default function Dashboard({ stats, monthlyShare, recentReviews, unansweredQuestions, unansweredCount, upcomingLive }: Props) {
+export default function Dashboard({ stats, monthlyShare, recentReviews, unansweredQuestions, unansweredCount }: Props) {
     const { auth } = usePage<{ auth: { user: { name: string } | null } }>().props;
     const name = auth?.user?.name ?? '';
     const shareMax = Math.max(1, ...monthlyShare.map((m) => m.value));
@@ -148,29 +146,6 @@ export default function Dashboard({ stats, monthlyShare, recentReviews, unanswer
                         </div>
                         <Link href="/instructor/qa" className={`${btnAccentCls} mt-4 w-full`}>
                             <MessageCircleQuestion className="size-4" /> မေးခွန်းများ ဖြေရန်
-                        </Link>
-                    </SectionCard>
-
-                    <SectionCard title="လာမည့် Live Session များ">
-                        <div className="space-y-3">
-                            {upcomingLive.length === 0 ? (
-                                <p className={`text-[.86rem] ${mutedCls}`}>လာမည့် Live session မရှိပါ။</p>
-                            ) : (
-                                upcomingLive.map((s) => (
-                                    <div key={s.title} className="rounded-xl bg-slate-50 p-3.5 dark:bg-[#12234a]">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <p className={`min-w-0 flex-1 text-[.88rem] font-bold leading-snug ${inkCls}`}>{s.title}</p>
-                                            {s.liveNow && <Pill tone="rose">LIVE NOW</Pill>}
-                                        </div>
-                                        <p className={`mt-1.5 text-[.78rem] ${mutedCls}`}>
-                                            {s.when} · {s.time}
-                                        </p>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                        <Link href="/instructor/live-host" className={`${btnGhostCls} mt-4 w-full`}>
-                            <Video className="size-4" /> Live စီမံရန်
                         </Link>
                     </SectionCard>
                 </div>

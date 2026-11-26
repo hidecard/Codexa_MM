@@ -83,7 +83,6 @@ export const studentNav: LmsNavSection[] = [
     {
         label: 'အခြား',
         items: [
-            { label: 'Live Classes', href: '/student/live-classes', icon: Video },
             { label: 'Community', href: '/student/community', icon: Users },
             { label: 'အချိန်ဇယား', href: '/student/schedule', icon: Calendar },
             { label: 'ကျွန်ုပ်၏ မှတ်စုများ', href: '/student/notes', icon: FileText },
@@ -129,7 +128,6 @@ export const instructorNav: LmsNavSection[] = [
             { label: 'ကျောင်းသား မေးခွန်းများ', href: '/instructor/qa', icon: MessagesSquare },
             { label: 'ဆရာ ဝင်ငွေ & Payout', href: '/instructor/earnings', icon: Wallet },
             { label: 'ဆရာ၏ Review များ', href: '/instructor/reviews', icon: Star },
-            { label: 'Live Host View', href: '/instructor/live-host', icon: Video },
             { label: 'ကြေညာချက်များ', href: '/instructor/announcements', icon: Megaphone },
             { label: 'ဆရာအဖြစ် သင်ကြားရန်', href: '/teach', icon: Presentation },
         ],
@@ -160,10 +158,8 @@ export const adminNav: LmsNavSection[] = [
             { label: 'ကျောင်းသား စီမံရန်', href: '/admin/academy/students', icon: Users },
             { label: 'ဆရာ စီမံရန်', href: '/admin/academy/instructors', icon: GraduationCap },
             { label: 'Assignment စီမံရန်', href: '/admin/academy/assignments', icon: FileCheck },
-            { label: 'Quiz စီမံရန်', href: '/admin/academy/quizzes', icon: ListChecks },
+{ label: 'Quiz စီမံရန်', href: '/admin/academy/quizzes', icon: ListChecks },
             { label: 'လက်မှတ် စီမံရန်', href: '/admin/academy/certificates', icon: Award },
-            { label: 'Certificate Template', href: '/admin/academy/cert-templates', icon: LayoutTemplate },
-            { label: 'Live Class စီမံရန်', href: '/admin/academy/live-classes', icon: Video },
             { label: 'Review စီမံရန်', href: '/admin/academy/reviews', icon: Star },
         ],
     },

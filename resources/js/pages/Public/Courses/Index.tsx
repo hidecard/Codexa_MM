@@ -3,7 +3,7 @@ import { Search } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { PublicLayout } from '@/components/shared/public-layout';
 import { CourseCard } from '@/components/lms/course-card';
-import { SAMPLE_COURSES, formatCount, mapApiCourse, type ApiCourse } from '../sample-data';
+import { formatCount, mapApiCourse, type ApiCourse } from '@/lib/ui-utils';
 
 type Category = { id: number; name: string; slug: string };
 type Page<T> = {
@@ -34,26 +34,6 @@ export default function Index({ courses, categories = [], filters = {} }: Props)
     const [level, setLevel] = useState(filters.level ?? 'All');
     const [sort, setSort] = useState(filters.sort ?? 'newest');
 
-    const hasActiveFilter = Boolean(filters.q || filters.category || (filters.level && filters.level !== 'All'));
-    // Sample-data fallback: only when the catalog is empty and no filter is active.
-    const usingSample = (!courses || courses.data.length === 0) && !hasActiveFilter;
-    const sampleFiltered = SAMPLE_COURSES.filter((c) => {
-        if (level !== 'All' && c.level !== level) return false;
-        if (category) {
-            const cat = categories.find((item) => item.id.toString() === category);
-            if (cat && c.category !== cat.name) return false;
-        }
-        if (q.trim()) {
-            const needle = q.trim().toLowerCase();
-            if (!`${c.title} ${c.category} ${c.instructor}`.toLowerCase().includes(needle)) return false;
-        }
-        return true;
-    }).sort((a, b) => {
-        if (sort === 'priceAsc') return (a.price ?? 0) - (b.price ?? 0);
-        if (sort === 'priceDesc') return (b.price ?? 0) - (a.price ?? 0);
-        return (b.students ?? 0) - (a.students ?? 0);
-    });
-
     const go = (next: { q?: string; category?: string; level?: string; sort?: string }) => {
         router.get(
             '/courses',
@@ -69,16 +49,15 @@ export default function Index({ courses, categories = [], filters = {} }: Props)
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        if (usingSample) return; // sample fallback filters client-side
         go({ q, category, level, sort });
     };
 
     const pickCategory = (id: string) => {
         setCategory(id);
-        if (!usingSample) go({ q, category: id, level, sort });
+        go({ q, category: id, level, sort });
     };
 
-    const total = usingSample ? sampleFiltered.length : (courses?.total ?? 0);
+    const total = courses?.total ?? 0;
 
     return (
         <PublicLayout>
@@ -171,17 +150,7 @@ export default function Index({ courses, categories = [], filters = {} }: Props)
                     </button>
                 </form>
 
-                {usingSample ? (
-                    sampleFiltered.length > 0 ? (
-                        <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                            {sampleFiltered.map((course) => (
-                                <CourseCard key={course.id} course={course} />
-                            ))}
-                        </div>
-                    ) : (
-                        <EmptyCatalog onReset={() => { setQ(''); setCategory(''); setLevel('All'); }} />
-                    )
-                ) : courses && courses.data.length > 0 ? (
+                {courses && courses.data.length > 0 ? (
                     <>
                         <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                             {courses.data.map((course) => (

@@ -2,7 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, BookOpen, Star, Users } from 'lucide-react';
 import { PublicLayout } from '@/components/shared/public-layout';
 import { CourseCard } from '@/components/lms/course-card';
-import { SAMPLE_COURSES, formatCount, initials, instructorInfo, mapApiCourse, type ApiCourse } from '../sample-data';
+import { formatCount, initials, instructorInfo, mapApiCourse, type ApiCourse } from '@/lib/ui-utils';
 
 type Instructor = { id?: number; name: string; profile?: { bio?: string | null } | null };
 type Review = { id: number; rating: number; comment?: string | null; student?: { name: string }; course?: { title: string; slug: string } };
@@ -10,11 +10,10 @@ type Props = { instructor: Instructor; courses?: ApiCourse[]; reviews?: Review[]
 
 export default function Show({ instructor, courses = [], reviews = [] }: Props) {
     const info = instructorInfo(instructor.name);
-    const sampleCourses = SAMPLE_COURSES.filter((c) => c.instructor === instructor.name);
-    const displayCourses = courses.length > 0 ? courses.map(mapApiCourse) : sampleCourses;
-    const totalStudents = sampleCourses.reduce((s, c) => s + (c.students ?? 0), 0);
+    const displayCourses = courses.map(mapApiCourse);
+    const totalStudents = displayCourses.reduce((s, c) => s + (c.students ?? 0), 0);
     const avgRating =
-        reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : sampleCourses.length > 0 ? sampleCourses.reduce((s, c) => s + (c.rating ?? 0), 0) / sampleCourses.length : null;
+        reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : null;
 
     return (
         <PublicLayout>

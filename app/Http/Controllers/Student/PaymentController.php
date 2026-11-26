@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\CoursePayment;
-use App\Models\LiveSession;
 use App\Support\AcademyAnalytics;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -47,6 +46,15 @@ class PaymentController extends Controller
             return '—';
         }
 
-        return LiveSession::myanmarMonth((int) $date->format('n')).' '.$date->format('d');
+        return self::myanmarMonth((int) $date->format('n')).' '.$date->format('d');
+    }
+
+    private static function myanmarMonth(int $month): string
+    {
+        return [
+            1 => 'ဇန်နဝါရီ', 2 => 'ဖေဖော်ဝါရီ', 3 => 'မတ်', 4 => 'ဧပြီ',
+            5 => 'မေ', 6 => 'ဇွန်', 7 => 'ဇူလိုင်', 8 => 'ဩဂုတ်',
+            9 => 'စက်တင်ဘာ', 10 => 'အောက်တိုဘာ', 11 => 'နိုဝင်ဘာ', 12 => 'ဒီဇင်ဘာ',
+        ][$month] ?? '';
     }
 }

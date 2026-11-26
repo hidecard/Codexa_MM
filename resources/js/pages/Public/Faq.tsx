@@ -2,23 +2,20 @@ import { Head, Link, router } from '@inertiajs/react';
 import { ChevronDown, Mail, MessageSquare, Search } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { PublicLayout } from '@/components/shared/public-layout';
-import { SAMPLE_FAQS } from './sample-data';
 
 type FaqItem = { id: number; question: string; answer: string; category?: string | null };
 type Page<T> = { data: T[]; links: { url: string | null; label: string; active: boolean }[] };
 type Props = { faqs?: Page<FaqItem>; categories?: string[]; filters?: { q?: string; category?: string } };
 
-const fallback: FaqItem[] = SAMPLE_FAQS.map((f, i) => ({ id: i + 1, question: f.q, answer: f.a }));
-
 export default function Faq({ faqs, categories = [], filters = {} }: Props) {
     const [q, setQ] = useState(filters.q ?? '');
     const [category, setCategory] = useState(filters.category ?? '');
     const [openId, setOpenId] = useState<number | null>(null);
-    const items = faqs?.data?.length ? faqs.data : faqs ? [] : fallback;
+    const items = faqs?.data?.length ? faqs.data : faqs ? [] : [];
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        if (!faqs) return; // sample fallback: filter client-side below
+        if (!faqs) return;
         router.get('/faq', { q: q || undefined, category: category || undefined }, { preserveState: true, replace: true });
     };
 

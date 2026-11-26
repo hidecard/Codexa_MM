@@ -8,7 +8,6 @@ use App\Models\CoursePayment;
 use App\Models\CourseQuestion;
 use App\Models\CourseReview;
 use App\Models\Enrollment;
-use App\Models\LiveSession;
 use App\Support\AcademyAnalytics;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -85,21 +84,6 @@ class DashboardController extends Controller
                 'time' => optional($q->created_at)?->toDateString(),
             ])->values();
 
-        $upcomingLive = LiveSession::query()
-            ->where('instructor_id', $user->id)
-            ->whereIn('status', [LiveSession::STATUS_SCHEDULED, LiveSession::STATUS_LIVE])
-            ->where('scheduled_at', '>=', now()->subHours(2))
-            ->orderBy('scheduled_at')
-            ->limit(3)
-            ->get()
-            ->map(fn (LiveSession $session) => [
-                'title' => $session->title,
-                'when' => LiveSession::myanmarWhen($session->scheduled_at),
-                'time' => LiveSession::myanmarTimeRange($session->scheduled_at, $session->ends_at),
-                'joined' => 0,
-                'liveNow' => $session->status === LiveSession::STATUS_LIVE,
-            ])->values();
-
         return Inertia::render('Instructor/Dashboard', [
             'stats' => [
                 'courses' => $courses->count(),
@@ -115,7 +99,6 @@ class DashboardController extends Controller
             'recentReviews' => $recentReviews,
             'unansweredQuestions' => $unanswered,
             'unansweredCount' => CourseQuestion::query()->whereIn('course_id', $courseIds)->where('is_answered', false)->count(),
-            'upcomingLive' => $upcomingLive,
         ]);
     }
 }

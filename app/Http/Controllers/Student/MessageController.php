@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\Enrollment;
-use App\Models\LiveSession;
 use App\Models\Message;
 use App\Models\User;
 use App\Support\AcademyAnalytics;
@@ -153,7 +152,16 @@ class MessageController extends Controller
             return 'မနေ့က';
         }
 
-        return LiveSession::myanmarMonth((int) $date->format('n')).' '.$date->format('d');
+        return self::myanmarMonth((int) $date->format('n')).' '.$date->format('d');
+    }
+
+    private static function myanmarMonth(int $month): string
+    {
+        return [
+            1 => 'ဇန်နဝါရီ', 2 => 'ဖေဖော်ဝါရီ', 3 => 'မတ်', 4 => 'ဧပြီ',
+            5 => 'မေ', 6 => 'ဇွန်', 7 => 'ဇူလိုင်', 8 => 'ဩဂုတ်',
+            9 => 'စက်တင်ဘာ', 10 => 'အောက်တိုဘာ', 11 => 'နိုဝင်ဘာ', 12 => 'ဒီဇင်ဘာ',
+        ][$month] ?? '';
     }
 
     private function timeLabel($date): string
@@ -172,6 +180,6 @@ class MessageController extends Controller
             return 'မနေ့က · '.$time;
         }
 
-        return LiveSession::myanmarMonth((int) $date->format('n')).' '.$date->format('d').' · '.$time;
+        return self::myanmarMonth((int) $date->format('n')).' '.$date->format('d').' · '.$time;
     }
 }
