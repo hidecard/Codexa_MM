@@ -73,18 +73,6 @@ const plans = [
         cta: 'Pro စတင်ရန်',
         features: ['သင်တန်း ဝယ်ယူမှုတိုင်းမှာ အပို 20% လျှော့ဈေး', 'Video class အားလုံး ဝင်ရောက်ခွင့်', 'လက်မှတ် ထုတ်ပေးမှု အခမဲ့', 'Assignment ဦးစားပေး အမှတ်ပေးမှု', 'ဆရာများထံ message support'],
     },
-    {
-        name: 'Team',
-        desc: 'အဖွဲ့လိုက် / ကုမ္ပဏီအလိုက် သင်ယူရန်',
-        monthly: 99000,
-        yearly: 79200,
-        period: '/လ',
-        noteMonthly: 'အဖွဲ့ဝင် 10 ဦး အထိ ပါဝင်ပါတယ်',
-        noteYearly: 'နှစ်စဉ် 950,400 ကျပ် တစ်ကြိမ်တည်း ပေးချေရန်',
-        featured: false,
-        cta: 'Team စတင်ရန်',
-        features: ['Pro အကျိုးခံစားခွင့် အားလုံး', 'အဖွဲ့ဝင် 10 ဦး အထိ အကောင့်', 'အဖွဲ့ တိုးတက်မှု အစီရင်ခံစာ', 'Admin dashboard ဖြင့် စီမံခွင့်', 'ဦးစားပေး support'],
-    },
 ];
 
 const testimonials = [
@@ -536,9 +524,9 @@ export default function Home({ courses: apiCourses, categories: apiCategories, i
                 {/* Pricing */}
                 <section className="mt-14">
                     <div className="mx-auto max-w-[640px] text-center">
-                        <h2 className="text-2xl font-extrabold tracking-tight">အဖွဲ့ဝင် Plan များ</h2>
+                        <h2 className="text-2xl font-extrabold tracking-tight">Plan များ</h2>
                         <p className="mt-1.5 text-sm leading-relaxed text-[#5a6a8a] dark:text-[#97a6c6]">
-                            သင်တန်းတွေကို တစ်ခန်းချင်း ဝယ်ယူနိုင်သလို Pro အဖွဲ့ဝင်အဖြစ်လည်း အကျိုးခံစားခွင့် အပိုတွေ ရယူနိုင်ပါတယ်။ အချိန်မရွေး ရပ်/ပြောင်း လုပ်နိုင်ပါတယ်။
+                            သင်တန်းတွေကို တစ်ခန်းချင်း ဝယ်ယူနိုင်သလို Pro အဖြစ်လည်း အကျိုးခံစားခွင့် အပိုတွေ ရယူနိုင်ပါတယ်။ အချိန်မရွေး ရပ်/ပြောင်း လုပ်နိုင်ပါတယ်။
                         </p>
                         <div className="mt-5 inline-flex gap-1.5 rounded-full bg-white p-1.5 ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52]">
                             <button
@@ -557,7 +545,7 @@ export default function Home({ courses: apiCourses, categories: apiCategories, i
                             </button>
                         </div>
                     </div>
-                    <div className="mt-7 grid items-start gap-4 md:grid-cols-3">
+                    <div className="mt-7 grid items-start gap-4 md:grid-cols-2">
                         {plans.map((plan) => {
                             const price = billing === 'monthly' ? plan.monthly : plan.yearly;
                             const note = billing === 'monthly' ? plan.noteMonthly : plan.noteYearly;
