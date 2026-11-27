@@ -4,7 +4,6 @@ import {
     Award,
     BookOpen,
     Check,
-    ChevronDown,
     ChevronLeft,
     ChevronRight,
     Code2,
@@ -13,7 +12,6 @@ import {
     Play,
     Star,
     Users,
-    Video,
     Wallet,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -43,7 +41,7 @@ type Props = {
 
 const features = [
     { icon: BookOpen, tint: 'bg-teal-500/10 text-teal-600 dark:text-teal-300', title: 'မြန်မာဘာသာ သင်ခန်းစာများ', text: 'Concept တိုင်းကို မြန်မာလို ရှင်းရှင်းလင်းလင်း ရှင်းပြပြီး English technical term တွေကိုပါ တွဲဖက် သင်ပေးတာမို့ အခြေခံမရှိသူလည်း လိုက်နိုင်ပါတယ်။' },
-    { icon: Video, tint: 'bg-rose-500/10 text-rose-600 dark:text-rose-300', title: 'Video Class + မှတ်တမ်း', text: 'Video သင်ခန်းစာတွေမှာ ဆရာကို တိုက်ရိုက် မေးမြန်းနိုင်ပြီး လွတ်သွားရင်လည်း မှတ်တမ်းကို အချိန်မရွေး ပြန်ကြည့်နိုင်ပါတယ်။' },
+    { icon: Play, tint: 'bg-rose-500/10 text-rose-600 dark:text-rose-300', title: 'Video Class + မှတ်တမ်း', text: 'Video သင်ခန်းစာတွေမှာ ဆရာကို တိုက်ရိုက် မေးမြန်းနိုင်ပြီး လွတ်သွားရင်လည်း မှတ်တမ်းကို အချိန်မရွေး ပြန်ကြည့်နိုင်ပါတယ်။' },
     { icon: Code2, tint: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-300', title: 'Project-based သင်ယူမှု', text: 'သင်ခန်းစာတိုင်းမှာ လက်တွေ့ လေ့ကျင့်ခန်းနဲ့ assignment ပါဝင်ပြီး ဆရာက အမှတ်ပေး မှတ်ချက် ပြန်ပေးတာမို့ portfolio အတွက် project တွေ စုဆောင်းပြီးသား ဖြစ်ပါတယ်။' },
     { icon: Award, tint: 'bg-amber-500/10 text-amber-600 dark:text-amber-300', title: 'အတည်ပြုနိုင်သော လက်မှတ်', text: 'သင်တန်း ပြီးဆုံးရင် Certificate ID ပါတဲ့ လက်မှတ် ရရှိပြီး အလုပ်ရှင်က link ဖြင့် တိုက်ရိုက် အတည်ပြုနိုင်တာမို့ CV နဲ့ LinkedIn မှာ ယုံကြည်စိတ်ချစွာ ထည့်သုံးနိုင်ပါတယ်။' },
     { icon: Wallet, tint: 'bg-sky-500/10 text-sky-600 dark:text-sky-300', title: 'မြန်မာ ငွေပေးချေမှုများ', text: 'KBZPay, WavePay, CB Pay နဲ့ bank transfer — ကိုယ် အဆင်ပြေတဲ့ နည်းလမ်းနဲ့ ပေးချေနိုင်ပြီး အတည်ပြုပြီးတာနဲ့ သင်ခန်းစာတွေ ချက်ချင်း ပွင့်သွားပါမယ်。' },
@@ -90,17 +88,16 @@ const plans = [
 ];
 
 const testimonials = [
-    { name: 'May Thandar', init: 'MT', color: '#ec4899', city: 'Yangon', course: 'JavaScript Deep Dive', text: 'အရင်က tutorial တွေ လိုက်ကြည့်ရင်း လမ်းပျောက်နေခဲ့တာ။ Codexa MM မှာ အခန်းလိုက် လေ့ကျင့်ခန်းတွေနဲ့ ဆရာ့ feedback ပါလာတော့ ၃ လအတွင်း ကိုယ်ပိုင် project ၂ ခု ပြီးအောင် လုပ်နိုင်ခဲ့ပါတယ်。' },
-    { name: 'Zaw Lin Htet', init: 'ZL', color: '#f59e0b', city: 'Yangon', course: 'Python for Beginners', text: 'Programming ကို သုညကနေ စတာပါ。 မြန်မာလို ရှင်းပြထားတာမို့ concept တွေ မြန်မြန် နားလည်ပြီး quiz တွေက ကိုယ် ဘယ်နေရာ အားနည်းလဲဆိုတာ တန်းသိရပါတယ်。' },
-    { name: 'Thiri Nanda', init: 'TN', color: '#6366f1', city: 'Mandalay', course: 'UI/UX Design with Figma', text: 'Figma ကို အခြေခံကနေ component, prototype အထိ စနစ်တကျ သင်ခဲ့ရတယ်。 ရလာတဲ့ လက်မှတ်ကို portfolio မှာ ထည့်ထားတာ အလုပ်လျှောက်တဲ့အခါ အထောက်အကူ အများကြီး ဖြစ်ပါတယ်。' },
+    { name: 'May Thandar', init: 'MT', color: '#ec4899', city: 'Yangon', course: 'JavaScript Deep Dive', text: 'အရင်က tutorial တွေ လိုက်ကြည့်ရင်း လမ်းပျောက်နေခဲ့တာ။ Codexa MM မှာ အခန်းလိုက် လေ့ကျင့်ခန်းတွေနဲ့ ဆရာ့ feedback ပါလာတော့ ၃ လအတွင်း ကိုယ်ပိုင် project ၂ ခု ပြီးအောင် လုပ်နိုင်ခဲ့ပါတယ်။' },
+    { name: 'Zaw Lin Htet', init: 'ZL', color: '#f59e0b', city: 'Yangon', course: 'Python for Beginners', text: 'Programming ကို သုညကနေ စတာပါ။ မြန်မာလို ရှင်းပြထားတာမို့ concept တွေ မြန်မြန် နားလည်ပြီး quiz တွေက ကိုယ် ဘယ်နေရာ အားနည်းလဲဆိုတာ တန်းသိရပါတယ်။' },
+    { name: 'Thiri Nanda', init: 'TN', color: '#6366f1', city: 'Mandalay', course: 'UI/UX Design with Figma', text: 'Figma ကို အခြေခံကနေ component, prototype အထိ စနစ်တကျ သင်ခဲ့ရတယ်။ ရလာတဲ့ လက်မှတ်ကို portfolio မှာ ထည့်ထားတာ အလုပ်လျှောက်တဲ့အခါ အထောက်အကူ အများကြီး ဖြစ်ပါတယ်။' },
 ];
 
-function slugify(name: string): string {
-    return name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
-}
+const steps = [
+    { n: 1, grad: 'linear-gradient(135deg,#0ea892,#2563eb)', title: 'အကောင့် ဖွင့်ရန်', text: 'အခမဲ့ အကောင့် ဖွင့်ပြီး profile ကို ပြင်ဆင်ပါ', cta: 'အကောင့် ဖွင့်ရန်', href: '/register' },
+    { n: 2, grad: 'linear-gradient(135deg,#f59e0b,#ec4899)', title: 'သင်တန်း ရွေးရန်', text: 'နယ်ပယ်အလိုက် သင်တန်းတွေကို ရှာပြီး ရွေးပါ', cta: 'သင်တန်းများ ကြည့်ရန်', href: '/courses' },
+    { n: 3, grad: 'linear-gradient(135deg,#6366f1,#8b5cf6)', title: 'စတင်သင်ယူမှု', text: 'စာရင်းသွင်းပြီး Video, Assignment တွေနဲ့ ဆက်လက်သင်ယူပါ', cta: 'သင်ယူရန်', href: '/student/dashboard' },
+];
 
 export default function Home({ courses: apiCourses, categories: apiCategories, instructors: apiInstructors, learningPaths, stats, landing }: Props) {
     const courses: LmsCourse[] = useMemo(
@@ -145,7 +142,6 @@ export default function Home({ courses: apiCourses, categories: apiCategories, i
 
     const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
     const [tstIdx, setTstIdx] = useState(0);
-    const [faqOpen, setFaqOpen] = useState<number | null>(0);
 
     useEffect(() => {
         const timer = setInterval(() => setTstIdx((i) => (i + 1) % testimonials.length), 6500);
@@ -515,10 +511,10 @@ export default function Home({ courses: apiCourses, categories: apiCategories, i
                                           <div className="min-w-0">
                                               <h3 className="truncate font-extrabold">{ins.name}</h3>
                                               <p className="text-xs font-bold text-teal-700 dark:text-teal-300">{info.role}</p>
-                                              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[#5a6a8a] dark:text-[#97a6c6]">
-                                                  <Star className="size-3 fill-amber-400 text-amber-400" />
-                                                  <b className="text-[#0d1730] dark:text-white">{formatCount(info.students ?? 0)}</b> · ကျောင်းသား {formatCount(ins.courses_count ?? 0)} ယောက်
-                                              </p>
+<p className="mt-0.5 flex items-center gap-1.5 text-xs text-[#5a6a8a] dark:text-[#97a6c6]">
+                                                   <Star className="size-3 fill-amber-400 text-amber-400" />
+                                                   <b className="text-[#0d1730] dark:text-white">{formatCount(ins.courses_count ?? 0)}</b> · သင်တန်း {ins.courses_count ?? 0} ခု
+                                               </p>
                                           </div>
                                       </div>
                                       <p className="mt-3.5 line-clamp-3 text-sm leading-relaxed text-[#5a6a8a] dark:text-[#97a6c6]">{ins.profile?.bio ?? info.bio}</p>

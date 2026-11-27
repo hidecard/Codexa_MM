@@ -1,8 +1,8 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Search, Star } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { PublicLayout } from '@/components/shared/public-layout';
-import { formatCount, initials, instructorInfo } from '@/lib/ui-utils';
+import { initials, instructorInfo } from '@/lib/ui-utils';
 
 type Instructor = { id: number; name: string; courses_count: number; profile?: { bio?: string | null } | null };
 type Page<T> = { data: T[]; links: { url: string | null; label: string; active: boolean }[] };

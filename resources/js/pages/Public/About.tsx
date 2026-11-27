@@ -8,14 +8,14 @@ type Props = { instructors?: ApiInstructor[]; stats?: { courses?: number; studen
 
 const values = [
     { icon: BookOpen, tint: 'bg-teal-500/10 text-teal-600 dark:text-teal-300', title: 'လက်တွေ့ အခြေပြု သင်ကြားမှု', text: 'သီအိုရီ သက်သက် မဟုတ်ဘဲ သင်တန်းတိုင်းမှာ တကယ့် product နဲ့ တူတဲ့ project တွေ တည်ဆောက်ရင်း သင်ယူရပါတယ်။' },
-    { icon: Languages, tint: 'bg-sky-500/10 text-sky-600 dark:text-sky-300', title: 'မြန်မာဘာသာ အပြည့်အစုံ', text: 'Video, စာရွက်စာတမ်းနဲ့ ဆရာ feedback အားလုံး မြန်မာလို ဖြစ်လို့ concept တွေကို နက်နက်နဲနဲ နားလည်နိုင်ပါတယ်。' },
-    { icon: Briefcase, tint: 'bg-amber-500/10 text-amber-600 dark:text-amber-300', title: 'အလုပ် ရရှိရေး အထောက်အပံ့', text: 'Learning Path, portfolio review နဲ့ မိတ်ဖက် ကုမ္ပဏီတွေရဲ့ အလုပ်ခေါ်စာတွေက သင်တန်း ပြီးသူတွေကို အလုပ်နဲ့ ချိတ်ဆက်ပေးပါတယ်。' },
+    { icon: Languages, tint: 'bg-sky-500/10 text-sky-600 dark:text-sky-300', title: 'မြန်မာဘာသာ အပြည့်အစုံ', text: 'Video, စာရွက်စာတမ်းနဲ့ ဆရာ feedback အားလုံး မြန်မာလို ဖြစ်လို့ concept တွေကို နက်နက်နဲနဲ နားလည်နိုင်ပါတယ်။' },
+    { icon: Briefcase, tint: 'bg-amber-500/10 text-amber-600 dark:text-amber-300', title: 'အလုပ် ရရှိရေး အထောက်အပံ့', text: 'Learning Path, portfolio review နဲ့ မိတ်ဖက် ကုမ္ပဏီတွေရဲ့ အလုပ်ခေါ်စာတွေက သင်တန်း ပြီးသူတွေကို အလုပ်နဲ့ ချိတ်ဆက်ပေးပါတယ်။' },
 ];
 
 const milestones = [
-    { year: '2024', title: 'Codexa MM စတင် တည်ထောင်', text: 'HTML/CSS နဲ့ Python သင်တန်း ၂ ခုနဲ့ ကျောင်းသား ၂၀၀ ဦးဖြင့် စတင်ခဲ့ပါတယ်。' },
-    { year: '2025', title: 'Video Classes နဲ့ Community စတင်', text: 'Video session တွေနဲ့ ကျောင်းသားအချင်းချင်း ဆွေးနွေးနိုင်တဲ့ community ကို ဖွင့်လှစ်ခဲ့ပါတယ်。' },
-    { year: '2026', title: 'Learning Paths နဲ့ လက်မှတ် စနစ်', text: 'အလုပ်အကိုင် လမ်းကြောင်း ၄ ခု၊ အတည်ပြုနိုင်တဲ့ digital လက်မှတ်တွေနဲ့ မိတ်ဖက် ကုမ္ပဏီ အလုပ်ခေါ်စာတွေ ထည့်သွင်းခဲ့ပါတယ်。' },
+    { year: '2024', title: 'Codexa MM စတင် တည်ထောင်', text: 'HTML/CSS နဲ့ Python သင်တန်း ၂ ခုနဲ့ ကျောင်းသား ၂၀၀ ဦးဖြင့် စတင်ခဲ့ပါတယ်။' },
+    { year: '2025', title: 'Video Classes နဲ့ Community စတင်', text: 'Video session တွေနဲ့ ကျောင်းသားအချင်းချင်း ဆွေးနွေးနိုင်တဲ့ community ကို ဖွင့်လှစ်ခဲ့ပါတယ်။' },
+    { year: '2026', title: 'Learning Paths နဲ့ လက်မှတ် စနစ်', text: 'အလုပ်အကိုင် လမ်းကြောင်း ၄ ခု၊ အတည်ပြုနိုင်တဲ့ digital လက်မှတ်တွေနဲ့ မိတ်ဖက် ကုမ္ပဏီ အလုပ်ခေါ်စာတွေ ထည့်သွင်းခဲ့ပါတယ်။' },
 ];
 
 export default function About({ instructors: apiInstructors, stats }: Props) {
@@ -94,48 +94,28 @@ export default function About({ instructors: apiInstructors, stats }: Props) {
                         </Link>
                     </div>
                     <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                        {usingSampleInstructors
-                            ? SAMPLE_INSTRUCTORS.slice(0, 4).map((ins) => (
-                                  <div key={ins.id} className="flex items-center gap-3 rounded-2xl bg-white p-4 ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52]">
-                                      <span className="grid size-11 flex-none place-items-center rounded-2xl text-xs font-extrabold text-white" style={{ background: ins.grad }}>
-                                          {initials(ins.name)}
-                                      </span>
-                                      <div className="min-w-0 flex-1">
-                                          <p className="truncate font-extrabold">{ins.name}</p>
-                                          <p className="text-xs text-[#5a6a8a] dark:text-[#97a6c6]">
-                                              {ins.role} · သင်တန်း {ins.courses} ခု
-                                          </p>
-                                      </div>
-                                      <Link
-                                          href="/instructors"
-                                          className="flex-none rounded-xl bg-white px-3 py-2 text-xs font-bold ring-1 ring-[#dce3f0] transition hover:bg-[#eef3fb] dark:bg-[#0d1730] dark:ring-[#1e2c52] dark:hover:bg-[#12234a]"
-                                      >
-                                          Profile
-                                      </Link>
-                                  </div>
-                              ))
-                            : apiInstructors!.slice(0, 4).map((ins) => {
-                                  const info = instructorInfo(ins.name);
-                                  return (
-                                      <div key={ins.id} className="flex items-center gap-3 rounded-2xl bg-white p-4 ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52]">
-                                          <span className="grid size-11 flex-none place-items-center rounded-2xl text-xs font-extrabold text-white" style={{ background: info.grad }}>
-                                              {initials(ins.name)}
-                                          </span>
-                                          <div className="min-w-0 flex-1">
-                                              <p className="truncate font-extrabold">{ins.name}</p>
-                                              <p className="text-xs text-[#5a6a8a] dark:text-[#97a6c6]">
-                                                  {info.role} · သင်တန်း {ins.courses_count ?? 0} ခု
-                                              </p>
-                                          </div>
-                                          <Link
-                                              href={`/instructors/${ins.id}`}
-                                              className="flex-none rounded-xl bg-white px-3 py-2 text-xs font-bold ring-1 ring-[#dce3f0] transition hover:bg-[#eef3fb] dark:bg-[#0d1730] dark:ring-[#1e2c52] dark:hover:bg-[#12234a]"
-                                          >
-                                              Profile
-                                          </Link>
-                                      </div>
-                                  );
-                              })}
+                        {instructors.slice(0, 4).map((ins) => {
+                            const info = instructorInfo(ins.name);
+                            return (
+                                <div key={ins.id} className="flex items-center gap-3 rounded-2xl bg-white p-4 ring-1 ring-[#dce3f0] dark:bg-[#0d1730] dark:ring-[#1e2c52]">
+                                    <span className="grid size-11 flex-none place-items-center rounded-2xl text-xs font-extrabold text-white" style={{ background: info.grad }}>
+                                        {initials(ins.name)}
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate font-extrabold">{ins.name}</p>
+                                        <p className="text-xs text-[#5a6a8a] dark:text-[#97a6c6]">
+                                            {info.role} · သင်တန်း {ins.courses_count ?? 0} ခု
+                                        </p>
+                                    </div>
+                                    <Link
+                                        href={`/instructors/${ins.id}`}
+                                        className="flex-none rounded-xl bg-white px-3 py-2 text-xs font-bold ring-1 ring-[#dce3f0] transition hover:bg-[#eef3fb] dark:bg-[#0d1730] dark:ring-[#1e2c52] dark:hover:bg-[#12234a]"
+                                    >
+                                        Profile
+                                    </Link>
+                                </div>
+                            );
+                        })}
                     </div>
                 </section>
 

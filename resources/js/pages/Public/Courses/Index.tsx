@@ -119,7 +119,7 @@ export default function Index({ courses, categories = [], filters = {} }: Props)
                         value={level}
                         onChange={(e) => {
                             setLevel(e.target.value);
-                            if (!usingSample) go({ q, category, level: e.target.value, sort });
+                            go({ q, category, level: e.target.value, sort });
                         }}
                         aria-label="Level"
                         className="rounded-xl bg-white px-3.5 py-2.5 text-sm font-semibold ring-1 ring-[#dce3f0] outline-none focus:ring-2 focus:ring-teal-500 dark:bg-[#0d1730] dark:ring-[#1e2c52]"
@@ -134,7 +134,7 @@ export default function Index({ courses, categories = [], filters = {} }: Props)
                         value={sort}
                         onChange={(e) => {
                             setSort(e.target.value);
-                            if (!usingSample) go({ q, category, level, sort: e.target.value });
+                            go({ q, category, level, sort: e.target.value });
                         }}
                         aria-label="Sort"
                         className="rounded-xl bg-white px-3.5 py-2.5 text-sm font-semibold ring-1 ring-[#dce3f0] outline-none focus:ring-2 focus:ring-teal-500 dark:bg-[#0d1730] dark:ring-[#1e2c52]"

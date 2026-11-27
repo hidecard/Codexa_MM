@@ -3,7 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Bell, ChevronLeft } from 'lucide-react';
+import { Bell } from 'lucide-react';
 
 type Announcement = {
     id: number;

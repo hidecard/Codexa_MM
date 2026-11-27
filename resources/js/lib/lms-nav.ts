@@ -22,7 +22,6 @@ import {
     History,
     Layers,
     LayoutDashboard,
-    LayoutTemplate,
     LifeBuoy,
     Link,
     ListChecks,
@@ -56,7 +55,6 @@ import {
     UserPlus,
     Users,
     UsersRound,
-    Video,
     Wallet,
 } from 'lucide-react';
 

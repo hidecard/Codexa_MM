@@ -36,6 +36,8 @@ type ArticleResult = {
     href: string;
 };
 
+type PageProps = { auth?: { user?: { id: number; name: string } | null } };
+
 type Props = {
     query?: string;
     tab?: string;
@@ -54,7 +56,8 @@ const TABS: { key: string; label: string }[] = [
 ];
 
 export default function Index(): JSX.Element {
-    const { data } = usePage<Props>();
+    const page = usePage<Props & PageProps>();
+    const data = page.props;
     const query = data.query ?? '';
     const tab = (data.tab ?? 'all') as (typeof TABS)[number]['key'];
     const courses = data.courses ?? [];
@@ -66,7 +69,6 @@ export default function Index(): JSX.Element {
     const [localTab, setLocalTab] = useState(tab);
 
     const q = localQuery.trim().toLowerCase();
-    const match = (text: string) => !q || text.toLowerCase().includes(q);
 
     const total = courses.length + instructors.length + paths.length + articles.length;
 
@@ -123,7 +125,7 @@ export default function Index(): JSX.Element {
                                         category: c.category,
                                         instructor: c.instructor,
                                         price: c.price,
-                                        oldPrice: c.oldPrice,
+                                        oldPrice: c.oldPrice ?? undefined,
                                         rating: c.rating,
                                         students: c.students,
                                         level: c.level,

@@ -3,8 +3,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { LmsShell } from '@/components/shared/lms-shell';
 import { StatCard } from '@/components/lms/stat-card';
 import { SectionCard } from '@/components/lms/section-card';
-import { ProgressBar } from '@/components/lms/progress-bar';
-import { Award, Bell, BookOpen, Crown, Flame, MapPin, Pencil, ShieldCheck, Target, Trophy } from 'lucide-react';
+import { Award, Bell, BookOpen, Crown, Flame, MapPin, Pencil, ShieldCheck, Target } from 'lucide-react';
 import { formatNumber } from '@/lib/format';
 
 const ICON_MAP: Record<string, React.ElementType> = {

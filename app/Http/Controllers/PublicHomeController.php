@@ -49,11 +49,25 @@ class PublicHomeController extends Controller
         });
 
         $learningPaths = LearningPath::query()
-            ->where('is_active', true)
+            ->where('is_published', true)
             ->withCount(['courses' => fn ($q) => $q->published()])
-            ->orderBy('position')
+            ->with('courses')
+            ->orderBy('sort_order')
             ->take(4)
-            ->get(['id', 'title', 'goal', 'glyph', 'grad', 'months', 'level', 'steps', 'outcomes']);
+            ->get(['id', 'title', 'description', 'glyph', 'gradient', 'duration_label', 'level', 'outcomes'])
+            ->map(function ($path) {
+                return [
+                    'id' => $path->id,
+                    'title' => $path->title,
+                    'goal' => $path->description,
+                    'glyph' => $path->glyph,
+                    'grad' => $path->gradient,
+                    'months' => $path->duration_label,
+                    'level' => $path->level,
+                    'steps' => $path->courses->map(fn ($c) => $c->title)->toArray(),
+                    'outcomes' => $path->outcomes ?? [],
+                ];
+            });
 
         return Inertia::render('Public/Home', [
             'courses' => $courses,

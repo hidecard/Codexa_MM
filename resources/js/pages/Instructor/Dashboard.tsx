@@ -4,7 +4,7 @@ import { LmsShell } from '@/components/shared/lms-shell';
 import { StatCard } from '@/components/lms/stat-card';
 import { SectionCard } from '@/components/lms/section-card';
 import { formatDate, formatKyat, formatNumber } from '@/lib/format';
-import { Avatar, BarChart, LmsCard, PageIntro, Pill, Stars, btnAccentCls, btnGhostCls, inkCls, mutedCls } from '@/pages/Admin/Academy/_shared';
+import { Avatar, BarChart, LmsCard, PageIntro, Stars, btnAccentCls, btnGhostCls, inkCls, mutedCls } from '@/pages/Admin/Academy/_shared';
 
 type Stats = {
     courses: number;

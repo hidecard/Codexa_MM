@@ -52,7 +52,7 @@ const QUICK_LINKS = [
 
 const MYANMAR_MONTHS = ['ဇန်နဝါရီ', 'ဖေဖော်ဝါရီ', 'မတ်', 'ဧပြီ', 'မေ', 'ဇွန်', 'ဇူလိုင်', 'ဩဂုတ်', 'စက်တင်ဘာ', 'အောက်တိုဘာ', 'နိုဝင်ဘာ', 'ဒီဇင်ဘာ'];
 
-export default function Dashboard({ stats, monthlyRevenue, monthlyRevenueTotal, topCourses, recentPayments, paymentMix, tasks, liveToday }: Props) {
+export default function Dashboard({ stats, monthlyRevenue, monthlyRevenueTotal, topCourses, recentPayments, paymentMix, tasks }: Props) {
     const now = new Date();
     const monthLabel = `${MYANMAR_MONTHS[now.getMonth()]} ${now.getFullYear()}`;
     const chartMax = Math.max(1, ...monthlyRevenue.map((m) => m.value));

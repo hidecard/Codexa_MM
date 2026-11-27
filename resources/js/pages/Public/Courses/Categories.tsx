@@ -1,7 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowRight, BookOpen } from 'lucide-react';
 import { PublicLayout } from '@/components/shared/public-layout';
-import { categoryMeta, formatCount } from '@/lib/ui-utils';
+import { categoryMeta } from '@/lib/ui-utils';
 
 type Category = { id: number; name: string; slug: string; description?: string | null; courses_count?: number };
 type Props = { categories?: Category[] };
@@ -19,9 +19,10 @@ export default function Categories({ categories: apiCategories }: Props) {
                 <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                     {categories.map((c) => {
                         const meta = categoryMeta(c.name);
+                        const count = c.courses_count ?? 0;
                         return (
                             <Link
-                                key={c.key}
+                                key={c.id}
                                 href={`/courses?category=${c.slug}`}
                                 className="group overflow-hidden rounded-2xl bg-white ring-1 ring-[#dce3f0] transition hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0d1730] dark:ring-[#1e2c52]"
                             >
@@ -29,7 +30,7 @@ export default function Categories({ categories: apiCategories }: Props) {
                                     <span className="font-mono text-3xl font-bold" style={{ textShadow: '0 4px 18px rgba(0,0,0,.35)' }}>
                                         {meta.glyph}
                                     </span>
-                                    <span className="rounded-full bg-black/25 px-3 py-1 text-xs font-bold backdrop-blur">သင်တန်း {c.count} ခု</span>
+                                    <span className="rounded-full bg-black/25 px-3 py-1 text-xs font-bold backdrop-blur">သင်တန်း {count} ခု</span>
                                 </div>
                                 <div className="p-5">
                                     <h2 className="text-lg font-extrabold">{c.name}</h2>
@@ -37,8 +38,7 @@ export default function Categories({ categories: apiCategories }: Props) {
                                         <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-[#5a6a8a] dark:text-[#97a6c6]">{c.description}</p>
                                     ) : (
                                         <p className="mt-1.5 flex items-center gap-1.5 text-sm text-[#5a6a8a] dark:text-[#97a6c6]">
-                                            <BookOpen className="size-4" />
-                                            {c.students > 0 ? `ကျောင်းသား ${formatCount(c.students)} ယောက် သင်ယူနေပါတယ်` : 'သင်တန်းများ ကြည့်ရန်'}
+                                            <BookOpen className="size-4" /> သင်တန်းများ ကြည့်ရန်
                                         </p>
                                     )}
                                     <p className="mt-4 inline-flex items-center gap-1.5 text-sm font-extrabold text-teal-700 group-hover:gap-2.5 dark:text-teal-300">

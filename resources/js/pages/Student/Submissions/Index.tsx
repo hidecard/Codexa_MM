@@ -2,7 +2,7 @@
 import { LmsShell } from '@/components/shared/lms-shell';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ClipboardList, FileText, Clock3, Download, CheckCircle2 } from 'lucide-react';
+import { ClipboardList, FileText, Download } from 'lucide-react';
 import { formatDate } from '@/lib/format';
 
 type Submission = {

@@ -4,7 +4,7 @@ import { StatCard } from '@/components/lms/stat-card';
 import { SectionCard } from '@/components/lms/section-card';
 import { ProgressBar } from '@/components/lms/progress-bar';
 import { formatMinutes } from '@/lib/format';
-import { BookOpen, CalendarDays, Check, Flame, PlayCircle, Radio, Trophy, Video } from 'lucide-react';
+import { BookOpen, CalendarDays, Flame, PlayCircle, Trophy } from 'lucide-react';
 
 type EnrollmentCard = {
     id: number;
